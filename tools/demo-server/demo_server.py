@@ -627,17 +627,36 @@ def jdump(o):
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     avatars_from = None
+    delay_ms = 0
+    bytes_per_second = 0
+    disable_websocket = False
+    trace_requests = False
 
     def log_message(self, fmt, *args):
         pass
 
     def send_json(self, obj, code=200):
         body = jdump(obj)
+        if self.delay_ms:
+            time.sleep(self.delay_ms / 1000)
+        if self.trace_requests:
+            print(f"{time.monotonic():.3f} {self.command} {self.path} {code} {len(body)}B", flush=True)
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
-        self.wfile.write(body)
+        try:
+            if self.bytes_per_second:
+                chunk_size = max(1, self.bytes_per_second // 10)
+                for start in range(0, len(body), chunk_size):
+                    chunk = body[start:start + chunk_size]
+                    self.wfile.write(chunk)
+                    self.wfile.flush()
+                    time.sleep(len(chunk) / self.bytes_per_second)
+            else:
+                self.wfile.write(body)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
 
     def body(self):
         n = int(self.headers.get("Content-Length") or 0)
@@ -667,6 +686,8 @@ class Handler(BaseHTTPRequestHandler):
         u = urllib.parse.urlparse(self.path)
         path, q = u.path, {k: v[-1] for k, v in urllib.parse.parse_qs(u.query).items()}
         if path.endswith("/events/ws") and self.headers.get("Upgrade", "").lower() == "websocket":
+            if self.disable_websocket:
+                return self.send_json({"error": "Realtime disabled for network simulation"}, 503)
             return self.websocket()
         if path.startswith("/api/agent-avatars/"):
             return self.avatar(path + ("?" + u.query if u.query else ""))
@@ -1004,7 +1025,17 @@ def main():
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=3100)
     ap.add_argument("--avatars-from", help="Paperclip base URL to proxy agent avatars from, e.g. http://127.0.0.1:3100")
+    ap.add_argument("--delay-ms", type=int, default=0, help="Delay each JSON response to simulate latency")
+    ap.add_argument("--bytes-per-second", type=int, default=0, help="Throttle each response body")
+    ap.add_argument("--disable-websocket", action="store_true", help="Exercise polling fallback")
+    ap.add_argument("--trace-requests", action="store_true", help="Print demo request timings/counts")
     a = ap.parse_args()
+    if a.delay_ms < 0 or a.bytes_per_second < 0:
+        ap.error("Network simulation values must be non-negative")
+    Handler.delay_ms = a.delay_ms
+    Handler.bytes_per_second = a.bytes_per_second
+    Handler.disable_websocket = a.disable_websocket
+    Handler.trace_requests = a.trace_requests
     Handler.avatars_from = a.avatars_from
     srv = ThreadingHTTPServer((a.host, a.port), Handler)
     print(f"Demo Paperclip on http://{a.host}:{a.port} ({len(ISSUES)} tasks, {len(AGENTS)} agents)")
