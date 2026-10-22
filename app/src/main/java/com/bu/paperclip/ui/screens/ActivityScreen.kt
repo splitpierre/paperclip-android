@@ -226,7 +226,7 @@ fun SearchScreen(nav: Nav) {
                         LazyColumn(Modifier.fillMaxSize()) {
                             grouped.forEach { (type, list) ->
                                 item(key = "h-$type") { SectionHeader("${adminSearchTypeLabel(type)} · ${list.size}") }
-                                items(list, key = { "$type-${it.id}" }) { r -> SearchResultRow(r) { adminOpenSearchResult(nav, r) } }
+                                items(list, key = { "$type-${it.id}" }, contentType = { "search-result" }) { r -> SearchResultRow(r) { adminOpenSearchResult(nav, r) } }
                             }
                         }
                     }

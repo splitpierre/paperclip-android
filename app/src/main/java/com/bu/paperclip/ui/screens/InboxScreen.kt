@@ -208,7 +208,7 @@ private fun InboxNeedsMe(nav: Nav, cid: String, snackbar: SnackbarHostState, sco
                     )
                 }
             }
-            items(items, key = { it.id }) { item ->
+            items(items, key = { it.id }, contentType = { it.sourceKind }) { item ->
                 InboxSwipeable(
                     enabled = item.dismissalKey != null,
                     icon = Icons.Outlined.DoneAll,
@@ -507,7 +507,7 @@ private fun InboxUnread(nav: Nav, cid: String) {
                         }
                     }
                 }
-                items(list, key = { it.id }) { issue ->
+                items(list, key = { it.id }, contentType = { "task" }) { issue ->
                     IssueRow(issue, onClick = { nav.issue(issue.identifier ?: issue.id) })
                 }
             }
@@ -563,7 +563,7 @@ private fun InboxMine(nav: Nav, cid: String, snackbar: SnackbarHostState, scope:
                         )
                     }
                 }
-                items(list, key = { it.id }) { issue ->
+                items(list, key = { it.id }, contentType = { "task" }) { issue ->
                     InboxSwipeable(enabled = true, icon = Icons.Outlined.Archive, label = "Archive", onSwiped = { archive(issue) }) {
                         Box(Modifier.background(MaterialTheme.colorScheme.background)) {
                             IssueRow(issue, onClick = { nav.issue(issue.identifier ?: issue.id) })

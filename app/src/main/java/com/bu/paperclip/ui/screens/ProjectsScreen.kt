@@ -207,7 +207,7 @@ fun ProjectDetailScreen(nav: Nav, id: String) {
                     }
                 }
                 if (b.issues.isEmpty()) item { EmptyState(if (seg == 0) "No active tasks in this project." else "No tasks in this project yet.") }
-                items(b.issues, key = { it.id }) { issue -> IssueRow(issue, onClick = { nav.issue(issue.identifier ?: issue.id) }, showProject = false) }
+                items(b.issues, key = { it.id }, contentType = { "task" }) { issue -> IssueRow(issue, onClick = { nav.issue(issue.identifier ?: issue.id) }, showProject = false) }
                 item { Spacer(Modifier.height(88.dp)) }
             }
         }
@@ -236,7 +236,7 @@ fun GoalsScreen(nav: Nav) {
                     val list = grouped[level].orEmpty()
                     if (list.isNotEmpty()) {
                         item(key = "h-$level") { SectionHeader("${level.replaceFirstChar { it.uppercase() }} goals") }
-                        items(list.sortedBy { adminGoalRank(it.status) }, key = { it.id }) { g -> GoalRow(nav, g) }
+                        items(list.sortedBy { adminGoalRank(it.status) }, key = { it.id }, contentType = { "goal" }) { g -> GoalRow(nav, g) }
                     }
                 }
             }

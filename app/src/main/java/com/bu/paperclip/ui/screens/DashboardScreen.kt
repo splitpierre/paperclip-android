@@ -1,5 +1,8 @@
 package com.bu.paperclip.ui.screens
 
+import com.bu.paperclip.data.IssueStore
+import com.bu.paperclip.util.catching
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,6 +20,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.bu.paperclip.ui.components.SectionAction
 import com.bu.paperclip.ui.theme.TABULAR
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -67,7 +72,6 @@ import com.bu.paperclip.ui.components.Links
 import com.bu.paperclip.ui.components.LiveRefresh
 import com.bu.paperclip.ui.components.LiveRunRow
 import com.bu.paperclip.ui.components.LoadContent
-import com.bu.paperclip.ui.components.PollWhileDisconnected
 import com.bu.paperclip.ui.components.SectionHeader
 import com.bu.paperclip.ui.components.activityActor
 import com.bu.paperclip.ui.components.activityLink
@@ -79,7 +83,10 @@ import com.bu.paperclip.ui.theme.LocalStatusColors
 import com.bu.paperclip.util.formatCents
 import com.bu.paperclip.util.relativeTime
 
-private data class DashData(val summary: DashboardSummary, val live: List<LiveRun>, val activity: List<ActivityEvent>)
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+
+internal data class DashData(val summary: DashboardSummary, val live: List<LiveRun>, val activity: List<ActivityEvent>)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,19 +98,25 @@ fun DashboardScreen(nav: Nav) {
     val act = rememberAction()
 
     val loader = rememberLoader(cid) {
-        DashData(Repo.dashboard(cid), Repo.liveRuns(cid, minCount = 5), Repo.activity(cid, limit = 20))
+        coroutineScope {
+            val summary = async { Repo.dashboard(cid) }
+            val live = async { Repo.liveRuns(cid, minCount = 5) }
+            val activity = async { Repo.activity(cid, limit = 20) }
+            DashData(summary.await(), live.await(), activity.await())
+        }
     }
     LiveRefresh(filter = { it.type == "heartbeat.run.queued" || it.type == "heartbeat.run.status" || it.type == "activity.logged" || it.type == "agent.status" }) {
         loader.refresh()
     }
-    PollWhileDisconnected { loader.refresh() }
 
     // Issue titles for live runs, fetched once each.
     val issueLabels = remember(cid) { mutableStateMapOf<String, String>() }
-    val liveIssueIds = loader.value?.live?.mapNotNull { it.issueId }?.distinct().orEmpty()
+    val live = loader.value?.live
+    val liveIssueIds = remember(live) { live?.mapNotNull { it.issueId }?.distinct().orEmpty() }
+    val paused = remember(agents) { agents.filter { it.status == "paused" } }
     LaunchedEffect(liveIssueIds) {
         liveIssueIds.filter { it !in issueLabels }.forEach { id ->
-            runCatching { Repo.issue(id) }.getOrNull()?.let { issueLabels[id] = "${it.ref} · ${it.title}" }
+            catching { IssueStore.get(id) ?: Repo.issue(id) }.getOrNull()?.let { issueLabels[id] = "${it.ref} · ${it.title}" }
         }
     }
 
@@ -125,47 +138,58 @@ fun DashboardScreen(nav: Nav) {
         },
     ) { pad ->
         LoadContent(loader, Modifier.padding(pad)) { d ->
-            rememberMinuteTick()
-            val paused = agents.filter { it.status == "paused" }
-            LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
-                if (paused.isNotEmpty()) {
-                    item(key = "paused") {
-                        DashPausedBanner(paused.size) {
-                            act({
-                                paused.forEach { Repo.resume(it.id) }
-                                AppState.refreshAgents()
-                                loader.refresh()
-                            }, "Resumed ${paused.size} agent${if (paused.size == 1) "" else "s"}")
-                        }
-                    }
-                }
-                item(key = "metrics") { DashMetrics(d.summary, nav) }
-                item(key = "live-h") {
-                    SectionHeader("Live now") {
-                        SectionAction("Agents") { nav.tab(Routes.AGENTS) }
-                    }
-                }
-                if (d.live.isEmpty()) {
-                    item(key = "live-empty") { EmptyState("No runs right now") }
-                } else {
-                    items(d.live, key = { "live-" + it.id }) { r ->
-                        LiveRunRow(r, onClick = { nav.run(r.id) }, issueLabel = r.issueId?.let { issueLabels[it] })
-                    }
-                }
-                item(key = "chart-h") { SectionHeader("Run activity · 14 days") }
-                item(key = "chart") {
-                    Card(Modifier.padding(horizontal = 16.dp)) {
-                        DashRunActivityChart(d.summary.runActivity)
-                    }
-                }
-                item(key = "act-h") {
-                    SectionHeader("Recent activity") {
-                        SectionAction("See all") { nav.activity() }
-                    }
-                }
-                if (d.activity.isEmpty()) item(key = "act-empty") { EmptyState("Nothing has happened yet") }
-                items(d.activity) { e -> DashActivityRow(e) }
+            DashboardFeed(
+                d, nav, issueLabels, paused.size,
+                onResume = {
+                    act({
+                        paused.forEach { Repo.resume(it.id) }
+                        AppState.refreshAgents()
+                        loader.refresh()
+                    }, "Resumed ${paused.size} agent${if (paused.size == 1) "" else "s"}")
+                },
+            )
+        }
+    }
+}
+
+/** Keep feed identity across refreshes; reuse compositions only between matching row layouts. */
+@Composable
+internal fun DashboardFeed(
+    data: DashData,
+    nav: Nav,
+    issueLabels: Map<String, String> = emptyMap(),
+    pausedCount: Int = 0,
+    onResume: () -> Unit = {},
+    modifier: Modifier = Modifier,
+    state: LazyListState = rememberLazyListState(),
+) {
+    LazyColumn(modifier.fillMaxSize(), state = state, contentPadding = PaddingValues(bottom = 24.dp)) {
+        if (pausedCount > 0) {
+            item(key = "paused", contentType = "paused") { DashPausedBanner(pausedCount, onResume) }
+        }
+        item(key = "metrics", contentType = "metrics") { DashMetrics(data.summary, nav) }
+        item(key = "live-h", contentType = "header") {
+            SectionHeader("Live now") { SectionAction("Agents") { nav.tab(Routes.AGENTS) } }
+        }
+        if (data.live.isEmpty()) {
+            item(key = "live-empty", contentType = "empty") { EmptyState("No runs right now") }
+        } else {
+            items(data.live, key = { "live-" + it.id }, contentType = { "live" }) { run ->
+                LiveRunRow(run, onClick = { nav.run(run.id) }, issueLabel = run.issueId?.let { issueLabels[it] })
             }
+        }
+        item(key = "chart-h", contentType = "header") { SectionHeader("Run activity · 14 days") }
+        item(key = "chart", contentType = "chart") {
+            Card(Modifier.padding(horizontal = 16.dp)) { DashRunActivityChart(data.summary.runActivity) }
+        }
+        item(key = "act-h", contentType = "header") {
+            SectionHeader("Recent activity") { SectionAction("See all") { nav.activity() } }
+        }
+        if (data.activity.isEmpty()) {
+            item(key = "act-empty", contentType = "empty") { EmptyState("Nothing has happened yet") }
+        }
+        items(data.activity, key = { "activity-" + it.id }, contentType = { "activity" }) { event ->
+            DashActivityRow(event)
         }
     }
 }
@@ -289,7 +313,9 @@ private fun DashMetric(
 
 @Composable
 internal fun DashActivityRow(e: ActivityEvent) {
-    val link = activityLink(e)
+    val link = remember(e) { activityLink(e) }
+    val actor = activityActor(e)
+    val sentence = remember(e, actor) { activitySentence(e, actor) }
     Row(
         Modifier.fillMaxWidth()
             .then(if (link != null) Modifier.clickable { Links.handler(link) } else Modifier)
@@ -297,10 +323,18 @@ internal fun DashActivityRow(e: ActivityEvent) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (e.actorType == "agent") AgentAvatar(e.actorId ?: e.agentId, 26.dp)
-        else Avatar(activityActor(e), null, 26.dp, isAgent = false)
+        else Avatar(actor, null, 26.dp, isAgent = false)
         Spacer(Modifier.width(12.dp))
-        Text(activitySentence(e), style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+        Text(sentence, style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
         Spacer(Modifier.width(8.dp))
-        Text(relativeTime(e.createdAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        DashActivityTime(e.createdAt)
     }
+}
+
+// Only the timestamp needs a clock subscription, not the entire feed and chart.
+@Composable
+private fun DashActivityTime(createdAt: String?) {
+    val tick = rememberMinuteTick()
+    val label = remember(createdAt, tick) { relativeTime(createdAt) }
+    Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }

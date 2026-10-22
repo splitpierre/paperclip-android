@@ -15,8 +15,7 @@ fun activityActor(e: ActivityEvent): String = when (e.actorType) {
 }
 
 /** Human-readable one-liner for an activity event, e.g. "Ada commented on PAP-12". */
-fun activitySentence(e: ActivityEvent): String {
-    val who = activityActor(e)
+fun activitySentence(e: ActivityEvent, who: String = activityActor(e)): String {
     val target = e.d("identifier") ?: e.d("issueIdentifier") ?: e.d("title") ?: e.d("name") ?: e.entityType ?: ""
     val verb = when (e.action) {
         "issue.created" -> "created"

@@ -374,7 +374,7 @@ fun Avatar(name: String, imageUrl: String? = null, size: Dp = 28.dp, isAgent: Bo
         if (!imageUrl.isNullOrBlank()) {
             AsyncImage(model = Api.absolute(imageUrl), contentDescription = name, modifier = Modifier.fillMaxSize())
         } else {
-            val initials = name.split(" ").filter { it.isNotBlank() }.take(2).joinToString("") { it.first().uppercase() }.ifEmpty { "?" }
+            val initials = remember(name) { name.split(" ").filter { it.isNotBlank() }.take(2).joinToString("") { it.first().uppercase() }.ifEmpty { "?" } }
             Text(initials, color = color, fontWeight = FontWeight.Bold, fontSize = (size.value * 0.38f).sp)
         }
     }

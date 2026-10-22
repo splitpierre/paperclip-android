@@ -230,7 +230,7 @@ fun DecisionsScreen(nav: Nav) {
             }
 
             LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 32.dp)) {
-                if (kinds.size > 1) item(key = "filters") {
+                if (kinds.size > 1) item(key = "filters", contentType = "filters") {
                     Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         FilterChip(selected = kindFilter == null, onClick = { kindFilter = null }, label = { Text("All ${desk.size}") })
                         kinds.forEach { (k, n) ->
@@ -239,7 +239,7 @@ fun DecisionsScreen(nav: Nav) {
                         }
                     }
                 }
-                if (desk.isEmpty()) item(key = "empty") {
+                if (desk.isEmpty()) item(key = "empty", contentType = "empty") {
                     EmptyState("You're all caught up.\nNothing needs a decision from you right now.", Icons.Outlined.TaskAlt)
                 }
                 Shelf.entries.forEach { shelf ->
@@ -249,7 +249,7 @@ fun DecisionsScreen(nav: Nav) {
                     }
                     if (rows.isNotEmpty()) {
                         item(key = "shelf-${shelf.name}") { DeskHeader(shelf.label, rows.size, urgent = shelf == Shelf.DecideNow) }
-                        items(rows, key = { it.id }) { item ->
+                        items(rows, key = { it.id }, contentType = { it.sourceKind }) { item ->
                             InboxSwipeable(enabled = item.dismissalKey != null, icon = Icons.Outlined.DoneAll, label = "Dismiss", onSwiped = { dismiss(item) }) {
                                 DeskCard(
                                     item = item,
@@ -275,7 +275,7 @@ fun DecisionsScreen(nav: Nav) {
                 ).forEach { (key, label, rows) ->
                     if (rows.isNotEmpty()) {
                         item(key = "sec-$key") { SectionToggle(label, rows.size, openSections[key] == true) { openSections[key] = openSections[key] != true } }
-                        if (openSections[key] == true) items(rows, key = { "$key-${it.id}" }) { item ->
+                        if (openSections[key] == true) items(rows, key = { "$key-${it.id}" }, contentType = { it.sourceKind }) { item ->
                             CompactRow(item, nav, trailing = {
                                 if (key != "aging") TextButton(onClick = { restore(item) }) {
                                     Icon(Icons.Outlined.Restore, null, Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text("Restore")
@@ -289,7 +289,7 @@ fun DecisionsScreen(nav: Nav) {
                         HistorySection(cid, status, label, open = openSections[status] == true, nav = nav) { openSections[status] = openSections[status] != true }
                     }
                 }
-                item(key = "inbox-link") {
+                item(key = "inbox-link", contentType = "inbox-link") {
                     TextButton(onClick = { nav.inbox() }, modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
                         Icon(Icons.Outlined.Inbox, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Unread and assigned tasks are in Inbox")
                     }

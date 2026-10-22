@@ -1,6 +1,5 @@
 package com.bu.paperclip.ui.screens
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,12 +17,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.bu.paperclip.data.RunActivityDay
@@ -65,38 +66,53 @@ fun DashRunActivityChart(days: List<RunActivityDay>, modifier: Modifier = Modifi
         Spacer(Modifier.height(8.dp))
         if (data.isEmpty()) return@Column
         val max = (data.maxOfOrNull { it.succeeded + it.failed + it.other + it.recovered } ?: 0).coerceAtLeast(1)
-        Canvas(
-            Modifier.fillMaxWidth().height(120.dp).pointerInput(data) {
-                detectTapGestures { pos ->
-                    val slot = size.width / data.size.toFloat()
-                    selected = (pos.x / slot).toInt().coerceIn(0, data.lastIndex)
+        Spacer(
+            Modifier.fillMaxWidth().height(120.dp)
+                .semantics { contentDescription = "Run activity chart" }
+                .pointerInput(data) {
+                    detectTapGestures { pos ->
+                        val slot = size.width / data.size.toFloat()
+                        selected = (pos.x / slot).toInt().coerceIn(0, data.lastIndex)
+                    }
                 }
-            },
-        ) {
-            val slot = size.width / data.size
-            val barW = (slot * 0.62f).coerceAtMost(28.dp.toPx())
-            val gap = 2.dp.toPx()
-            // Recessive baseline + midline.
-            drawLine(gridColor, Offset(0f, size.height), Offset(size.width, size.height), 1.dp.toPx())
-            drawLine(gridColor.copy(alpha = 0.5f), Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 1.dp.toPx())
-            data.forEachIndexed { i, d ->
-                val x = i * slot + (slot - barW) / 2
-                if (i == selected) {
-                    drawRoundRect(highlight, Offset(i * slot + 1, 0f), Size(slot - 2, size.height), CornerRadius(6.dp.toPx()))
-                }
-                val parts = listOf(d.succeeded to okColor, d.failed to failColor, (d.other + d.recovered) to otherColor).filter { it.first > 0 }
-                var yBottom = size.height
-                parts.forEachIndexed { pi, (v, c) ->
-                    val h = size.height * v / max
-                    val top = yBottom - h
-                    val isTop = pi == parts.lastIndex
-                    dashBarSegment(c, x, top, barW, h, rounded = isTop)
-                    // 2px surface gap between stacked segments.
-                    if (!isTop) drawRect(surface, Offset(x, top - gap / 2), Size(barW, gap))
-                    yBottom = top
-                }
-            }
-        }
+                .drawWithCache {
+                    val slot = size.width / data.size
+                    val barW = (slot * 0.62f).coerceAtMost(28.dp.toPx())
+                    val gap = 2.dp.toPx()
+                    val stroke = 1.dp.toPx()
+                    val midline = gridColor.copy(alpha = 0.5f)
+                    val corner = CornerRadius(6.dp.toPx())
+                    // Geometry changes with data, size or density, never with scroll position.
+                    val chartHeight = size.height
+                    val segments = buildList {
+                        data.forEachIndexed { i, day ->
+                            val x = i * slot + (slot - barW) / 2
+                            val parts = listOf(
+                                day.succeeded to okColor, day.failed to failColor,
+                                (day.other + day.recovered) to otherColor,
+                            ).filter { it.first > 0 }
+                            var bottom = chartHeight
+                            parts.forEachIndexed { index, (value, color) ->
+                                val height = chartHeight * value / max
+                                val top = bottom - height
+                                val isTop = index == parts.lastIndex
+                                add(dashBarPath(x, top, barW, height, if (isTop) 4.dp.toPx() else 0f) to color)
+                                if (!isTop) {
+                                    add(dashBarPath(x, top - gap / 2, barW, gap, 0f) to surface)
+                                }
+                                bottom = top
+                            }
+                        }
+                    }
+                    onDrawBehind {
+                        drawLine(gridColor, Offset(0f, size.height), Offset(size.width, size.height), stroke)
+                        drawLine(midline, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), stroke)
+                        // Read selection during drawing so taps don't rebuild the cached paths.
+                        drawRoundRect(highlight, Offset(selected * slot + 1, 0f), Size(slot - 2, size.height), corner)
+                        segments.forEach { (path, color) -> drawPath(path, color) }
+                    }
+                },
+        )
         Row(Modifier.fillMaxWidth()) {
             data.forEachIndexed { i, d ->
                 Text(
@@ -127,14 +143,9 @@ private fun DashLegend(color: Color, label: String) {
     }
 }
 
-private fun DrawScope.dashBarSegment(color: Color, x: Float, top: Float, w: Float, h: Float, rounded: Boolean) {
-    if (h <= 0f) return
-    if (!rounded) {
-        drawRect(color, Offset(x, top), Size(w, h))
-        return
-    }
-    val r = minOf(4.dp.toPx(), h, w / 2)
-    val path = Path().apply {
+private fun dashBarPath(x: Float, top: Float, w: Float, h: Float, radius: Float): Path {
+    val r = minOf(radius, h, w / 2)
+    return Path().apply {
         moveTo(x, top + h)
         lineTo(x, top + r)
         quadraticTo(x, top, x + r, top)
@@ -143,7 +154,6 @@ private fun DrawScope.dashBarSegment(color: Color, x: Float, top: Float, w: Floa
         lineTo(x + w, top + h)
         close()
     }
-    drawPath(path, color)
 }
 
 private val dashMonths = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")

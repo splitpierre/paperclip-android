@@ -145,7 +145,7 @@ private fun CostsContent(nav: Nav, b: CostBundle, period: Int) {
                     }
                 }
             }
-            items(quota.results, key = { "q-" + it.provider }) { p ->
+            items(quota.results, key = { "q-" + it.provider }, contentType = { "quota" }) { p ->
                 Card(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -179,12 +179,12 @@ private fun CostsContent(nav: Nav, b: CostBundle, period: Int) {
         if (agents.isEmpty()) {
             item { EmptyState("No agent spend in this period.") }
         }
-        items(agents, key = { "a-" + it.agentId }) { a -> CostAgentRow(a) { if (a.agentId.isNotEmpty()) nav.agent(a.agentId) } }
+        items(agents, key = { "a-" + it.agentId }, contentType = { "agent-cost" }) { a -> CostAgentRow(a) { if (a.agentId.isNotEmpty()) nav.agent(a.agentId) } }
 
         val providers = b.byProvider.sortedByDescending { it.costCents }
         if (providers.isNotEmpty()) {
             item { SectionHeader("By provider & model") }
-            items(providers.size) { i ->
+            items(providers.size, contentType = { "provider-cost" }) { i ->
                 val p = providers[i]
                 AdminListRow(
                     title = listOfNotNull(p.provider.ifEmpty { null }?.let { com.bu.paperclip.util.providerLabel(it) }, p.model).joinToString(" · "),
@@ -219,7 +219,7 @@ private fun CostsContent(nav: Nav, b: CostBundle, period: Int) {
                     )
                 }
             }
-            items(budgets.policies.size) { i ->
+            items(budgets.policies.size, contentType = { "budget" }) { i ->
                 val p = budgets.policies[i]
                 val name = p.scopeName ?: when (p.scopeType) {
                     "agent" -> AppState.agent(p.scopeId)?.name
