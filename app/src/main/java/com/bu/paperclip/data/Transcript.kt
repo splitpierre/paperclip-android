@@ -33,10 +33,23 @@ private val prettyJson = kotlinx.serialization.json.Json { prettyPrint = true }
 /** Incrementally turns run log records (NDJSON {ts,stream,chunk,seq}) into transcript entries. */
 class TranscriptBuilder(private val adapterType: String?) {
     val entries = ArrayList<TEntry>()
+    var droppedEntries = 0L
+        private set
     private val toolIndex = HashMap<String, TEntry.ToolCall>()
     private val stdoutBuf = StringBuilder()
-    private val seenSeq = HashSet<Long>()
+    private val seenSeq = LinkedHashSet<Long>()
     private var partialRecord = ""
+
+    /** Bound retained rendering history; the original log remains available on the server. */
+    fun trim(maxEntries: Int): Boolean {
+        if (entries.size <= maxEntries) return false
+        val removed = entries.size - maxEntries
+        entries.subList(0, removed).clear()
+        droppedEntries += removed
+        val retainedTools = entries.filterIsInstance<TEntry.ToolCall>().mapNotNull { it.id }.toHashSet()
+        toolIndex.keys.retainAll(retainedTools)
+        return true
+    }
 
     /** Feed raw `content` from the /log endpoint (may end mid-line). */
     fun feedLogContent(content: String) {
@@ -54,6 +67,7 @@ class TranscriptBuilder(private val adapterType: String?) {
 
     fun feedRecord(ts: String?, stream: String, chunk: String, seq: Long?) {
         if (seq != null && !seenSeq.add(seq)) return
+        while (seenSeq.size > 20_000) seenSeq.iterator().let { it.next(); it.remove() }
         when (stream) {
             "stdout" -> {
                 stdoutBuf.append(chunk)

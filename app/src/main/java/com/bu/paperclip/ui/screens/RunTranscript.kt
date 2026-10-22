@@ -1,5 +1,7 @@
 package com.bu.paperclip.ui.screens
 
+import com.bu.paperclip.util.catching
+
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -55,23 +57,70 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.longOrNull
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+
+/** Main-thread-confined handoff from HTTP catch-up to live records, including suspending parsing. */
+internal class RunLogCatchUp(private val capacity: Int = 2048) {
+    private val pending = ArrayDeque<JsonObject>()
+    private var buffering = true
+    private var overflowed = false
+
+    /** True means buffered (or awaiting HTTP recovery); false means ready for direct live parsing. */
+    fun offer(record: JsonObject): Boolean {
+        if (!buffering) return false
+        // Once a gap exists, don't parse newer live records ahead of its HTTP recovery.
+        if (!overflowed) {
+            if (pending.size < capacity) pending.addLast(record) else overflowed = true
+        }
+        return true
+    }
+
+    suspend fun complete(replay: suspend (JsonObject) -> Unit, recover: suspend () -> Unit) {
+        while (true) {
+            // New arrivals stay queued while replay suspends; iterating a mutable list isn't safe.
+            while (pending.isNotEmpty()) replay(pending.removeFirst())
+            if (overflowed) {
+                overflowed = false
+                recover()
+            } else {
+                buffering = false
+                return
+            }
+        }
+    }
+}
+
 data class RunRawLine(val stream: String, val text: String)
+
+data class RunTranscriptSnapshot(
+    val entries: List<TEntry>,
+    val rawLines: List<RunRawLine>,
+    val entryStart: Long,
+    val rawStart: Long,
+)
 
 /**
  * Accumulates a run's log from the paged /log endpoint and live WebSocket chunks.
- * All access happens on the main thread (composition coroutines), so no locking.
+ * Parsing and snapshots run off Main, serialized by a mutex. Offsets belong to the fetching coroutine.
  */
 class RunTranscriptState(adapterType: String?) {
-    val builder = TranscriptBuilder(adapterType)
-    val raw = ArrayList<RunRawLine>()
-    private val rawSeqs = HashSet<Long>()
+    private val mutex = Mutex()
+    private val builder = TranscriptBuilder(adapterType)
+    private val raw = ArrayList<RunRawLine>()
+    private var droppedRaw = 0L
+    private val rawSeqs = LinkedHashSet<Long>()
     private var partial = ""
     var offset: Long = 0
     var startOffset: Long = 0
     var loaded = false
-    var dirty = true
+    private var dirty = true
+    @Volatile var trimmed = false
+        private set
 
-    fun feedContent(content: String) {
+    suspend fun feedContent(content: String) = withContext(Dispatchers.Default) { mutex.withLock {
         builder.feedLogContent(content)
         val data = partial + content
         val lines = data.split('\n')
@@ -79,18 +128,41 @@ class RunTranscriptState(adapterType: String?) {
         for (i in 0 until lines.size - 1) {
             val l = lines[i]
             if (l.isBlank()) continue
-            val o = runCatching { AppJson.parseToJsonElement(l) }.getOrNull() as? JsonObject ?: continue
+            val o = catching { AppJson.parseToJsonElement(l) }.getOrNull() as? JsonObject ?: continue
             val seq = (o["seq"] as? JsonPrimitive)?.longOrNull
             if (seq != null && !rawSeqs.add(seq)) continue
             raw.add(RunRawLine((o["stream"] as? JsonPrimitive)?.contentOrNull ?: "stdout", (o["chunk"] as? JsonPrimitive)?.contentOrNull ?: ""))
         }
+        while (rawSeqs.size > 20_000) rawSeqs.iterator().let { it.next(); it.remove() }
+        if (builder.trim(5000)) trimmed = true
+        trimRaw()
         dirty = true
-    }
+    } }
 
-    fun feedLive(ts: String?, stream: String, chunk: String, seq: Long?) {
+    suspend fun feedLive(ts: String?, stream: String, chunk: String, seq: Long?) = withContext(Dispatchers.Default) { mutex.withLock {
         builder.feedRecord(ts, stream, chunk, seq)
         if (seq == null || rawSeqs.add(seq)) raw.add(RunRawLine(stream, chunk))
+        while (rawSeqs.size > 20_000) rawSeqs.iterator().let { it.next(); it.remove() }
+        if (builder.trim(5000)) trimmed = true
+        trimRaw()
         dirty = true
+    } }
+    private fun trimRaw() {
+        if (raw.size > 5000) {
+            val removed = raw.size - 5000
+            raw.subList(0, removed).clear()
+            droppedRaw += removed
+            trimmed = true
+        }
+    }
+
+    suspend fun snapshot(): RunTranscriptSnapshot? = withContext(Dispatchers.Default) {
+        mutex.withLock {
+            if (!dirty) null else {
+                dirty = false
+                RunTranscriptSnapshot(builder.entries.toList(), raw.toList(), builder.droppedEntries, droppedRaw)
+            }
+        }
     }
 }
 
@@ -176,7 +248,7 @@ private fun RunUserMessage(text: String) {
 
 /** A short human summary of a tool's JSON input, e.g. the command or file path. */
 internal fun runToolSummary(input: String): String {
-    val el = runCatching { AppJson.parseToJsonElement(input) }.getOrNull()
+    val el = catching { AppJson.parseToJsonElement(input) }.getOrNull()
     val o = el as? JsonObject
     if (o != null) {
         val keys = listOf("command", "CommandLine", "cmd", "file_path", "path", "AbsolutePath", "TargetFile", "pattern", "url", "Url", "query", "Query", "description", "prompt", "skill", "name")

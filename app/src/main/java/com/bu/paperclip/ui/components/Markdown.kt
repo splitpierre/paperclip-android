@@ -1,5 +1,7 @@
 package com.bu.paperclip.ui.components
 
+import com.bu.paperclip.util.catching
+
 import android.content.Context
 import android.text.method.LinkMovementMethod
 import android.util.TypedValue
@@ -13,6 +15,14 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import android.text.Spanned
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -74,7 +84,7 @@ private fun markwon(context: Context, codeBg: Int): Markwon {
                 builder.linkResolver(object : LinkResolver {
                     override fun resolve(view: View, link: String) {
                         if (Links.handler(link)) return
-                        runCatching {
+                        catching {
                             val i = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(Api.absolute(link)))
                             view.context.startActivity(i)
                         }
@@ -129,7 +139,8 @@ private fun MarkdownText(prepared: String, modifier: Modifier, fontSizeSp: Float
     val color = LocalContentColor.current.toArgb()
     val link = MaterialTheme.colorScheme.tertiary.toArgb()
     val codeBg = MaterialTheme.colorScheme.surfaceContainerHighest.toArgb()
-    val mw = remember(codeBg, Api.baseUrl) { markwon(context, codeBg) }
+    val mw = remember(codeBg, Api.baseUrl) { markwon(context.applicationContext, codeBg) }
+    val rendered = rememberRenderedMarkdown(prepared, mw)
     AndroidView(
         modifier = modifier,
         factory = { ctx ->
@@ -142,11 +153,45 @@ private fun MarkdownText(prepared: String, modifier: Modifier, fontSizeSp: Float
                 letterSpacing = -0.004f
             }
         },
+        // Opt in to LazyColumn's AndroidView pool. A row entering view can reuse its TextView.
+        onReset = { tv ->
+            // Markwon clears image subscriptions before replacing text. Never carry selection,
+            // image spans or a previous row's render identity into another comment.
+            mw.setParsedMarkdown(tv, android.text.SpannedString(""))
+            tv.tag = null
+            tv.clearFocus()
+        },
+        onRelease = { tv -> mw.setParsedMarkdown(tv, android.text.SpannedString("")) },
         update = { tv ->
+            tv.setTextIsSelectable(selectable)
+            tv.movementMethod = LinkMovementMethod.getInstance()
             tv.setTextColor(color)
             tv.setLinkTextColor(link)
             tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSizeSp)
-            mw.setMarkdown(tv, prepared)
+            val content = rendered
+            val identity: Any = content
+            if (tv.tag !== identity) {
+                mw.setParsedMarkdown(tv, content)
+                tv.tag = identity
+            }
         },
     )
+}
+
+/** First display has final formatting/height; subsequent edits retain it while rendering off Main. */
+@Composable
+internal fun rememberRenderedMarkdown(
+    prepared: String,
+    renderer: Markwon,
+    dispatcher: CoroutineDispatcher = Dispatchers.Default,
+): Spanned {
+    var rendered by remember(renderer) { mutableStateOf(renderer.toMarkdown(prepared)) }
+    var displayedSource by remember(renderer) { mutableStateOf(prepared) }
+    LaunchedEffect(prepared, renderer) {
+        if (prepared != displayedSource) {
+            rendered = withContext(dispatcher) { renderer.toMarkdown(prepared) }
+            displayedSource = prepared
+        }
+    }
+    return rendered
 }
