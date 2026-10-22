@@ -115,7 +115,32 @@ class TaskGraph(issues: Collection<Issue>, val ctx: MatchCtx) {
     val blocking: Map<String, List<Issue>> = buildMap<String, MutableList<Issue>> {
         issues.filter { !isClosed(it.status) }.forEach { i -> i.blockedBy.orEmpty().forEach { b -> getOrPut(b.id) { mutableListOf() }.add(i) } }
     }
-    private val rollups = HashMap<String, Rollup>()
+    private val rollups = java.util.concurrent.ConcurrentHashMap<String, Rollup>()
+
+    init {
+        // Bottom-up aggregation is linear for a forest; scanning every subtree was quadratic.
+        val remaining = byId.keys.associateWith { childrenOf[it].orEmpty().size }.toMutableMap()
+        val sums = byId.keys.associateWith { Rollup(0, 0, 0, 0, 0) }.toMutableMap()
+        val ready = ArrayDeque(byId.keys.filter { remaining[it] == 0 })
+        while (ready.isNotEmpty()) {
+            val id = ready.removeFirst()
+            val issue = byId.getValue(id)
+            val subtotal = sums.getValue(id)
+            rollups[id] = subtotal
+            val parent = issue.parentId?.takeIf { it in byId } ?: continue
+            val old = sums.getValue(parent)
+            sums[parent] = Rollup(
+                old.total + subtotal.total + 1,
+                old.closed + subtotal.closed + if (isClosed(issue.status)) 1 else 0,
+                old.inFlight + subtotal.inFlight + if (issue.status in setOf("in_progress", "in_review")) 1 else 0,
+                old.blocked + subtotal.blocked + if (issue.status == "blocked") 1 else 0,
+                old.live + subtotal.live + if (id in ctx.live) 1 else 0,
+            )
+            remaining[parent] = remaining.getValue(parent) - 1
+            if (remaining[parent] == 0) ready.addLast(parent)
+        }
+        // Malformed cyclic input uses the existing cycle-safe descendant fallback.
+    }
 
     fun children(id: String): List<Issue> = childrenOf[id].orEmpty()
 

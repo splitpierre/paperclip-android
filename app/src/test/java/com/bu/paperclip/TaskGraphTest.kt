@@ -47,6 +47,19 @@ class TaskGraphTest {
     }
 
     @Test
+    fun largeForestRollupsAgreeWithDescendantScan() {
+        val issues = (0 until 2000).map { n ->
+            issue("n$n", if (n % 3 == 0) "done" else "todo", if (n == 0) null else "n${(n - 1) / 4}", n = n)
+        }
+        val g = graph(*issues.toTypedArray())
+        issues.forEach { i ->
+            val descendants = g.descendants(i.id)
+            assertEquals(descendants.size, g.rollup(i.id).total)
+            assertEquals(descendants.count { isClosed(it.status) }, g.rollup(i.id).closed)
+        }
+    }
+
+    @Test
     fun realCompanyGraph() {
         val f = System.getenv("PAPERCLIP_FIXTURES")?.let { File(it, "allissues.json") }
         assumeTrue(f?.exists() == true)
