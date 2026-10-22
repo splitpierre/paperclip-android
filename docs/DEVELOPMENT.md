@@ -5,7 +5,7 @@
 - Kotlin 2.1, Jetpack Compose (BOM 2024.12) with Material 3, Navigation Compose
 - OkHttp 4 for HTTP and the WebSocket, kotlinx.serialization for JSON
 - Coil for images, Markwon for Markdown (tables, task lists, strikethrough, links, images)
-- WorkManager for background notification checks, DataStore for settings
+- WorkManager for background notification checks, DataStore for settings, bounded private SQLite snapshots for cached reads
 - `minSdk` 26 (Android 8.0), `targetSdk` and `compileSdk` 35
 
 ## Layout
@@ -20,7 +20,10 @@ app/src/main/java/com/bu/paperclip/
 │   ├── Models.kt         @Serializable API models
 │   ├── Repo.kt           one function per endpoint
 │   ├── AppState.kt       signed-in user, company, agents, people, projects, badges
-│   ├── IssueStore.kt     local mirror of every task, kept fresh with deltas
+│   ├── IssueStore.kt     foreground task mirror, paged deltas and full reconciliation
+│   ├── ReadCache.kt      account-scoped durable read snapshots and shared in-flight GETs
+│   ├── RefreshQueue.kt   non-cancelling, conflated refresh requests
+│   ├── Paging.kt         keyset pagination with stalled-cursor protection
 │   ├── TaskGraph.kt      filters, trees, rollups and Next up over the mirror
 │   ├── Transcript.kt     run log → transcript entries, per adapter
 │   └── Settings.kt       DataStore-backed settings
@@ -46,9 +49,9 @@ The app uses the same `/api` endpoints as the web UI. [`Repo.kt`](../app/src/mai
 
 **Sign-in.** `Api.gateHost()` probes `/api/health`. If a proxy such as Cloudflare Access answers instead, a WebView opens on that URL so you can pass the proxy. After that, `POST /api/auth/sign-in/email` signs in to Paperclip natively. OkHttp's cookie jar is backed by the WebView's `CookieManager`, so both share the same proxy and Paperclip cookies. With a board API key, the app sends it as a bearer token and skips cookies.
 
-**Live updates.** `LiveEvents` keeps one WebSocket open to `/api/companies/{id}/events/ws` while the app is in the foreground and reconnects with backoff. It bumps an `epoch` on every reconnect so screens can refetch what they missed. While the socket is down, `LiveRefresh` and `PollWhileDisconnected` poll instead. The socket only accepts cookie sessions, so it's skipped in API-key mode.
+**Live updates.** `LiveEvents` keeps one WebSocket open to `/api/companies/{id}/events/ws` while the app is in the foreground and reconnects with backoff. It bumps an `epoch` on every reconnect so screens can refetch what they missed. While the socket is down, `LiveRefresh` polls active screens every 20 seconds. RefreshQueue lets a slow request finish and coalesces invalidations into one follow-up. Network availability retries a disconnected socket and leaves healthy connections alone; event-buffer overflow requests reconciliation. The socket only accepts cookie sessions, so it's skipped in API-key mode.
 
-**The task mirror.** `IssueStore` loads every task once using keyset paging (`sortField=id`, `afterId`, `limit=500`, `includeBlockedBy=true`). After that it asks only for `updatedSince` the last sync, triggered by `activity.logged` events, reconnects, or a 20-second poll while disconnected. Quick edits are applied locally first and rolled back if the server rejects them. `TaskGraph` builds the list groups, the tree (with ancestors kept as dimmed context), rollups, Next up and In flight from that map in memory.
+**The task mirror.** `IssueStore` loads every task once using keyset paging (`sortField=id`, `afterId`, `limit=500`, `includeBlockedBy=true`). After that it drains all `updatedSince` pages using a conservative server-time watermark. Events, reconnects and disconnected polling request deltas; deletion events and a five-minute reconciliation interval request full snapshots. Interactive syncing stops in the background. Cached tasks appear before network sync, and first-use pages publish incrementally. Quick edits are applied locally first and rolled back if the server rejects them. `TaskGraph` builds the list groups, the tree (with ancestors kept as dimmed context), rollups, Next up and In flight from that map in memory.
 
 **Decisions.** The Decisions tab reads the same attention feed as the web UI's Decisions page (`/companies/{id}/attention?includeDismissed=true&all=true`) and groups it client-side the way the web does: decide-by due today or overdue (in UTC days, like the server's badge count), created today, then the rest. Open agent decisions come from `/companies/{id}/decisions?status=open`; choosing an option posts `/decisions/{id}/decide` with a fresh idempotency key. Decide-by goes through `PUT /companies/{id}/decision-triage/{sourceKind}/{sourceId}`, which is shared; dismiss and snooze use the per-user `inbox-dismissals`. The tab badge is the feed's `deskBadgeCount`.
 
@@ -144,3 +147,7 @@ Debug builds share the same debug signing key on one machine. Build from a diffe
 ## Keeping private data out
 
 The repo is public. Don't commit server URLs, API keys, captured API responses or screenshots of a real company. Use the demo server for anything that ends up in the repo.
+
+## Performance verification
+
+See [CACHE_REFRESH.md](CACHE_REFRESH.md) for the cache boundaries and refresh regression tests. Robolectric UI/storage tests complement emulator testing; they do not measure physical-device frame times.

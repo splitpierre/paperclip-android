@@ -1,5 +1,7 @@
 package com.bu.paperclip.ui.screens
 
+import com.bu.paperclip.util.catching
+
 import android.net.Uri
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -91,7 +93,6 @@ import com.bu.paperclip.ui.components.LiveRefresh
 import com.bu.paperclip.ui.components.LoadContent
 import com.bu.paperclip.ui.components.Links
 import com.bu.paperclip.ui.components.Pill
-import com.bu.paperclip.ui.components.PollWhileDisconnected
 import com.bu.paperclip.ui.components.errorMessage
 import com.bu.paperclip.ui.components.rememberLoader
 import com.bu.paperclip.ui.components.rememberMinuteTick
@@ -171,7 +172,6 @@ private fun InboxNeedsMe(nav: Nav, cid: String, snackbar: SnackbarHostState, sco
         hidden = emptySet()
     }
     LiveRefresh(filter = { inboxIsLiveRelevant(it.type) }) { loader.refresh() }
-    PollWhileDisconnected { loader.refresh() }
 
     fun hideWithUndo(item: AttentionItem, message: String, call: suspend (String) -> Unit) {
         val key = item.dismissalKey ?: return
@@ -379,7 +379,8 @@ private fun InboxAttentionRow(
                 }
                 val agentName = item.originAgentName
                 if (!agentName.isNullOrBlank()) {
-                    val agent = AppState.agents.collectAsState().value.firstOrNull { it.name == agentName }
+                    val agents by AppState.agents.collectAsState()
+                    val agent = agents.firstOrNull { it.name == agentName }
                     Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         if (agent != null) { AgentAvatar(agent.id, 18.dp); Spacer(Modifier.width(6.dp)) }
                         Text(agentName, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -465,7 +466,6 @@ private fun InboxUnread(nav: Nav, cid: String) {
     val loader = rememberLoader(cid) { Repo.issues(cid, unreadForUserId = "me", status = INBOX_MINE_STATUSES, limit = 200) }
     var marking by remember { mutableStateOf(false) }
     LiveRefresh(filter = { inboxIsLiveRelevant(it.type) }) { loader.refresh() }
-    PollWhileDisconnected { loader.refresh() }
 
     LoadContent(loader) { issues ->
         val list = issues.filter { it.isUnreadForMe != false }
@@ -490,7 +490,7 @@ private fun InboxUnread(nav: Nav, cid: String) {
                                 marking = true
                                 scope.launch {
                                     try {
-                                        list.forEach { runCatching { Repo.markRead(it.id) } }
+                                        list.forEach { catching { Repo.markRead(it.id) } }
                                         loader.set(emptyList())
                                         AppState.refreshBadges()
                                         AppState.toast("Marked ${list.size} as read")
@@ -525,7 +525,6 @@ private fun InboxMine(nav: Nav, cid: String, snackbar: SnackbarHostState, scope:
     var hidden by remember(cid) { mutableStateOf<Set<String>>(emptySet()) }
     LaunchedEffect(loader.value) { hidden = emptySet() }
     LiveRefresh(filter = { inboxIsLiveRelevant(it.type) }) { loader.refresh() }
-    PollWhileDisconnected { loader.refresh() }
 
     fun archive(issue: Issue) {
         hidden = hidden + issue.id

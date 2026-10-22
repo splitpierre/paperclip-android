@@ -3,6 +3,8 @@ package com.bu.paperclip
 import android.app.Application
 import coil.ImageLoader
 import coil.ImageLoaderFactory
+import com.bu.paperclip.data.ReadCache
+import com.bu.paperclip.net.LiveEvents
 import com.bu.paperclip.data.AppState
 import com.bu.paperclip.data.SettingsStore
 import com.bu.paperclip.net.Api
@@ -12,6 +14,8 @@ import kotlinx.coroutines.launch
 class PaperclipApp : Application(), ImageLoaderFactory {
     override fun onCreate() {
         super.onCreate()
+        ReadCache.initialize(this)
+        LiveEvents.observeNetwork(this)
         AppState.settings = SettingsStore(this)
         NotifyWorker.ensureChannel(this)
         AppState.scope.launch {

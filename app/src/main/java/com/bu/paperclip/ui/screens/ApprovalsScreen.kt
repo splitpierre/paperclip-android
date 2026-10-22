@@ -1,5 +1,7 @@
 package com.bu.paperclip.ui.screens
 
+import com.bu.paperclip.util.catching
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -184,8 +186,8 @@ fun ApprovalDetailScreen(nav: Nav, id: String) {
     val loader = rememberLoader(id) {
         coroutineScope {
             val a = async { Repo.approval(id) }
-            val c = async { runCatching { Repo.approvalComments(id) }.getOrDefault(emptyList()) }
-            val i = async { runCatching { Repo.approvalIssues(id) }.getOrDefault(emptyList()) }
+            val c = async { catching { Repo.approvalComments(id) }.getOrDefault(emptyList()) }
+            val i = async { catching { Repo.approvalIssues(id) }.getOrDefault(emptyList()) }
             ApprovalBundle(a.await(), c.await(), i.await())
         }
     }

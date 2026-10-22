@@ -1,5 +1,8 @@
 package com.bu.paperclip.ui.screens
 
+import com.bu.paperclip.util.SupersededResponse
+import com.bu.paperclip.util.catching
+
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -109,6 +112,13 @@ import com.bu.paperclip.util.parseInstant
 import com.bu.paperclip.util.relativeTime
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.conflate
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
+import com.bu.paperclip.data.ReadCache
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -131,6 +141,7 @@ private sealed class IssueThreadEntry(val at: Instant, val key: String) {
 @Composable
 fun IssueDetailScreen(nav: Nav, id: String) {
     val ctx = LocalContext.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     val scope = rememberCoroutineScope()
     val me by AppState.me.collectAsState()
     val company by AppState.company.collectAsState()
@@ -216,28 +227,41 @@ fun IssueDetailScreen(nav: Nav, id: String) {
     }
 
     fun safe(block: suspend () -> Unit) = scope.launch {
-        try { block() } catch (c: CancellationException) { throw c } catch (t: Throwable) { AppState.toast(errorMessage(t)) }
+        try { block() } catch (_: SupersededResponse) { /* Ignore a previous owner. */ } catch (c: CancellationException) { throw c } catch (t: Throwable) { AppState.toast(errorMessage(t)) }
     }
 
     // ---- initial + manual reload ----
-    LaunchedEffect(id, reloadTick) {
-        try {
-            coroutineScope {
-                val iss = async { Repo.issue(issue?.id ?: id) }
-                issue = iss.await()
-                launch { runCatching { loadLatestComments(reset = reloadTick == 0 || !commentsLoaded) } }
-                launch { runCatching { loadInteractions() } }
-                launch { runCatching { loadLiveRuns() } }
-                launch { runCatching { cost = Repo.issueCost(issue!!.id) } }
+    LaunchedEffect(id, lifecycle) {
+        if (issue == null) catching {
+            ReadCache.only {
+                loadIssue()
+                catching { loadLatestComments(true) }
+                catching { loadInteractions() }
             }
-            loadError = null
-            if (tab != 0) runCatching { loadTab(tab) }
-        } catch (c: CancellationException) {
-            throw c
-        } catch (t: Throwable) {
-            if (issue == null) loadError = errorMessage(t) else AppState.toast(errorMessage(t))
-        } finally {
-            refreshing = false
+        }
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            snapshotFlow { reloadTick }.conflate().collect {
+                try {
+                    coroutineScope {
+                        val iss = async { Repo.issue(issue?.id ?: id) }
+                        issue = iss.await()
+                        launch { catching { loadLatestComments(reset = reloadTick == 0 || !commentsLoaded) } }
+                        launch { catching { loadInteractions() } }
+                        launch { catching { loadLiveRuns() } }
+                        launch { catching { cost = Repo.issueCost(issue!!.id) } }
+                    }
+                    loadError = null
+                    if (tab != 0) catching { loadTab(tab) }
+                } catch (_: SupersededResponse) {
+                    // Keep the reload collector alive for the next request.
+                } catch (c: CancellationException) {
+                    throw c
+                } catch (t: Throwable) {
+                    if (issue == null) loadError = errorMessage(t) else AppState.toast(errorMessage(t))
+                } finally {
+                    refreshing = false
+                }
+            }
         }
     }
 
@@ -245,76 +269,82 @@ fun IssueDetailScreen(nav: Nav, id: String) {
         val i = issue ?: return@LaunchedEffect
         if (!markedRead) {
             markedRead = true
-            runCatching { Repo.markRead(i.id); AppState.refreshBadges() }
+            catching { Repo.markRead(i.id); AppState.refreshBadges() }
         }
     }
 
     LaunchedEffect(tab, issue?.id, tabTick) {
-        if (issue != null && tab != 0) runCatching { loadTab(tab) }.onFailure { AppState.toast(errorMessage(it)) }
+        if (issue != null && tab != 0) catching { loadTab(tab) }.onFailure { AppState.toast(errorMessage(it)) }
     }
 
     // ---- live updates: targeted refetches, coalesced ----
     LaunchedEffect(issue?.id) {
         val i = issue ?: return@LaunchedEffect
-        var job: Job? = null
         val pendingKinds = mutableSetOf<String>()
+        val requests = Channel<Unit>(Channel.CONFLATED)
         fun schedule(vararg kinds: String) {
             pendingKinds.addAll(kinds)
-            job?.cancel()
-            job = scope.launch {
-                delay(450)
-                val k = pendingKinds.toSet(); pendingKinds.clear()
-                runCatching {
-                    coroutineScope {
-                        if ("issue" in k) launch { runCatching { loadIssue() } }
-                        if ("comments" in k) launch { runCatching { loadLatestComments(reset = false) } }
-                        if ("interactions" in k) launch { runCatching { loadInteractions() } }
-                        if ("runs" in k) launch { runCatching { loadLiveRuns() } }
-                        if ("tab" in k) tabTick++
+            requests.trySend(Unit)
+        }
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            launch {
+                for (request in requests) {
+                    delay(450)
+                    val k = pendingKinds.toSet(); pendingKinds.clear()
+                    catching {
+                        coroutineScope {
+                            if ("issue" in k) launch { catching { loadIssue() } }
+                            if ("comments" in k) launch { catching { loadLatestComments(reset = false) } }
+                            if ("interactions" in k) launch { catching { loadInteractions() } }
+                            if ("runs" in k) launch { catching { loadLiveRuns() } }
+                            if ("tab" in k) tabTick++
+                        }
                     }
                 }
             }
-        }
-        LiveEvents.events.collect { e ->
-            when (e.type) {
-                "activity.logged" -> {
-                    val details = e.payload["details"] as? JsonObject
-                    val ident = (details?.get("identifier") as? JsonPrimitive)?.contentOrNull
-                    val match = e.s("entityId") == i.id || (ident != null && ident == i.identifier) ||
-                        (details?.get("issueId") as? JsonPrimitive)?.contentOrNull == i.id
-                    if (!match) return@collect
-                    val action = e.s("action") ?: ""
-                    when {
-                        action == "issue.comment_added" || action == "issue.conversation_session_started" -> schedule("comments", "issue")
-                        action.startsWith("issue.thread_interaction_") -> schedule("interactions", "comments")
-                        action.startsWith("issue.attachment_") || action.startsWith("issue.work_product_") || action.contains("document") -> schedule("tab", "issue")
-                        else -> schedule("issue", "interactions", "tab")
+            LiveEvents.events.collect { e ->
+                when (e.type) {
+                    "activity.logged" -> {
+                        val details = e.payload["details"] as? JsonObject
+                        val ident = (details?.get("identifier") as? JsonPrimitive)?.contentOrNull
+                        val match = e.s("entityId") == i.id || (ident != null && ident == i.identifier) ||
+                            (details?.get("issueId") as? JsonPrimitive)?.contentOrNull == i.id
+                        if (!match) return@collect
+                        val action = e.s("action") ?: ""
+                        when {
+                            action == "issue.comment_added" || action == "issue.conversation_session_started" -> schedule("comments", "issue")
+                            action.startsWith("issue.thread_interaction_") -> schedule("interactions", "comments")
+                            action.startsWith("issue.attachment_") || action.startsWith("issue.work_product_") || action.contains("document") -> schedule("tab", "issue")
+                            else -> schedule("issue", "interactions", "tab")
+                        }
                     }
-                }
-                "heartbeat.run.queued", "heartbeat.run.status" -> if (e.s("issueId") == i.id || liveRuns.any { it.id == e.s("runId") }) {
-                    schedule("runs", "issue")
-                    if (e.s("status") in setOf("succeeded", "failed", "cancelled", "timed_out", "interrupted")) schedule("comments", "interactions")
-                }
-                "heartbeat.run.progress" -> if (e.s("issueId") == i.id) {
-                    val runId = e.s("runId")
-                    liveRuns = liveRuns.map { r ->
-                        if (r.id == runId) r.copy(
-                            currentStatusMessage = e.s("message") ?: r.currentStatusMessage,
-                            currentToolName = e.s("currentToolName"),
-                            lastAssistantSnippet = e.s("lastAssistantSnippet") ?: r.lastAssistantSnippet,
-                        ) else r
+                    "heartbeat.run.queued", "heartbeat.run.status" -> if (e.s("issueId") == i.id || liveRuns.any { it.id == e.s("runId") }) {
+                        schedule("runs", "issue")
+                        if (e.s("status") in setOf("succeeded", "failed", "cancelled", "timed_out", "interrupted")) schedule("comments", "interactions")
                     }
-                    if (liveRuns.none { it.id == runId }) schedule("runs")
+                    "heartbeat.run.progress" -> if (e.s("issueId") == i.id) {
+                        val runId = e.s("runId")
+                        liveRuns = liveRuns.map { r ->
+                            if (r.id == runId) r.copy(
+                                currentStatusMessage = e.s("message") ?: r.currentStatusMessage,
+                                currentToolName = e.s("currentToolName"),
+                                lastAssistantSnippet = e.s("lastAssistantSnippet") ?: r.lastAssistantSnippet,
+                            ) else r
+                        }
+                        if (liveRuns.none { it.id == runId }) schedule("runs")
+                    }
                 }
             }
         }
     }
-    LaunchedEffect(Unit) { LiveEvents.epoch.drop(1).collect { reloadTick++ } }
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(20_000)
-            if (!LiveEvents.connected.value && issue != null) {
-                runCatching { loadIssue(); loadLatestComments(false); loadInteractions(); loadLiveRuns() }
+    LaunchedEffect(lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            launch { LiveEvents.epoch.drop(1).collect { reloadTick++ } }
+            launch {
+                while (true) {
+                    delay(20_000)
+                    if (!LiveEvents.connected.value && issue != null) reloadTick++
+                }
             }
         }
     }
@@ -326,7 +356,7 @@ fun IssueDetailScreen(nav: Nav, id: String) {
         scope.launch {
             try {
                 Repo.updateIssue(optimistic.id, body)
-                runCatching { loadIssue() }
+                catching { loadIssue() }
             } catch (c: CancellationException) {
                 throw c
             } catch (t: Throwable) {
@@ -366,7 +396,7 @@ fun IssueDetailScreen(nav: Nav, id: String) {
                             })
                             DropdownMenuItem(text = { Text("Open in browser") }, enabled = linkUrl != null, onClick = {
                                 menu = false
-                                runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(linkUrl))) }
+                                catching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(linkUrl))) }
                             })
                             DropdownMenuItem(text = { Text("Mark unread") }, enabled = i != null, onClick = {
                                 menu = false
@@ -413,7 +443,7 @@ fun IssueDetailScreen(nav: Nav, id: String) {
                 modifier = Modifier.fillMaxSize().padding(pad),
             ) {
                 LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
-                    item(key = "header") {
+                    item(key = "header", contentType = "header") {
                         IssueHeader(
                             issue = i,
                             cost = cost,
@@ -423,7 +453,7 @@ fun IssueDetailScreen(nav: Nav, id: String) {
                             onSheet = { sheet = it },
                         )
                     }
-                    if (activeLive.isNotEmpty() || runLive) item(key = "live") {
+                    if (activeLive.isNotEmpty() || runLive) item(key = "live", contentType = "live") {
                         IssueLiveBanner(
                             runs = activeLive,
                             fallbackRunId = i.activeRun?.id,
@@ -433,7 +463,7 @@ fun IssueDetailScreen(nav: Nav, id: String) {
                             onStop = { runId -> safe { Repo.cancelRun(runId); AppState.toast("Stopping run"); loadLiveRuns() } },
                         )
                     }
-                    stickyHeader(key = "tabs") {
+                    stickyHeader(key = "tabs", contentType = "tabs") {
                         Surface(color = MaterialTheme.colorScheme.background) {
                             Column {
                                 ScrollableTabRow(selectedTabIndex = tab, edgePadding = 8.dp, containerColor = MaterialTheme.colorScheme.background) {
@@ -442,18 +472,18 @@ fun IssueDetailScreen(nav: Nav, id: String) {
                                             0 -> interactions.count { it.status == "pending" }.takeIf { it > 0 }?.let { " ($it)" } ?: ""
                                             1 -> (docs?.size ?: i.documentSummaries?.size)?.takeIf { it > 0 }?.let { " $it" } ?: ""
                                             else -> ""
-                                        }
-                                        Tab(selected = tab == idx, onClick = { tab = idx }, text = { Text(label + badge) })
                                     }
+                                        Tab(selected = tab == idx, onClick = { tab = idx }, text = { Text(label + badge) })
                                 }
-                                Divider()
                             }
+                                Divider()
+                        }
                         }
                     }
                     when (tab) {
                         0 -> {
                             val pending = interactions.filter { it.status == "pending" }.sortedBy { it.createdAt ?: "" }
-                            items(pending, key = { "p-" + it.id }) { inter ->
+                            items(pending, key = { "p-" + it.id }, contentType = { "interaction" }) { inter ->
                                 IssueInteractionCard(
                                     issueId = i.id,
                                     interaction = inter,
@@ -465,16 +495,16 @@ fun IssueDetailScreen(nav: Nav, id: String) {
                                     },
                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                 )
-                            }
-                            if (hasOlder) item(key = "older") {
+                        }
+                            if (hasOlder) item(key = "older", contentType = "older") {
                                 IssueLoadOlderButton(loadingOlder) {
                                     loadingOlder = true
                                     scope.launch {
                                         try { loadOlder() } catch (c: CancellationException) { throw c } catch (t: Throwable) { AppState.toast(errorMessage(t)) }
                                         loadingOlder = false
-                                    }
                                 }
                             }
+                        }
                             val oldestLoaded = comments.firstOrNull()?.createdAt?.let { parseInstant(it) }
                             val timeline = buildList<IssueThreadEntry> {
                                 comments.forEach { c -> add(IssueThreadEntry.C(c, parseInstant(c.createdAt) ?: Instant.MAX)) }
@@ -482,11 +512,11 @@ fun IssueDetailScreen(nav: Nav, id: String) {
                                     val at = parseInstant(inter.createdAt) ?: Instant.EPOCH
                                     // Older interactions than the loaded comment window appear once older comments load.
                                     if (!hasOlder || oldestLoaded == null || !at.isBefore(oldestLoaded)) add(IssueThreadEntry.I(inter, at))
-                                }
+                            }
                             }.sortedBy { it.at }
                             if (!commentsLoaded) item { IssueTabLoading() }
                             else if (timeline.isEmpty()) item { EmptyState("No comments yet. Say something to the assignee below.") }
-                            items(timeline, key = { it.key }) { entry ->
+                            items(timeline, key = { it.key }, contentType = { it::class }) { entry ->
                                 when (entry) {
                                     is IssueThreadEntry.C -> {
                                         val c = entry.c
@@ -494,7 +524,7 @@ fun IssueDetailScreen(nav: Nav, id: String) {
                                         IssueCommentItem(c, onDelete = if (mine) ({
                                             safe { Repo.deleteComment(i.id, c.id); loadLatestComments(false); comments.removeAll { it.id == c.id } }
                                         }) else null)
-                                    }
+                                }
                                     is IssueThreadEntry.I -> {
                                         if (entry.i.status == "pending") {
                                             Box(Modifier.padding(horizontal = 16.dp)) { IssuePinnedMarker(entry.i) }
@@ -503,10 +533,10 @@ fun IssueDetailScreen(nav: Nav, id: String) {
                                                 val idx = interactions.indexOfFirst { it.id == upd.id }
                                                 if (idx >= 0) interactions[idx] = upd
                                             }, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
-                                        }
                                     }
                                 }
                             }
+                        }
                             item { Spacer(Modifier.height(16.dp)) }
                         }
                         1 -> item { IssueDocsTab(i, docs, nav) }

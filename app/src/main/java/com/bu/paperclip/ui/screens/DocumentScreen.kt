@@ -1,5 +1,7 @@
 package com.bu.paperclip.ui.screens
 
+import com.bu.paperclip.util.catching
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -80,7 +82,7 @@ fun DocumentScreen(nav: Nav, issueId: String, key: String) {
             } catch (t: Throwable) {
                 if (t is ApiException.Http && t.status == 409) {
                     AppState.toast("Someone changed this document meanwhile. Reloaded the latest version; your edit is still in the editor.")
-                    runCatching { loader.set(Repo.document(issueId, key)) }
+                    catching { loader.set(Repo.document(issueId, key)) }
                 } else AppState.toast(errorMessage(t))
             } finally {
                 saving = false

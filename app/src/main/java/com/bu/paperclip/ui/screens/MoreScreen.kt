@@ -1,5 +1,7 @@
 package com.bu.paperclip.ui.screens
 
+import com.bu.paperclip.util.catching
+
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Column
@@ -88,7 +90,7 @@ fun MoreScreen(nav: Nav) {
             SectionHeader("App")
             MoreRow(Icons.Outlined.Settings, "Settings") { nav.settings() }
             MoreRow(Icons.AutoMirrored.Outlined.OpenInNew, "Open web UI") {
-                runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(Api.baseUrl + "/"))) }
+                catching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(Api.baseUrl + "/"))) }
             }
             Divider()
             Spacer(Modifier.size(24.dp))

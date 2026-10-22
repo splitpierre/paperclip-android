@@ -1,5 +1,7 @@
 package com.bu.paperclip.ui.screens
 
+import com.bu.paperclip.util.catching
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -35,7 +37,7 @@ internal fun adminStatusColor(status: String?): Color {
 }
 
 internal fun adminParseColor(hex: String?, fallback: Color): Color =
-    runCatching { Color(android.graphics.Color.parseColor(hex)) }.getOrDefault(fallback)
+    catching { Color(android.graphics.Color.parseColor(hex)) }.getOrDefault(fallback)
 
 internal fun adminCompact(n: Long): String = when {
     n >= 1_000_000_000 -> String.format("%.1fB", n / 1e9)

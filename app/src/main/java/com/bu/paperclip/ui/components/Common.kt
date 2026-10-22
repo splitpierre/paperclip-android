@@ -1,5 +1,6 @@
 package com.bu.paperclip.ui.components
 
+import com.bu.paperclip.util.SupersededResponse
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -64,7 +65,14 @@ import com.bu.paperclip.ui.theme.LocalStatusColors
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.debounce
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.coroutineScope
+import com.bu.paperclip.data.RefreshQueue
+import com.bu.paperclip.data.ReadCache
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 
@@ -79,12 +87,13 @@ sealed class Load<out T> {
 class Loader<T>(
     val state: MutableState<Load<T>>,
     val refreshing: MutableState<Boolean>,
-    private val trigger: MutableState<Int>,
+    private val queue: RefreshQueue,
+    val fromCache: MutableState<Boolean>,
 ) {
     val value: T? get() = (state.value as? Load.Ok<T>)?.value
     /** Reload; keeps showing current data while it runs. */
-    fun refresh() { trigger.value++ }
-    fun set(v: T) { state.value = Load.Ok(v) }
+    fun refresh() { queue.request() }
+    fun set(v: T) { state.value = Load.Ok(v); fromCache.value = false }
 }
 
 fun errorMessage(t: Throwable): String = when (t) {
@@ -99,54 +108,61 @@ fun errorMessage(t: Throwable): String = when (t) {
 fun <T> rememberLoader(vararg keys: Any?, block: suspend () -> T): Loader<T> {
     val state = remember(*keys) { mutableStateOf<Load<T>>(Load.Loading) }
     val refreshing = remember(*keys) { mutableStateOf(false) }
-    val trigger = remember(*keys) { mutableStateOf(0) }
+    val queue = remember(*keys) { RefreshQueue() }
+    val fromCache = remember(*keys) { mutableStateOf(false) }
     val latest by rememberUpdatedState(block)
-    LaunchedEffect(*keys, trigger.value) {
-        if (state.value !is Load.Ok) state.value = Load.Loading
-        try {
-            state.value = Load.Ok(latest())
-        } catch (c: CancellationException) {
-            throw c
-        } catch (t: Throwable) {
-            if (state.value !is Load.Ok || t is ApiException.AuthRequired) state.value = Load.Err(errorMessage(t))
-            else AppState.toast(errorMessage(t))
-        } finally {
-            refreshing.value = false
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(*keys, lifecycle) {
+        if (state.value !is Load.Ok) {
+            try { state.value = Load.Ok(ReadCache.only { latest() }); fromCache.value = true }
+            catch (c: CancellationException) { throw c }
+            catch (_: Exception) { /* A partial/missing cache falls through to network. */ }
+        }
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            queue.run {
+                try {
+                    state.value = Load.Ok(latest())
+                    fromCache.value = false
+                } catch (_: SupersededResponse) {
+                    // Discard the old response without stopping future refreshes.
+                } catch (c: CancellationException) {
+                    throw c
+                } catch (t: Throwable) {
+                    if (state.value !is Load.Ok || t is ApiException.AuthRequired) state.value = Load.Err(errorMessage(t))
+                    else AppState.toast(errorMessage(t))
+                } finally {
+                    refreshing.value = false
+                }
+            }
         }
     }
-    return remember(*keys) { Loader(state, refreshing, trigger) }
+    return remember(*keys) { Loader(state, refreshing, queue, fromCache) }
 }
 
-/** Calls [onEvent] (debounced) for matching live events and after every WebSocket reconnect. */
-@OptIn(FlowPreview::class)
+/** One lifecycle-scoped fallback timer; event bursts coalesce without starving refresh. */
 @Composable
 fun LiveRefresh(debounceMs: Long = 600, filter: (LiveEvent) -> Boolean, onEvent: () -> Unit) {
     val cb by rememberUpdatedState(onEvent)
     val f by rememberUpdatedState(filter)
-    LaunchedEffect(Unit) {
-        LiveEvents.events.filter { f(it) }.debounce(debounceMs).collect { cb() }
-    }
-    LaunchedEffect(Unit) {
-        var first = true
-        LiveEvents.epoch.collect { if (!first) cb(); first = false }
-    }
-    // Without the live socket (reconnecting, or API-key mode) poll like the web UI does.
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(15_000)
-            if (!LiveEvents.connected.value) cb()
-        }
-    }
-}
-
-/** Fallback polling while the live socket is down. */
-@Composable
-fun PollWhileDisconnected(intervalMs: Long = 20_000, onTick: () -> Unit) {
-    val cb by rememberUpdatedState(onTick)
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(intervalMs)
-            if (!LiveEvents.connected.value) cb()
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            launch {
+                LiveEvents.events.filter { f(it) }.conflate().collect {
+                    delay(debounceMs)
+                    cb()
+                }
+            }
+            launch {
+                var first = true
+                LiveEvents.epoch.collect { if (!first) cb(); first = false }
+            }
+            launch {
+                while (true) {
+                    delay(20_000)
+                    if (!LiveEvents.connected.value) cb()
+                }
+            }
         }
     }
 }
@@ -165,7 +181,17 @@ fun <T> LoadContent(
             isRefreshing = loader.refreshing.value,
             onRefresh = { loader.refreshing.value = true; loader.refresh() },
             modifier = modifier.fillMaxSize(),
-        ) { content(s.value) }
+        ) {
+            Column(Modifier.fillMaxSize()) {
+                if (loader.fromCache.value) Text(
+                    "Showing saved data",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+                Box(Modifier.weight(1f)) { content(s.value) }
+            }
+        }
     }
 }
 

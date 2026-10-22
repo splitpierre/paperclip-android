@@ -1,5 +1,7 @@
 package com.bu.paperclip.ui.screens
 
+import com.bu.paperclip.util.catching
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -38,6 +40,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -65,7 +68,6 @@ import com.bu.paperclip.ui.components.LiveRefresh
 import com.bu.paperclip.ui.components.LiveRunRow
 import com.bu.paperclip.ui.components.LoadContent
 import com.bu.paperclip.ui.components.Pill
-import com.bu.paperclip.ui.components.PollWhileDisconnected
 import com.bu.paperclip.ui.components.RunRow
 import com.bu.paperclip.ui.components.SectionHeader
 import com.bu.paperclip.ui.components.agentStatusColor
@@ -102,8 +104,8 @@ fun AgentDetailScreen(nav: Nav, id: String) {
         val a = Repo.agent(id)
         AgentDetailData(
             a,
-            runCatching { Repo.runtimeState(a.id) }.getOrNull(),
-            runCatching { Repo.liveRuns(companyId) }.getOrDefault(emptyList()).filter { it.agentId == a.id && (it.status == "running" || it.status == "queued") },
+            catching { Repo.runtimeState(a.id) }.getOrNull(),
+            catching { Repo.liveRuns(companyId) }.getOrDefault(emptyList()).filter { it.agentId == a.id && (it.status == "running" || it.status == "queued") },
         )
     }
     val agentId = loader.value?.agent?.id
@@ -125,7 +127,6 @@ fun AgentDetailScreen(nav: Nav, id: String) {
     }) {
         loader.refresh(); runs.refresh(); tasks.refresh()
     }
-    PollWhileDisconnected { loader.refresh(); runs.refresh() }
 
     Scaffold(
         topBar = {
@@ -339,8 +340,9 @@ private fun LazyListScope.agentOverview(d: AgentDetailData, nav: Nav) {
         }
     }
     item(key = "ov-org") {
-        val manager = AppState.agent(a.reportsTo)
-        val reports = AppState.agents.collectAsState().value.filter { it.reportsTo == a.id }
+        val agents by AppState.agents.collectAsState()
+        val manager = agents.firstOrNull { it.id == a.reportsTo }
+        val reports = remember(agents, a.id) { agents.filter { it.reportsTo == a.id } }
         SectionHeader("Team")
         Card(Modifier.padding(horizontal = 16.dp), padding = PaddingValues(vertical = 6.dp)) {
             Column {

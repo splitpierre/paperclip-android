@@ -67,7 +67,6 @@ import com.bu.paperclip.ui.components.Links
 import com.bu.paperclip.ui.components.LiveRefresh
 import com.bu.paperclip.ui.components.LiveRunRow
 import com.bu.paperclip.ui.components.LoadContent
-import com.bu.paperclip.ui.components.PollWhileDisconnected
 import com.bu.paperclip.ui.components.SectionHeader
 import com.bu.paperclip.ui.components.activityActor
 import com.bu.paperclip.ui.components.activityLink
@@ -96,7 +95,6 @@ fun DashboardScreen(nav: Nav) {
     LiveRefresh(filter = { it.type == "heartbeat.run.queued" || it.type == "heartbeat.run.status" || it.type == "activity.logged" || it.type == "agent.status" }) {
         loader.refresh()
     }
-    PollWhileDisconnected { loader.refresh() }
 
     // Issue titles for live runs, fetched once each.
     val issueLabels = remember(cid) { mutableStateMapOf<String, String>() }

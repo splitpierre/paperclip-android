@@ -159,6 +159,10 @@ echo "sdk.dir=/path/to/android/sdk" > local.properties
 
 See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the architecture, tests, regenerating screenshots and cutting a release.
 
+## Saved data
+
+The app keeps API responses, including task descriptions and comments, in an unencrypted SQLite cache in Android's app-private storage for up to seven days. Saved reads are bounded to 128 snapshots and 32 MiB of JSON payload, partitioned by server and account, and cleared on sign-out. Android backup is disabled. Writes still require a server connection; saved data may be stale until it refreshes.
+
 ## Notes
 
 This is an unofficial client and isn't affiliated with the Paperclip project. Releases are debug-signed builds for sideloading.

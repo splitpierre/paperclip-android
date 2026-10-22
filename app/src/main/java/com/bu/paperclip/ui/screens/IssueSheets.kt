@@ -1,5 +1,7 @@
 package com.bu.paperclip.ui.screens
 
+import com.bu.paperclip.util.catching
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -64,7 +66,7 @@ internal fun JsonObject?.issueArr(key: String): List<JsonElement> = (this?.get(k
 internal fun JsonObject?.issueObjs(key: String): List<JsonObject> = issueArr(key).mapNotNull { it as? JsonObject }
 internal fun JsonObject?.issueStrs(key: String): List<String> = issueArr(key).mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
 
-internal fun parseIssueColor(hex: String?): Color? = runCatching {
+internal fun parseIssueColor(hex: String?): Color? = catching {
     val h = hex?.removePrefix("#") ?: return null
     if (h.length != 6) return null
     Color(0xFF000000 or h.toLong(16))

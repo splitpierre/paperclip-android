@@ -1,5 +1,10 @@
 package com.bu.paperclip.net
 
+import android.net.Network
+import android.content.Context
+import android.net.ConnectivityManager
+import com.bu.paperclip.util.catching
+
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -34,15 +39,31 @@ object LiveEvents {
     private val _epoch = MutableStateFlow(0)
     val epoch: StateFlow<Int> = _epoch
 
-    private var socket: WebSocket? = null
+    fun observeNetwork(context: Context) {
+        val manager = context.getSystemService(ConnectivityManager::class.java)
+        manager.registerDefaultNetworkCallback(object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) = reconnectAfterNetworkChange()
+        })
+    }
+
+    @Synchronized private fun reconnectAfterNetworkChange() {
+        if (!wanted || connected.value) return
+        loop?.cancel()
+        stopSocket()
+        attempt = 0
+        connect()
+    }
+
+    @Volatile private var socket: WebSocket? = null
     private var companyId: String? = null
-    private var wanted = false
+    @Volatile private var wanted = false
     private var loop: Job? = null
     private var attempt = 0
 
     @Synchronized
     fun start(cid: String) {
         if (wanted && cid == companyId && socket != null) return
+        loop?.cancel()
         stopSocket()
         companyId = cid
         wanted = true
@@ -71,17 +92,22 @@ object LiveEvents {
         val req = Request.Builder().url(wsUrl.replaceFirst("wss://", "https://").replaceFirst("ws://", "http://")).build()
         socket = Api.client.newWebSocket(req, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
+                if (webSocket !== socket || !wanted) { webSocket.close(1000, null); return }
                 attempt = 0
                 _connected.value = true
                 _epoch.value = _epoch.value + 1
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
-                runCatching {
+                if (webSocket !== socket || !wanted) return
+                catching {
                     val o = AppJson.parseToJsonElement(text).jsonObject
                     val type = o["type"]?.jsonPrimitive?.contentOrNull ?: return
                     val payload = o["payload"] as? JsonObject ?: JsonObject(emptyMap())
-                    _events.tryEmit(LiveEvent(type, payload))
+                    if (!_events.tryEmit(LiveEvent(type, payload))) {
+                        // Recover dropped events through the same reconciliation used on reconnect.
+                        _epoch.value = _epoch.value + 1
+                    }
                 }
             }
 
@@ -90,7 +116,7 @@ object LiveEvents {
         })
     }
 
-    private fun scheduleReconnect(ws: WebSocket) {
+    @Synchronized private fun scheduleReconnect(ws: WebSocket) {
         if (ws !== socket) return
         _connected.value = false
         socket = null
@@ -98,7 +124,7 @@ object LiveEvents {
         attempt++
         val wait = minOf(15_000L, 1000L * (1L shl minOf(attempt - 1, 4)))
         loop = scope.launch {
-            delay(wait)
+            delay(wait + kotlin.random.Random.nextLong(0, 500))
             synchronized(this@LiveEvents) { if (wanted && socket == null) connect() }
         }
     }

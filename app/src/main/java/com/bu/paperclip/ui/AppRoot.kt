@@ -1,5 +1,12 @@
 package com.bu.paperclip.ui
 
+import androidx.compose.runtime.key
+import kotlinx.coroutines.CancellationException
+import com.bu.paperclip.data.ReadCache
+import com.bu.paperclip.net.AppJson
+import com.bu.paperclip.data.Repo
+import com.bu.paperclip.data.IssueStore
+import com.bu.paperclip.data.AuthSession
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -72,21 +79,44 @@ fun AppRoot(pendingLink: String?, onLinkConsumed: () -> Unit) {
     var phase by remember { mutableStateOf<Phase>(Phase.Boot) }
     var bootKey by remember { mutableStateOf(0) }
     val auth by Api.auth.collectAsState()
+    val currentUser by AppState.me.collectAsState()
 
     LaunchedEffect(bootKey) {
         val s = AppState.settings.current()
         if (s.baseUrl.isEmpty()) { phase = Phase.Setup; return@LaunchedEffect }
         Api.configure(s.baseUrl, s.apiToken)
         phase = Phase.Boot
+        val cache = ReadCache
+        if (cache.restore(Api.baseUrl, Api.bearer)) {
+            runCatching {
+                cache.only {
+                    AppState.me.value = Api.decode(AuthSession.serializer(), cache.read("local:session")).user
+                    AppState.loadCompanies(s.companyId)
+                    if (AppState.company.value != null) phase = Phase.Ready
+                    AppState.refreshLookups()
+                }
+            }
+        }
         try {
-            if (!Api.checkSession()) { phase = Phase.Login; return@LaunchedEffect }
-            AppState.loadSession()
+            val session = if (Api.bearer == null) Repo.session() else AuthSession()
+            if (session.user == null && Api.bearer == null) { phase = Phase.Login; return@LaunchedEffect }
+            if (AppState.me.value?.id != session.user?.id) {
+                phase = Phase.Boot
+                IssueStore.clear()
+                AppState.agents.value = emptyList(); AppState.users.value = emptyMap(); AppState.projects.value = emptyList()
+            }
+            AppState.me.value = session.user
+            ReadCache.select(Api.baseUrl, session.user?.id ?: "board", Api.bearer)
+            cache.fetch("local:session") { AppJson.encodeToJsonElement(AuthSession.serializer(), session) }
             AppState.loadCompanies(s.companyId)
             if (AppState.company.value == null) { phase = Phase.NoCompany; return@LaunchedEffect }
-            AppState.refreshLookups()
             phase = Phase.Ready
-        } catch (t: Throwable) {
-            phase = if (Api.auth.value == AuthState.SignedOut) Phase.Login else Phase.Failed(errorMessage(t))
+            AppState.refreshLookups()
+        } catch (c: CancellationException) { throw c }
+        catch (t: Throwable) {
+            if (Api.auth.value == AuthState.SignedOut) phase = Phase.Login
+            else if (phase != Phase.Ready) phase = Phase.Failed(errorMessage(t))
+            else AppState.toast("Showing saved data. " + errorMessage(t))
         }
     }
 
@@ -102,12 +132,18 @@ fun AppRoot(pendingLink: String?, onLinkConsumed: () -> Unit) {
         }
         Phase.Login -> if (Api.bearer != null) SplashScreen("The API key was rejected.", onRetry = { phase = Phase.Setup }) else SignInScreen(
             baseUrl = Api.baseUrl,
-            onSignedIn = { bootKey++ },
+            onSignedIn = {
+                ReadCache.forget()
+                IssueStore.clear()
+                bootKey++
+            },
             onChangeServer = { phase = Phase.Setup },
         )
         is Phase.Failed -> SplashScreen(p.message, onRetry = { bootKey++ }, onSignIn = { phase = Phase.Login })
         Phase.NoCompany -> SplashScreen("Your account has no Paperclip company yet.", onRetry = { bootKey++ })
-        Phase.Ready -> MainShell(pendingLink, onLinkConsumed, onSignedOut = { phase = Phase.Login })
+        Phase.Ready -> key(Api.baseUrl, currentUser?.id) {
+            MainShell(pendingLink, onLinkConsumed, onSignedOut = { phase = Phase.Login })
+        }
     }
 }
 
@@ -143,18 +179,18 @@ private fun MainShell(pendingLink: String?, onLinkConsumed: () -> Unit, onSigned
         val cid = company?.id
         val obs = LifecycleEventObserver { _, e ->
             when (e) {
-                Lifecycle.Event.ON_START -> if (cid != null) LiveEvents.start(cid)
-                Lifecycle.Event.ON_STOP -> LiveEvents.stop()
+                Lifecycle.Event.ON_START -> if (cid != null) { LiveEvents.start(cid); IssueStore.start(cid) }
+                Lifecycle.Event.ON_STOP -> { LiveEvents.stop(); IssueStore.stop() }
                 else -> {}
             }
         }
         lifecycle.addObserver(obs)
-        if (cid != null && lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) LiveEvents.start(cid)
-        onDispose { lifecycle.removeObserver(obs) }
+        if (cid != null && lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) { LiveEvents.start(cid); IssueStore.start(cid) }
+        onDispose { lifecycle.removeObserver(obs); LiveEvents.stop(); IssueStore.stop() }
     }
 
     // The local task mirror behind the Tasks views and sub-task trees.
-    LaunchedEffect(company?.id) { company?.id?.let { com.bu.paperclip.data.IssueStore.start(it) } }
+
 
     // Keep agent names/statuses and badge counts fresh.
     LaunchedEffect(company?.id) {

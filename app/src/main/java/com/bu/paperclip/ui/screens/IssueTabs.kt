@@ -1,5 +1,8 @@
 package com.bu.paperclip.ui.screens
 
+import com.bu.paperclip.data.IssueStore
+import com.bu.paperclip.util.catching
+
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -127,8 +130,8 @@ internal fun IssueDocsTab(issue: Issue, docs: List<IssueDocument>?, nav: Nav) {
 
 @Composable
 internal fun IssueSubtasksTab(issue: Issue, children: List<Issue>?, nav: Nav) {
-    val all by com.bu.paperclip.data.IssueStore.issues.collectAsState()
-    val live by com.bu.paperclip.data.IssueStore.liveIssueIds.collectAsState()
+    val all by IssueStore.issues.collectAsState()
+    val live by IssueStore.liveIssueIds.collectAsState()
     val me by AppState.me.collectAsState()
     var showClosed by remember(issue.id) { mutableStateOf(false) }
     val collapsed = remember(issue.id) { androidx.compose.runtime.mutableStateMapOf<String, Boolean>() }
@@ -336,7 +339,7 @@ private fun IssueWorkProductCard(wp: WorkProduct) {
     }
     val meta = wp.metadata
     Card(modifier = Modifier.clickable(enabled = wp.url != null) {
-        wp.url?.let { u -> if (!Links.handler(u)) runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(Api.absolute(u)))) } }
+        wp.url?.let { u -> if (!Links.handler(u)) catching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(Api.absolute(u)))) } }
     }, padding = androidx.compose.foundation.layout.PaddingValues(12.dp)) {
         Row(verticalAlignment = Alignment.Top) {
             Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)

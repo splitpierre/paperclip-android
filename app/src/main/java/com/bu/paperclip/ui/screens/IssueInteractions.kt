@@ -1,5 +1,7 @@
 package com.bu.paperclip.ui.screens
 
+import com.bu.paperclip.util.catching
+
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -732,7 +734,7 @@ private fun IssueConnectionBody(issueId: String, it: Interaction, pending: Boole
         Button(onClick = {
             val company = AppState.company.value
             val url = com.bu.paperclip.net.Api.baseUrl + "/" + (company?.issuePrefix ?: "") + "/issues/" + issueId
-            runCatching { ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))) }
+            catching { ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))) }
         }) { Text("Open web UI") }
         OutlinedButton(onClick = { run { issueRejectInteraction(issueId, it.id, null) } }, enabled = !work.working) { Text("Decline") }
         if (work.working) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)

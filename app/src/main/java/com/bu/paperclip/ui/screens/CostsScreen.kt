@@ -1,5 +1,7 @@
 package com.bu.paperclip.ui.screens
 
+import com.bu.paperclip.util.catching
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -84,10 +86,10 @@ fun CostsScreen(nav: Nav) {
         val from = costFrom(period)
         coroutineScope {
             val s = async { Repo.costSummary(cid, from) }
-            val a = async { runCatching { Repo.costByAgent(cid, from) }.getOrDefault(emptyList()) }
-            val p = async { runCatching { Repo.costByProvider(cid, from) }.getOrDefault(emptyList()) }
-            val q = async { runCatching { Repo.quotas(cid) }.getOrNull() }
-            val b = async { runCatching { Repo.budgets(cid) }.getOrNull() }
+            val a = async { catching { Repo.costByAgent(cid, from) }.getOrDefault(emptyList()) }
+            val p = async { catching { Repo.costByProvider(cid, from) }.getOrDefault(emptyList()) }
+            val q = async { catching { Repo.quotas(cid) }.getOrNull() }
+            val b = async { catching { Repo.budgets(cid) }.getOrNull() }
             CostBundle(s.await(), a.await(), p.await(), q.await(), b.await())
         }
     }

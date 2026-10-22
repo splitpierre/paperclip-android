@@ -1,5 +1,7 @@
 package com.bu.paperclip.ui.screens
 
+import com.bu.paperclip.util.catching
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -73,11 +75,11 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
     val focus = remember { FocusRequester() }
 
     LaunchedEffect(parentId) {
-        if (parentId != null) runCatching { parent = Repo.issue(parentId) }.onSuccess {
+        if (parentId != null) catching { parent = Repo.issue(parentId) }.onSuccess {
             if (project == null) project = parent?.projectId
         }
     }
-    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
+    LaunchedEffect(Unit) { catching { focus.requestFocus() } }
 
     fun create() {
         if (title.isBlank() || saving) return

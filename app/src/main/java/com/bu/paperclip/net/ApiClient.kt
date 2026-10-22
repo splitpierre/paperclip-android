@@ -1,6 +1,15 @@
 package com.bu.paperclip.net
 
+import java.time.Instant
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.util.concurrent.atomic.AtomicLong
+import com.bu.paperclip.data.IssueStore
+import com.bu.paperclip.util.SupersededResponse
+import com.bu.paperclip.util.catching
+
 import android.webkit.CookieManager
+import com.bu.paperclip.data.ReadCache
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -72,8 +81,12 @@ object Api {
     /** Optional board API key; when set it replaces the cookie session for REST calls. */
     @Volatile var bearer: String? = null
         private set
+    private val sessionVersion = AtomicLong()
     private val _auth = MutableStateFlow(AuthState.Unknown)
     val auth: StateFlow<AuthState> = _auth
+
+    @Volatile var serverTime: Instant? = null
+        private set
 
     val origin: String
         get() = baseUrl.toHttpUrl().let { u ->
@@ -82,10 +95,12 @@ object Api {
         }
 
     val client: OkHttpClient = OkHttpClient.Builder()
+        .eventListenerFactory { NetworkMetrics.listener() }
         .cookieJar(WebViewCookieJar)
         .followRedirects(false)
         .followSslRedirects(false)
-        .connectTimeout(20, TimeUnit.SECONDS)
+        .callTimeout(75, TimeUnit.SECONDS)
+        .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
         .pingInterval(25, TimeUnit.SECONDS)
         .addInterceptor { chain ->
@@ -102,12 +117,18 @@ object Api {
     val mediaClient: OkHttpClient = client.newBuilder().followRedirects(true).followSslRedirects(true).build()
 
     fun configure(url: String, token: String? = null) {
+        if (baseUrl != url.trimEnd('/') || bearer != token?.trim()?.takeIf { it.isNotEmpty() }) {
+            sessionVersion.incrementAndGet()
+            ReadCache.detach()
+            serverTime = null
+            _auth.value = AuthState.Unknown
+        }
         baseUrl = url.trimEnd('/')
         bearer = token?.trim()?.takeIf { it.isNotEmpty() }
     }
 
     fun markSignedIn() { _auth.value = AuthState.SignedIn }
-    fun markSignedOut() { _auth.value = AuthState.SignedOut }
+    fun markSignedOut() { sessionVersion.incrementAndGet(); _auth.value = AuthState.SignedOut }
 
     fun absolute(pathOrUrl: String): String = when {
         pathOrUrl.startsWith("http://") || pathOrUrl.startsWith("https://") -> pathOrUrl
@@ -137,7 +158,7 @@ object Api {
                 if (cont.isActive) cont.resumeWithException(ApiException.Network(e.message ?: "Network error"))
             }
             override fun onResponse(call: Call, response: Response) {
-                cont.resume(response)
+                cont.resume(response) { _, value, _ -> value.close() }
             }
         })
     }
@@ -150,34 +171,47 @@ object Api {
             method == "DELETE" -> null
             else -> "{}".toRequestBody(jsonType)
         }
+        val requestVersion = sessionVersion.get()
         val req = Request.Builder().url(url(path, query)).method(method, rb).build()
-        return handle(execute(req))
+        val cacheable = method == "GET" && !path.startsWith("/auth/") && path != "/health" && !path.endsWith("/log")
+        if (ReadCache.isCacheOnly()) {
+            if (!cacheable) throw ReadCache.Miss()
+            return ReadCache.read(req.url.toString())
+        }
+        if (cacheable) return ReadCache.fetch(req.url.toString()) { handle(execute(req), requestVersion) }
+        val result = handle(execute(req), requestVersion)
+        if (method != "GET" && method != "HEAD" && !path.endsWith("/read")) ReadCache.invalidate()
+        return result
     }
 
     suspend fun upload(path: String, fileName: String, mime: String, bytes: ByteArray, extra: Map<String, String> = emptyMap()): JsonElement {
         val mb = MultipartBody.Builder().setType(MultipartBody.FORM)
         extra.forEach { (k, v) -> mb.addFormDataPart(k, v) }
         mb.addFormDataPart("file", fileName, bytes.toRequestBody(mime.toMediaType()))
+        val requestVersion = sessionVersion.get()
         val req = Request.Builder().url(url(path)).post(mb.build()).build()
-        return handle(execute(req))
+        return handle(execute(req), requestVersion).also { ReadCache.invalidate() }
     }
 
-    private suspend fun handle(resp: Response): JsonElement = withContext(Dispatchers.IO) {
-        resp.use { r ->
+    private suspend fun handle(resp: Response, requestVersion: Long): JsonElement = resp.use { r ->
+        withContext(Dispatchers.IO) {
+            if (requestVersion != sessionVersion.get()) throw SupersededResponse()
             val text = r.body?.string().orEmpty()
+            if (requestVersion != sessionVersion.get()) throw SupersededResponse()
+            r.header("Date")?.let { date -> catching { ZonedDateTime.parse(date, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant() }.getOrNull()?.let { serverTime = it } }
             val code = r.code
             val location = r.header("Location").orEmpty()
             if (code in 300..399) {
-                _auth.value = AuthState.SignedOut
+                markSignedOut()
                 throw ApiException.AuthRequired(
                     if (location.contains("cloudflareaccess")) "Cloudflare Access session expired" else "Redirected to sign-in",
                 )
             }
             val contentType = r.header("Content-Type").orEmpty()
-            val parsed: JsonElement? = if (text.isBlank()) null else runCatching { AppJson.parseToJsonElement(text) }.getOrNull()
+            val parsed: JsonElement? = if (text.isBlank()) null else catching { AppJson.parseToJsonElement(text) }.getOrNull()
             if (code in 200..299) {
                 if (parsed == null && text.isNotBlank() && contentType.contains("text/html")) {
-                    _auth.value = AuthState.SignedOut
+                    markSignedOut()
                     throw ApiException.AuthRequired("Got a web page instead of data — sign in again")
                 }
                 if (_auth.value != AuthState.SignedIn) _auth.value = AuthState.SignedIn
@@ -189,7 +223,7 @@ object Api {
             val authMsg = msg.contains("Board authentication required") || msg.contains("Board access required") ||
                 msg.contains("Unauthorized", ignoreCase = true)
             if (code == 401 || (code == 403 && authMsg)) {
-                _auth.value = AuthState.SignedOut
+                markSignedOut()
                 throw ApiException.AuthRequired(msg)
             }
             throw ApiException.Http(code, msg, parsed)
@@ -210,7 +244,7 @@ object Api {
 
     suspend fun delete(path: String, body: JsonElement? = null): JsonElement = requestJson("DELETE", path, body = body)
 
-    fun <T> decode(ser: KSerializer<T>, el: JsonElement): T = AppJson.decodeFromJsonElement(ser, el)
+    suspend fun <T> decode(ser: KSerializer<T>, el: JsonElement): T = withContext(Dispatchers.Default) { AppJson.decodeFromJsonElement(ser, el) }
 
     /** Probes the session; true when both Cloudflare (if any) and Paperclip accept the cookies. */
     suspend fun checkSession(): Boolean = try {
@@ -232,7 +266,7 @@ object Api {
         val r = execute(Request.Builder().url(url("/health")).get().build())
         return r.use {
             when {
-                it.code in 300..399 -> it.header("Location")?.let { loc -> runCatching { loc.toHttpUrl().host }.getOrNull() } ?: "a sign-in page"
+                it.code in 300..399 -> it.header("Location")?.let { loc -> catching { loc.toHttpUrl().host }.getOrNull() } ?: "a sign-in page"
                 it.header("Content-Type").orEmpty().contains("text/html") -> "a sign-in page"
                 else -> null
             }
@@ -241,6 +275,7 @@ object Api {
 
     /** Native Paperclip (better-auth) email sign-in; the session cookie lands in the shared store. */
     suspend fun signIn(email: String, password: String) {
+        sessionVersion.incrementAndGet()
         requestJson(
             "POST", "/auth/sign-in/email",
             body = JsonObject(
@@ -255,13 +290,17 @@ object Api {
     }
 
     suspend fun signOut() {
-        runCatching { requestJson("POST", "/auth/sign-out", body = JsonObject(emptyMap())) }
+        sessionVersion.incrementAndGet()
+        catching { requestJson("POST", "/auth/sign-out", body = JsonObject(emptyMap())) }
         CookieManager.getInstance().removeAllCookies(null)
         CookieManager.getInstance().flush()
+        ReadCache.invalidate(all = true)
+        ReadCache.forget()
+        IssueStore.clear()
         markSignedOut()
     }
 }
 
 fun JsonElement?.obj(): JsonObject? = this as? JsonObject
 fun JsonObject.str(key: String): String? = (this[key] as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNull
-fun JsonElement.objOrEmpty(): JsonObject = runCatching { jsonObject }.getOrDefault(JsonObject(emptyMap()))
+fun JsonElement.objOrEmpty(): JsonObject = catching { jsonObject }.getOrDefault(JsonObject(emptyMap()))

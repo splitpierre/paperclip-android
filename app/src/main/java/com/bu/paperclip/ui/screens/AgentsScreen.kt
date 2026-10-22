@@ -1,5 +1,7 @@
 package com.bu.paperclip.ui.screens
 
+import com.bu.paperclip.util.catching
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -50,7 +52,6 @@ import com.bu.paperclip.ui.components.EmptyState
 import com.bu.paperclip.ui.components.LiveRefresh
 import com.bu.paperclip.ui.components.LoadContent
 import com.bu.paperclip.ui.components.Pill
-import com.bu.paperclip.ui.components.PollWhileDisconnected
 import com.bu.paperclip.ui.components.agentStatusColor
 import com.bu.paperclip.ui.components.rememberAction
 import com.bu.paperclip.ui.components.rememberLoader
@@ -96,12 +97,11 @@ fun AgentsScreen(nav: Nav) {
     val loader = rememberLoader(cid) {
         val agents = Repo.agents(cid).filter { it.status != "terminated" }
         AppState.agents.value = agents
-        AgentsData(agents, runCatching { Repo.liveRuns(cid) }.getOrDefault(emptyList()))
+        AgentsData(agents, catching { Repo.liveRuns(cid) }.getOrDefault(emptyList()))
     }
     LiveRefresh(filter = { it.type == "agent.status" || it.type == "heartbeat.run.queued" || it.type == "heartbeat.run.status" || (it.type == "activity.logged" && it.s("entityType") == "agent") }) {
         loader.refresh()
     }
-    PollWhileDisconnected { loader.refresh() }
 
     Scaffold(
         topBar = {
