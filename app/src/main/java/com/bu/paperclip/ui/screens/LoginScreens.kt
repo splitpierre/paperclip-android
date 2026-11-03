@@ -89,6 +89,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.util.appString
 
 /** Centred, branded column shared by the setup, sign-in and connecting screens. */
 @Composable
@@ -116,7 +119,7 @@ private fun AuthLayout(title: String, subtitle: String?, content: @Composable Co
             content()
             Spacer(Modifier.weight(1.3f).heightIn(min = 32.dp))
             Text(
-                "Unofficial client for Paperclip",
+                stringResource(R.string.unofficial_client_for_paperclip),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,
@@ -147,7 +150,7 @@ private fun AuthField(
         supportingText = supporting?.let { { Text(it) } },
         leadingIcon = { Icon(icon, null, Modifier.size(20.dp)) },
         trailingIcon = if (secret) {
-            { IconButton(onClick = { reveal = !reveal }) { Icon(if (reveal) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility, if (reveal) "Hide" else "Show", Modifier.size(20.dp)) } }
+            { IconButton(onClick = { reveal = !reveal }) { Icon(if (reveal) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility, if (reveal) stringResource(R.string.hide) else stringResource(R.string.show), Modifier.size(20.dp)) } }
         } else null,
         visualTransformation = if (secret && !reveal) PasswordVisualTransformation() else VisualTransformation.None,
         singleLine = true,
@@ -191,11 +194,11 @@ fun SetupScreen(initial: String, initialToken: String = "", onSave: (url: String
     val valid = url.trim().toHttpUrlOrNull()?.host?.isNotBlank() == true
     val save = { if (valid) onSave(url.trim().trimEnd('/'), token.trim()) }
     AuthLayout(
-        "Connect to Paperclip",
-        "Enter the address you open Paperclip at in your browser. You'll sign in next.",
+        stringResource(R.string.connect_to_paperclip),
+        stringResource(R.string.enter_the_address_you_open_paperclip),
     ) {
         AuthField(
-            url, { url = it }, "Server URL", Icons.Outlined.Language,
+            url, { url = it }, stringResource(R.string.server_url), Icons.Outlined.Language,
             KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go),
             placeholder = "https://paperclip.example.com",
             onGo = save,
@@ -203,20 +206,20 @@ fun SetupScreen(initial: String, initialToken: String = "", onSave: (url: String
         Spacer(Modifier.height(12.dp))
         if (showToken) {
             AuthField(
-                token, { token = it }, "Board API key (optional)", Icons.Outlined.Key,
+                token, { token = it }, stringResource(R.string.board_api_key_optional), Icons.Outlined.Key,
                 KeyboardOptions(imeAction = ImeAction.Go),
                 placeholder = "pcp_board_…",
-                supporting = "Skips sign-in. Without a session, live updates fall back to polling.",
+                supporting = stringResource(R.string.skips_sign_in_without_a_session),
                 secret = true,
                 onGo = save,
             )
             Spacer(Modifier.height(12.dp))
         }
         Spacer(Modifier.height(8.dp))
-        AuthButton("Continue", enabled = valid, onClick = save)
+        AuthButton(stringResource(R.string.t_continue), enabled = valid, onClick = save)
         if (!showToken) {
             Spacer(Modifier.height(4.dp))
-            AuthLink("Use an API key instead") { showToken = true }
+            AuthLink(stringResource(R.string.use_an_api_key_instead)) { showToken = true }
         }
     }
 }
@@ -254,14 +257,14 @@ fun LoginScreen(baseUrl: String, onSignedIn: () -> Unit, onChangeServer: () -> U
             TopAppBar(
                 title = {
                     Column {
-                        Text("Sign in", style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.sign_in), style = MaterialTheme.typography.titleMedium)
                         Text(host, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },
                 actions = {
                     if (checking) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                    IconButton(onClick = { webView?.reload() }) { Icon(Icons.Default.Refresh, "Reload") }
-                    TextButton(onClick = onChangeServer) { Text("Server") }
+                    IconButton(onClick = { webView?.reload() }) { Icon(Icons.Default.Refresh, stringResource(R.string.reload)) }
+                    TextButton(onClick = onChangeServer) { Text(stringResource(R.string.server)) }
                 },
             )
         },
@@ -297,7 +300,7 @@ fun LoginScreen(baseUrl: String, onSignedIn: () -> Unit, onChangeServer: () -> U
 }
 
 @Composable
-fun SplashScreen(message: String = "Connecting…", onRetry: (() -> Unit)? = null, onSignIn: (() -> Unit)? = null) {
+fun SplashScreen(message: String = stringResource(R.string.connecting), onRetry: (() -> Unit)? = null, onSignIn: (() -> Unit)? = null) {
     Column(
         Modifier.fillMaxSize().systemBarsPadding().padding(32.dp),
         verticalArrangement = Arrangement.Center,
@@ -316,9 +319,9 @@ fun SplashScreen(message: String = "Connecting…", onRetry: (() -> Unit)? = nul
         Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
         if (onRetry != null) {
             Spacer(Modifier.height(24.dp))
-            Button(onClick = onRetry, shape = MaterialTheme.shapes.small, modifier = Modifier.widthIn(min = 160.dp)) { Text("Try again") }
+            Button(onClick = onRetry, shape = MaterialTheme.shapes.small, modifier = Modifier.widthIn(min = 160.dp)) { Text(stringResource(R.string.try_again)) }
         }
-        if (onSignIn != null) TextButton(onClick = onSignIn) { Text("Sign in again", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        if (onSignIn != null) TextButton(onClick = onSignIn) { Text(stringResource(R.string.sign_in_again), color = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
 }
 
@@ -346,16 +349,16 @@ fun BackIcon(onClick: () -> Unit) {
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(bounded = false, radius = 20.dp),
                 role = Role.Button,
-                onClickLabel = "Back",
-                onLongClickLabel = origin?.let { "Back to ${it.label}" },
+                onClickLabel = stringResource(R.string.back),
+                onLongClickLabel = origin?.let { stringResource(R.string.back_to_x, it.label) },
                 onLongClick = if (deep) ({ haptics.performHapticFeedback(HapticFeedbackType.LongPress); nav!!.backToTab(origin!!.route) }) else null,
                 onClick = onClick,
             ),
             contentAlignment = Alignment.Center,
-        ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+        ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) }
         if (deep) {
             IconButton(onClick = { nav!!.backToTab(origin!!.route) }, modifier = Modifier.offset(x = (-6).dp)) {
-                Icon(origin!!.icon, "Back to ${origin.label}", Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(origin!!.icon, stringResource(R.string.back_to_x, origin.label), Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -416,7 +419,7 @@ fun SignInScreen(baseUrl: String, onSignedIn: () -> Unit, onChangeServer: () -> 
             scope.launch {
                 try {
                     Api.signIn(email, password)
-                    if (Api.checkSession()) onSignedIn() else error = "Signed in, but the session wasn't accepted."
+                    if (Api.checkSession()) onSignedIn() else error = appString(R.string.signed_in_but_the_session_wasn)
                 } catch (t: Throwable) {
                     error = com.bu.paperclip.ui.components.errorMessage(t)
                 } finally { busy = false }
@@ -424,7 +427,7 @@ fun SignInScreen(baseUrl: String, onSignedIn: () -> Unit, onChangeServer: () -> 
         }
     }
 
-    AuthLayout("Sign in", host) {
+    AuthLayout(stringResource(R.string.sign_in), host) {
         when (val g = gate) {
             Gate.Checking -> Box(Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(Modifier.size(28.dp), strokeWidth = 2.5.dp, color = MaterialTheme.colorScheme.onSurface)
@@ -432,33 +435,33 @@ fun SignInScreen(baseUrl: String, onSignedIn: () -> Unit, onChangeServer: () -> 
             is Gate.Error -> {
                 Notice(g.message, error = true)
                 Spacer(Modifier.height(16.dp))
-                AuthButton("Try again") { probeKey++ }
+                AuthButton(stringResource(R.string.try_again)) { probeKey++ }
             }
             is Gate.Required -> {
-                Notice("This server is protected by ${g.host}. Sign in there first; the app keeps that session for everything else.")
+                Notice(stringResource(R.string.this_server_is_protected_by_x, g.host))
                 Spacer(Modifier.height(16.dp))
-                AuthButton("Continue to ${g.host}") { gateBrowser = true }
+                AuthButton(stringResource(R.string.continue_to_x, g.host)) { gateBrowser = true }
             }
             Gate.Open -> {
                 AuthField(
-                    email, { email = it; error = null }, "Email", Icons.Outlined.Mail,
+                    email, { email = it; error = null }, stringResource(R.string.email), Icons.Outlined.Mail,
                     KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                 )
                 Spacer(Modifier.height(12.dp))
                 AuthField(
-                    password, { password = it; error = null }, "Password", Icons.Outlined.Lock,
+                    password, { password = it; error = null }, stringResource(R.string.password), Icons.Outlined.Lock,
                     KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Go),
                     secret = true,
                     onGo = submit,
                 )
                 error?.let { Spacer(Modifier.height(12.dp)); Notice(it, error = true) }
                 Spacer(Modifier.height(20.dp))
-                AuthButton("Sign in", enabled = email.isNotBlank() && password.isNotEmpty(), busy = busy, onClick = submit)
+                AuthButton(stringResource(R.string.sign_in), enabled = email.isNotBlank() && password.isNotEmpty(), busy = busy, onClick = submit)
             }
         }
         Spacer(Modifier.height(8.dp))
-        AuthLink("Sign in with the web page instead") { webFallback = true }
-        AuthLink("Change server", onChangeServer)
+        AuthLink(stringResource(R.string.sign_in_with_the_web_page)) { webFallback = true }
+        AuthLink(stringResource(R.string.change_server), onChangeServer)
     }
 }
 
@@ -487,7 +490,7 @@ private fun GateBrowser(baseUrl: String, onPassed: () -> Unit, onClose: () -> Un
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Sign in", style = MaterialTheme.typography.titleMedium) },
+                title = { Text(stringResource(R.string.sign_in), style = MaterialTheme.typography.titleMedium) },
                 navigationIcon = { BackIcon(onClose) },
             )
         },

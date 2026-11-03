@@ -87,6 +87,10 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.longOrNull
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.util.appString
+import com.bu.paperclip.util.appPlural
 
 private const val RUN_TAIL_BYTES = 256_000L
 private const val RUN_PAGE_BYTES = 512_000
@@ -250,8 +254,8 @@ fun RunScreen(nav: Nav, id: String) {
             TopAppBar(
                 title = {
                     Column {
-                        Text(theAgent?.name ?: "Run", maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text("Run ${id.take(8)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(theAgent?.name ?: stringResource(R.string.run), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(stringResource(R.string.run_x, id.take(8)), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },
                 navigationIcon = { BackIcon { nav.back() } },
@@ -259,7 +263,7 @@ fun RunScreen(nav: Nav, id: String) {
                     if (live) TextButton(onClick = { confirmStop = true }) {
                         Icon(Icons.Outlined.StopCircle, null, tint = LocalStatusColors.current.red)
                         Spacer(Modifier.width(4.dp))
-                        Text("Stop", color = LocalStatusColors.current.red)
+                        Text(stringResource(R.string.stop), color = LocalStatusColors.current.red)
                     }
                 },
             )
@@ -268,7 +272,7 @@ fun RunScreen(nav: Nav, id: String) {
             ScrollJumpButton(
                 listState,
                 enabled = itemCount > 0,
-                label = { t -> if (t == JumpTarget.Top) "Jump to top" else if (live) "Jump to latest" else "Jump to end" },
+                label = { t -> if (t == JumpTarget.Top) appString(R.string.jump_to_top) else if (live) appString(R.string.jump_to_latest) else appString(R.string.jump_to_end) },
                 onJump = { follow = it == JumpTarget.Bottom },
             )
         },
@@ -288,7 +292,7 @@ fun RunScreen(nav: Nav, id: String) {
                             val skipped = (o?.get("status") as? JsonPrimitive)?.contentOrNull == "skipped"
                             if (newId != null && !skipped) nav.run(newId)
                             else com.bu.paperclip.data.AppState.toast(
-                                (o?.get("message") as? JsonPrimitive)?.contentOrNull ?: "Retry requested",
+                                (o?.get("message") as? JsonPrimitive)?.contentOrNull ?: appString(R.string.retry_requested),
                             )
                         }, null)
                     })
@@ -299,9 +303,9 @@ fun RunScreen(nav: Nav, id: String) {
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        AppFilterChip(view == RunView.Transcript, onClick = { view = RunView.Transcript }, label = { Text("Transcript") })
-                        AppFilterChip(view == RunView.Raw, onClick = { view = RunView.Raw }, label = { Text("Raw log") })
-                        AppFilterChip(view == RunView.Events, onClick = { view = RunView.Events }, label = { Text("Events") })
+                        AppFilterChip(view == RunView.Transcript, onClick = { view = RunView.Transcript }, label = { Text(stringResource(R.string.transcript)) })
+                        AppFilterChip(view == RunView.Raw, onClick = { view = RunView.Raw }, label = { Text(stringResource(R.string.raw_log)) })
+                        AppFilterChip(view == RunView.Events, onClick = { view = RunView.Events }, label = { Text(stringResource(R.string.events)) })
                         if (live) {
                             Spacer(Modifier.width(4.dp))
                             Pill(if (connected) "streaming" else "polling", if (connected) LocalStatusColors.current.blue else LocalStatusColors.current.yellow)
@@ -312,12 +316,12 @@ fun RunScreen(nav: Nav, id: String) {
                     item(key = "truncated") {
                         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                "Showing the last ${RUN_TAIL_BYTES / 1000} KB of output",
+                                stringResource(R.string.showing_the_last_x_kb_of, RUN_TAIL_BYTES / 1000),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.weight(1f),
                             )
-                            TextButton(onClick = { fullLog = true; follow = false }) { Text("Load full log") }
+                            TextButton(onClick = { fullLog = true; follow = false }) { Text(stringResource(R.string.load_full_log)) }
                         }
                     }
                 }
@@ -329,19 +333,19 @@ fun RunScreen(nav: Nav, id: String) {
                 when (view) {
                     RunView.Transcript -> {
                         if (!logLoaded) item(key = "loading") { RunLoadingRow() }
-                        else if (entries.isEmpty()) item(key = "empty") { EmptyState(if (live) "Waiting for output…" else "No output was recorded for this run") }
+                        else if (entries.isEmpty()) item(key = "empty") { EmptyState(if (live) stringResource(R.string.waiting_for_output) else stringResource(R.string.no_output_was_recorded_for_this)) }
                         itemsIndexed(entries, key = { i, _ -> "e$i" }) { _, e -> RunEntryView(e) }
                         if (live && logLoaded) item(key = "live-tail") { RunLiveTail(r) }
                     }
                     RunView.Raw -> {
                         if (!logLoaded) item(key = "loading") { RunLoadingRow() }
-                        else if (rawLines.isEmpty()) item(key = "empty") { EmptyState("No raw output") }
+                        else if (rawLines.isEmpty()) item(key = "empty") { EmptyState(stringResource(R.string.no_raw_output)) }
                         itemsIndexed(rawLines, key = { i, _ -> "r$i" }) { _, l -> RunLogLine(l.stream, l.text) }
                     }
                     RunView.Events -> {
                         val list = events.value
                         if (list == null) item(key = "loading") { RunLoadingRow() }
-                        else if (list.isEmpty()) item(key = "empty") { EmptyState("No events recorded") }
+                        else if (list.isEmpty()) item(key = "empty") { EmptyState(stringResource(R.string.no_events_recorded)) }
                         else itemsIndexed(list, key = { _, ev -> "ev${ev.seq}" }) { _, ev -> RunEventRow(ev) }
                     }
                 }
@@ -352,15 +356,15 @@ fun RunScreen(nav: Nav, id: String) {
     if (confirmStop) {
         AlertDialog(
             onDismissRequest = { confirmStop = false },
-            title = { Text("Stop this run?") },
-            text = { Text("${theAgent?.name ?: "The agent"} will be interrupted. Work already committed stays; the current turn is lost.") },
+            title = { Text(stringResource(R.string.stop_this_run)) },
+            text = { Text(appString(R.string.x_will_be_interrupted, theAgent?.name ?: appString(R.string.the_agent))) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmStop = false
-                    act({ Repo.cancelRun(id); runLoader.refresh() }, "Run stopped")
-                }) { Text("Stop", color = LocalStatusColors.current.red) }
+                    act({ Repo.cancelRun(id); runLoader.refresh() }, appString(R.string.run_stopped))
+                }) { Text(stringResource(R.string.stop), color = LocalStatusColors.current.red) }
             },
-            dismissButton = { TextButton(onClick = { confirmStop = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { confirmStop = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
 }
@@ -376,7 +380,7 @@ private fun RunLiveTail(r: HeartbeatRun) {
         CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 1.6.dp)
         Spacer(Modifier.width(10.dp))
         Text(
-            r.currentStatusMessage ?: r.currentToolName?.let { "Using $it" } ?: if (r.status == "queued") "Queued…" else "Working…",
+            r.currentStatusMessage ?: r.currentToolName?.let { stringResource(R.string.using_x, it) } ?: if (r.status == "queued") stringResource(R.string.queued) else stringResource(R.string.working),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 2,
@@ -416,8 +420,8 @@ private fun RunHeader(r: HeartbeatRun, elapsed: String, agent: Agent?, issue: Is
                     StatusIcon(issue?.status ?: "todo", 14.dp)
                     Spacer(Modifier.width(10.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(issue?.ref ?: "Task", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(issue?.title ?: "Loading…", style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Text(issue?.ref ?: stringResource(R.string.task), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(issue?.title ?: stringResource(R.string.loading), style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
                 }
             }
@@ -432,10 +436,10 @@ private fun RunHeader(r: HeartbeatRun, elapsed: String, agent: Agent?, issue: Is
         }
         if (r.status == "failed" || r.status == "timed_out") {
             Spacer(Modifier.height(6.dp))
-            PropertyChip(onClick = onRetry, label = { Text("Retry run") }, leadingIcon = { Icon(Icons.Outlined.Replay, null, Modifier.size(18.dp)) })
+            PropertyChip(onClick = onRetry, label = { Text(stringResource(R.string.retry_run)) }, leadingIcon = { Icon(Icons.Outlined.Replay, null, Modifier.size(18.dp)) })
         }
         if (runIsTerminal(r.status) && r.finishedAt != null) {
-            Text("Finished ${absoluteTime(r.finishedAt)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.finished_x, absoluteTime(r.finishedAt)), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

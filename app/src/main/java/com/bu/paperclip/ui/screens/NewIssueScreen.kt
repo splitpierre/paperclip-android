@@ -54,6 +54,11 @@ import com.bu.paperclip.ui.components.errorMessage
 import com.bu.paperclip.ui.components.statusLabel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.ui.components.priorityLabel
+import com.bu.paperclip.util.appString
+import com.bu.paperclip.util.appPlural
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -95,7 +100,7 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
                     "parentId" to (parent?.id ?: parentId),
                 ).let { o -> kotlinx.serialization.json.JsonObject(o.filterValues { v -> v !is kotlinx.serialization.json.JsonNull }) }
                 val created = Repo.createIssue(AppState.cid, body)
-                AppState.toast("Created ${created.identifier ?: "task"}")
+                AppState.toast(appString(R.string.created_x, created.identifier ?: appString(R.string.task_fallback)))
                 nav.back()
                 nav.issue(created.identifier ?: created.id)
             } catch (c: CancellationException) {
@@ -112,10 +117,10 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
         topBar = {
             TopAppBar(
                 navigationIcon = { BackIcon { nav.back() } },
-                title = { Text(if (parentId != null) "New sub-task" else "New task") },
+                title = { Text(if (parentId != null) stringResource(R.string.new_sub_task) else stringResource(R.string.new_task)) },
                 actions = {
                     if (saving) CircularProgressIndicator(Modifier.padding(end = 16.dp).size(22.dp), strokeWidth = 2.dp)
-                    else TextButton(onClick = { create() }, enabled = title.isNotBlank()) { Text("Create") }
+                    else TextButton(onClick = { create() }, enabled = title.isNotBlank()) { Text(stringResource(R.string.create)) }
                 },
             )
         },
@@ -125,21 +130,21 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             parent?.let { p ->
-                Text("Sub-task of ${p.identifier ?: ""} · ${p.title}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(appString(R.string.sub_task_of_x, p.identifier ?: "", p.title), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
-                label = { Text("Title") },
+                label = { Text(stringResource(R.string.title)) },
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 modifier = Modifier.fillMaxWidth().focusRequester(focus),
             )
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 PropertyChip(onClick = { sheet = "status" }, label = { Text(statusLabel(status)) }, leadingIcon = { StatusIcon(status, 14.dp) })
-                PropertyChip(onClick = { sheet = "priority" }, label = { Text(priority.replaceFirstChar { it.uppercase() }) }, leadingIcon = { PriorityIcon(priority, 16.dp) })
+                PropertyChip(onClick = { sheet = "priority" }, label = { Text(priorityLabel(priority)) }, leadingIcon = { PriorityIcon(priority, 16.dp) })
                 PropertyChip(
                     onClick = { sheet = "assignee" },
-                    label = { Text(agentId?.let { AppState.agentName(it) } ?: userId?.let { AppState.userName(it) } ?: "Unassigned") },
+                    label = { Text(agentId?.let { AppState.agentName(it) } ?: userId?.let { AppState.userName(it) } ?: stringResource(R.string.unassigned)) },
                     leadingIcon = {
                         when {
                             agentId != null -> AgentAvatar(agentId, 18.dp)
@@ -150,20 +155,20 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
                 )
                 PropertyChip(
                     onClick = { sheet = "project" },
-                    label = { Text(AppState.project(project)?.name ?: "No project") },
+                    label = { Text(AppState.project(project)?.name ?: stringResource(R.string.no_project)) },
                     leadingIcon = { Icon(Icons.Outlined.FolderOpen, null, Modifier.size(18.dp)) },
                 )
             }
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
-                label = { Text("Description (markdown)") },
+                label = { Text(stringResource(R.string.description_markdown)) },
                 minLines = 8,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 modifier = Modifier.fillMaxWidth().heightIn(min = 200.dp),
             )
             if (status == "in_progress" && agentId == null && userId == null) {
-                Text("In progress tasks need an assignee.", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.in_progress_tasks_need_an_assignee), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             Spacer(Modifier.height(40.dp))

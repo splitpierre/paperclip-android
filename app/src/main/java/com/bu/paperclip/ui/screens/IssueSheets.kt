@@ -53,6 +53,10 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.ui.components.priorityLabel
+import com.bu.paperclip.util.appString
 
 // ---------- JSON helpers for loosely-typed payloads ----------
 
@@ -106,7 +110,7 @@ internal fun IssueSheet(title: String, onDismiss: () -> Unit, content: @Composab
 
 @Composable
 internal fun IssueStatusSheet(current: String?, onPick: (String) -> Unit, onDismiss: () -> Unit) {
-    IssueSheet("Status", onDismiss) {
+    IssueSheet(stringResource(R.string.status), onDismiss) {
         ISSUE_STATUSES.forEach { s ->
             IssueSheetRow(s == current, { onPick(s); onDismiss() }, { StatusIcon(s, 18.dp) }, statusLabel(s))
         }
@@ -115,9 +119,9 @@ internal fun IssueStatusSheet(current: String?, onPick: (String) -> Unit, onDism
 
 @Composable
 internal fun IssuePrioritySheet(current: String?, onPick: (String) -> Unit, onDismiss: () -> Unit) {
-    IssueSheet("Priority", onDismiss) {
+    IssueSheet(stringResource(R.string.priority), onDismiss) {
         PRIORITIES.forEach { p ->
-            IssueSheetRow(p == current, { onPick(p); onDismiss() }, { PriorityIcon(p, 20.dp) }, p.replaceFirstChar { it.uppercase() })
+            IssueSheetRow(p == current, { onPick(p); onDismiss() }, { PriorityIcon(p, 20.dp) }, priorityLabel(p))
         }
     }
 }
@@ -134,7 +138,7 @@ internal fun IssueAssigneeSheet(
     currentAgentId: String?,
     currentUserId: String?,
     allowMe: Boolean = true,
-    title: String = "Assignee",
+    title: String = stringResource(R.string.assignee),
     unassignedSelected: Boolean = currentAgentId == null && currentUserId == null,
     onPick: (IssueAssignee) -> Unit,
     onDismiss: () -> Unit,
@@ -146,7 +150,7 @@ internal fun IssueAssigneeSheet(
         if (agents.size > 8) {
             OutlinedTextField(
                 value = q, onValueChange = { q = it }, singleLine = true,
-                placeholder = { Text("Filter agents") },
+                placeholder = { Text(stringResource(R.string.filter_agents)) },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
             )
         }
@@ -154,11 +158,11 @@ internal fun IssueAssigneeSheet(
             if (q.isBlank()) {
                 item {
                     IssueSheetRow(unassignedSelected, { onPick(IssueAssignee.Nobody); onDismiss() },
-                        { Icon(Icons.Outlined.PersonOff, null, Modifier.size(28.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) }, "Unassigned")
+                        { Icon(Icons.Outlined.PersonOff, null, Modifier.size(28.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) }, stringResource(R.string.unassigned))
                 }
                 if (allowMe && me != null) item {
                     IssueSheetRow(currentUserId != null && currentUserId == me?.id, { onPick(IssueAssignee.Me); onDismiss() },
-                        { Avatar(me?.name ?: "Me", me?.image, 28.dp, isAgent = false) }, "Me", me?.email)
+                        { Avatar(me?.name ?: stringResource(R.string.me), me?.image, 28.dp, isAgent = false) }, stringResource(R.string.me), me?.email)
                 }
             }
             val filtered = agents.filter { q.isBlank() || it.name.contains(q, true) || (it.title ?: "").contains(q, true) }
@@ -178,11 +182,11 @@ internal fun IssueAssigneeSheet(
 @Composable
 internal fun IssueProjectSheet(currentId: String?, onPick: (String?) -> Unit, onDismiss: () -> Unit) {
     val projects by AppState.projects.collectAsState()
-    IssueSheet("Project", onDismiss) {
+    IssueSheet(stringResource(R.string.project), onDismiss) {
         LazyColumn(Modifier.heightIn(max = 520.dp)) {
             item {
                 IssueSheetRow(currentId == null, { onPick(null); onDismiss() },
-                    { Icon(Icons.Outlined.FolderOff, null, Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) }, "No project")
+                    { Icon(Icons.Outlined.FolderOff, null, Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) }, stringResource(R.string.no_project))
             }
             items(projects.filter { it.archivedAt == null }, key = { it.id }) { p ->
                 IssueSheetRow(currentId == p.id, { onPick(p.id); onDismiss() }, {

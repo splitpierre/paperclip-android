@@ -71,6 +71,9 @@ import com.bu.paperclip.ui.Nav
 import com.bu.paperclip.ui.components.Avatar
 import com.bu.paperclip.ui.components.SectionHeader
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.util.appString
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,15 +91,15 @@ fun SettingsScreen(nav: Nav, onSignedOut: () -> Unit) {
         scope.launch { AppState.settings.setNotifications(granted); NotifyWorker.schedule(ctx, granted) }
     }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Settings") }, navigationIcon = { BackIcon { nav.back() } }) }) { pad ->
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.settings)) }, navigationIcon = { BackIcon { nav.back() } }) }) { pad ->
         Column(Modifier.fillMaxSize().padding(pad).verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
-            SectionHeader("Account")
+            SectionHeader(stringResource(R.string.account))
             SettingsGroup {
                 Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Avatar(me?.name ?: me?.email ?: "?", me?.image, 44.dp, isAgent = false)
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(me?.name ?: "Signed in", style = MaterialTheme.typography.titleMedium)
+                        Text(me?.name ?: stringResource(R.string.signed_in), style = MaterialTheme.typography.titleMedium)
                         Text(me?.email ?: "", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
@@ -104,16 +107,16 @@ fun SettingsScreen(nav: Nav, onSignedOut: () -> Unit) {
                 SettingsRow(
                     Icons.Outlined.Dns,
                     Api.baseUrl.removePrefix("https://").removePrefix("http://"),
-                    if (Api.bearer != null) "Board API key" else "Browser session",
+                    if (Api.bearer != null) stringResource(R.string.board_api_key) else stringResource(R.string.browser_session),
                 ) {
                     Dot(if (connected) LocalStatusColors.current.green else LocalStatusColors.current.yellow, 8.dp)
                     Spacer(Modifier.width(6.dp))
-                    Text(if (connected) "Live" else if (Api.bearer != null) "Polling" else "Reconnecting", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(if (connected) stringResource(R.string.live) else if (Api.bearer != null) stringResource(R.string.polling) else stringResource(R.string.reconnecting), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
             if (companies.size > 1) {
-                SectionHeader("Company")
+                SectionHeader(stringResource(R.string.company))
                 SettingsGroup {
                     companies.forEachIndexed { i, c ->
                         if (i > 0) SettingsDivider()
@@ -124,13 +127,13 @@ fun SettingsScreen(nav: Nav, onSignedOut: () -> Unit) {
                 }
             }
 
-            SectionHeader("Appearance")
+            SectionHeader(stringResource(R.string.appearance))
             SettingsGroup {
                 Row(Modifier.fillMaxWidth().padding(6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     listOf(
-                        Triple("system", "System", Icons.Outlined.PhoneAndroid),
-                        Triple("dark", "Dark", Icons.Outlined.DarkMode),
-                        Triple("light", "Light", Icons.Outlined.LightMode),
+                        Triple("system", stringResource(R.string.system), Icons.Outlined.PhoneAndroid),
+                        Triple("dark", stringResource(R.string.dark), Icons.Outlined.DarkMode),
+                        Triple("light", stringResource(R.string.light), Icons.Outlined.LightMode),
                     ).forEach { (k, label, icon) ->
                         val sel = settings.theme == k
                         Column(
@@ -151,12 +154,12 @@ fun SettingsScreen(nav: Nav, onSignedOut: () -> Unit) {
                 }
             }
 
-            SectionHeader("Notifications")
+            SectionHeader(stringResource(R.string.notifications))
             SettingsGroup {
                 SettingsRow(
                     Icons.Outlined.NotificationsActive,
-                    "Agent requests",
-                    "Checks about every 15 minutes for new questions, confirmations, approvals and failed runs.",
+                    stringResource(R.string.agent_requests),
+                    stringResource(R.string.checks_about_every_15_minutes_for),
                 ) {
                     Spacer(Modifier.width(8.dp))
                     Switch(
@@ -173,7 +176,7 @@ fun SettingsScreen(nav: Nav, onSignedOut: () -> Unit) {
                     )
                 }
                 SettingsDivider()
-                SettingsRow(Icons.Outlined.Refresh, "Check now", null, onClick = { NotifyWorker.runNow(ctx) })
+                SettingsRow(Icons.Outlined.Refresh, stringResource(R.string.check_now), null, onClick = { NotifyWorker.runNow(ctx) })
             }
 
             Spacer(Modifier.height(20.dp))
@@ -184,14 +187,14 @@ fun SettingsScreen(nav: Nav, onSignedOut: () -> Unit) {
                 ) {
                     Icon(Icons.AutoMirrored.Outlined.Logout, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(22.dp))
                     Spacer(Modifier.width(14.dp))
-                    Text("Sign out", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.sign_out), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.error)
                 }
             }
             Column(Modifier.fillMaxWidth().padding(top = 28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 BrandMark(28.dp)
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    "Paperclip for Android ${BuildConfig.VERSION_NAME}",
+                    stringResource(R.string.paperclip_for_android_x, BuildConfig.VERSION_NAME),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -202,15 +205,15 @@ fun SettingsScreen(nav: Nav, onSignedOut: () -> Unit) {
     if (confirmSignOut) {
         AlertDialog(
             onDismissRequest = { confirmSignOut = false },
-            title = { Text("Sign out?") },
-            text = { Text("This clears the app's Paperclip and Cloudflare sessions on this phone.") },
+            title = { Text(stringResource(R.string.sign_out_2)) },
+            text = { Text(stringResource(R.string.this_clears_the_app_s_paperclip)) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmSignOut = false
                     scope.launch { LiveEvents.stop(); Api.signOut(); AppState.settings.setApiToken(""); Api.configure(Api.baseUrl, null); onSignedOut() }
-                }) { Text("Sign out") }
+                }) { Text(stringResource(R.string.sign_out)) }
             },
-            dismissButton = { TextButton(onClick = { confirmSignOut = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { confirmSignOut = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
 }

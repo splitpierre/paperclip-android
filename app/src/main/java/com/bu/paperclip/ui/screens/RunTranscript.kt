@@ -54,6 +54,9 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.longOrNull
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.util.appString
 
 data class RunRawLine(val stream: String, val text: String)
 
@@ -107,7 +110,7 @@ fun RunEntryView(e: TEntry) {
         is TEntry.Init -> Row(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
             Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
                 Text(
-                    "Session started · ${e.model}",
+                    stringResource(R.string.session_started_x, e.model),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
@@ -129,7 +132,7 @@ private fun RunThinking(text: String) {
             Icon(Icons.Outlined.Lightbulb, null, Modifier.size(15.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(6.dp))
             Text(
-                if (open) "Thinking" else text.lineSequence().firstOrNull { it.isNotBlank() }?.trim() ?: "Thinking",
+                if (open) stringResource(R.string.thinking) else text.lineSequence().firstOrNull { it.isNotBlank() }?.trim() ?: stringResource(R.string.thinking),
                 style = MaterialTheme.typography.bodySmall,
                 fontStyle = FontStyle.Italic,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -164,8 +167,8 @@ private fun RunUserMessage(text: String) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.Person, null, Modifier.size(15.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.width(6.dp))
-                Text("Prompt", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
-                if (long) Text(if (open) "Collapse" else "Show all", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
+                Text(stringResource(R.string.prompt), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                if (long) Text(if (open) stringResource(R.string.collapse) else stringResource(R.string.show_all), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
             }
             Spacer(Modifier.height(4.dp))
             if (open) Markdown(text, fontSizeSp = 14f)
@@ -216,8 +219,8 @@ private fun RunToolCard(e: TEntry.ToolCall) {
             ) {
                 when {
                     !e.done -> CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 1.6.dp)
-                    e.isError -> Icon(Icons.Outlined.ErrorOutline, "Failed", Modifier.size(16.dp), tint = red)
-                    else -> Icon(Icons.Outlined.CheckCircle, "Done", Modifier.size(16.dp), tint = green)
+                    e.isError -> Icon(Icons.Outlined.ErrorOutline, stringResource(R.string.failed), Modifier.size(16.dp), tint = red)
+                    else -> Icon(Icons.Outlined.CheckCircle, stringResource(R.string.done), Modifier.size(16.dp), tint = green)
                 }
                 Spacer(Modifier.width(8.dp))
                 Icon(Icons.Outlined.Build, null, Modifier.size(13.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -240,9 +243,9 @@ private fun RunToolCard(e: TEntry.ToolCall) {
                 )
             }
             if (open) {
-                if (e.input.isNotBlank()) RunCodeBlock("Input", e.input, null)
-                if (e.result != null) RunCodeBlock(if (e.isError) "Error" else "Result", e.result.ifBlank { "(empty)" }, if (e.isError) red else null)
-                else if (!e.done) Text("Running…", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 12.dp, bottom = 10.dp))
+                if (e.input.isNotBlank()) RunCodeBlock(stringResource(R.string.input), e.input, null)
+                if (e.result != null) RunCodeBlock(if (e.isError) stringResource(R.string.error) else stringResource(R.string.result), e.result.ifBlank { "(empty)" }, if (e.isError) red else null)
+                else if (!e.done) Text(stringResource(R.string.running_2), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 12.dp, bottom = 10.dp))
                 Spacer(Modifier.height(4.dp))
             }
         }
@@ -268,7 +271,7 @@ private fun RunCodeBlock(label: String, text: String, tint: Color?) {
             }
         }
         if (!full && text.length > RUN_RESULT_PREVIEW) {
-            TextButton(onClick = { full = true }) { Text("Show all ${text.length / 1000}k chars") }
+            TextButton(onClick = { full = true }) { Text(stringResource(R.string.show_all_x_k_chars, text.length / 1000)) }
         }
     }
 }
@@ -288,7 +291,7 @@ private fun RunResultCard(e: TEntry.Result) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(if (e.isError) Icons.Outlined.ErrorOutline else Icons.Outlined.CheckCircle, null, Modifier.size(16.dp), tint = color)
                 Spacer(Modifier.width(6.dp))
-                Text(if (e.isError) "Turn failed" else "Turn complete", style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
+                Text(if (e.isError) stringResource(R.string.turn_failed) else stringResource(R.string.turn_complete), style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
                 if (e.costUsd > 0) Text(String.format("$%.4f", e.costUsd), style = MaterialTheme.typography.labelMedium)
             }
             val tokens = listOfNotNull(

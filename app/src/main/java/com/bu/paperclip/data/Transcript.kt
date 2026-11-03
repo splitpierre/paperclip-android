@@ -8,6 +8,10 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.longOrNull
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.util.appString
+import com.bu.paperclip.util.appPlural
 
 sealed class TEntry {
     abstract val ts: String?
@@ -176,7 +180,7 @@ class TranscriptBuilder(private val adapterType: String?) {
                     "command_execution" -> if (started) toolCall(ts, "command", id, JsonPrimitive(item.s("command"))) else {
                         val exit = (item["exit_code"] as? JsonPrimitive)?.longOrNull
                         val out = buildString {
-                            if (exit != null) append("exit $exit\n")
+                            if (exit != null) append(appString(R.string.exit_x_n, exit))
                             append(item.s("aggregated_output").trimEnd())
                         }
                         if (id != null && toolIndex[id] == null) toolCall(ts, "command", id, JsonPrimitive(item.s("command")))
@@ -184,7 +188,7 @@ class TranscriptBuilder(private val adapterType: String?) {
                     }
                     "file_change" -> if (!started) {
                         val ch = (item["changes"] as? JsonArray)?.mapNotNull { it.o() }?.joinToString(", ") { "${it.s("kind")} ${it.s("path")}" }
-                        add(TEntry.Line(ts, "system", "file changes: ${ch ?: ""}"))
+                        add(TEntry.Line(ts, "system", appString(R.string.file_changes_x, ch ?: "")))
                     }
                     "mcp_tool_call", "tool_use" -> if (started) toolCall(ts, item.s("name").ifEmpty { item.s("tool") }.ifEmpty { "tool" }, id, item["input"] ?: item["arguments"])
                         else toolResult(ts, id, item.s("name"), pretty(item["result"] ?: item["output"] ?: item["content"] ?: item["error"]), item.s("status") in setOf("failed", "error"))

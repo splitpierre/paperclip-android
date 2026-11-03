@@ -56,8 +56,11 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.util.appString
 
-private val costPeriods = listOf("This month", "Last 7 days", "Last 30 days", "All time")
+private val costPeriods = listOf(appString(R.string.this_month), appString(R.string.last_7_days), appString(R.string.last_30_days), appString(R.string.all_time))
 
 private fun costFrom(period: Int): String? = when (period) {
     0 -> LocalDate.now(ZoneOffset.UTC).withDayOfMonth(1).atStartOfDay(ZoneOffset.UTC).toInstant().toString()
@@ -93,7 +96,7 @@ fun CostsScreen(nav: Nav) {
     }
     LiveRefresh(debounceMs = 3000, filter = { it.type == "activity.logged" && it.s("entityType") == "cost_event" }) { loader.refresh() }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Costs") }, navigationIcon = { BackIcon { nav.back() } }) }) { pad ->
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.costs)) }, navigationIcon = { BackIcon { nav.back() } }) }) { pad ->
         Column(Modifier.fillMaxSize().padding(pad)) {
             Row(
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 4.dp),
@@ -119,15 +122,15 @@ private fun CostsContent(nav: Nav, b: CostBundle, period: Int) {
                     Text(formatCents(b.summary.spendCents), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
                     if (b.summary.budgetCents > 0) {
                         val frac = b.summary.spendCents.toFloat() / b.summary.budgetCents
-                        AdminUsageBar(frac, "Monthly budget ${formatCents(b.summary.budgetCents)}", "${b.summary.utilizationPercent.toInt()}%")
+                        AdminUsageBar(frac, stringResource(R.string.monthly_budget_x, formatCents(b.summary.budgetCents)), "${b.summary.utilizationPercent.toInt()}%")
                     } else {
-                        Text("No company budget set", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.no_company_budget_set), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     val apiRuns = b.byAgent.sumOf { it.apiRunCount }
                     val subRuns = b.byAgent.sumOf { it.subscriptionRunCount }
                     if (apiRuns + subRuns > 0) {
                         Text(
-                            "$apiRuns metered runs · $subRuns subscription runs",
+                            stringResource(R.string.x_metered_runs_x_subscription_runs, apiRuns, subRuns),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -139,9 +142,9 @@ private fun CostsContent(nav: Nav, b: CostBundle, period: Int) {
         val quota = b.quota
         if (quota != null && quota.results.isNotEmpty()) {
             item {
-                SectionHeader("Provider quotas") {
+                SectionHeader(stringResource(R.string.provider_quotas)) {
                     if (quota.asOf != null) {
-                        Text("as of ${relativeTime(quota.asOf)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 8.dp))
+                        Text(stringResource(R.string.as_of_x, relativeTime(quota.asOf)), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 8.dp))
                     }
                 }
             }
@@ -159,7 +162,7 @@ private fun CostsContent(nav: Nav, b: CostBundle, period: Int) {
                             val used = w.usedPercent
                             val trailing = buildString {
                                 append(used?.let { "${it.toInt()}%" } ?: (w.valueLabel ?: "—"))
-                                if (w.resetsAt != null) append(" · resets ${relativeTime(w.resetsAt)}")
+                                if (w.resetsAt != null) append(stringResource(R.string.resets_x, relativeTime(w.resetsAt)))
                             }
                             AdminUsageBar(((used ?: 0.0) / 100.0).toFloat(), w.label, trailing)
                             if (!w.detail.isNullOrBlank()) {
@@ -167,31 +170,31 @@ private fun CostsContent(nav: Nav, b: CostBundle, period: Int) {
                             }
                         }
                         if (p.windows.isEmpty() && p.ok) {
-                            Text("No usage windows reported", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.no_usage_windows_reported), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
             }
         }
 
-        item { SectionHeader("By agent") }
+        item { SectionHeader(stringResource(R.string.by_agent)) }
         val agents = b.byAgent.sortedByDescending { it.costCents }
         if (agents.isEmpty()) {
-            item { EmptyState("No agent spend in this period.") }
+            item { EmptyState(stringResource(R.string.no_agent_spend_in_this_period)) }
         }
         items(agents, key = { "a-" + it.agentId }) { a -> CostAgentRow(a) { if (a.agentId.isNotEmpty()) nav.agent(a.agentId) } }
 
         val providers = b.byProvider.sortedByDescending { it.costCents }
         if (providers.isNotEmpty()) {
-            item { SectionHeader("By provider & model") }
+            item { SectionHeader(stringResource(R.string.by_provider_model)) }
             items(providers.size) { i ->
                 val p = providers[i]
                 AdminListRow(
                     title = listOfNotNull(p.provider.ifEmpty { null }?.let { com.bu.paperclip.util.providerLabel(it) }, p.model).joinToString(" · "),
                     subtitle = buildString {
-                        append("${adminCompact(p.inputTokens)} in · ${adminCompact(p.outputTokens)} out")
+                        append(stringResource(R.string.x_in_x_out, adminCompact(p.inputTokens), adminCompact(p.outputTokens)))
                         val runs = p.apiRunCount + p.subscriptionRunCount
-                        if (runs > 0) append(" · $runs runs")
+                        if (runs > 0) append(stringResource(R.string.x_runs, runs))
                         p.billingType?.let { append(" · ${it.replace('_', ' ')}") }
                     },
                     trailing = { Text(formatCents(p.costCents), style = MaterialTheme.typography.titleSmall) },
@@ -201,18 +204,18 @@ private fun CostsContent(nav: Nav, b: CostBundle, period: Int) {
 
         val budgets = b.budgets
         if (budgets != null) {
-            item { SectionHeader("Budgets") }
+            item { SectionHeader(stringResource(R.string.budgets)) }
             item {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    CostStat("Incidents", budgets.activeIncidents.size.toString(), Modifier.weight(1f))
-                    CostStat("Paused agents", budgets.pausedAgentCount.toString(), Modifier.weight(1f))
-                    CostStat("Paused projects", budgets.pausedProjectCount.toString(), Modifier.weight(1f))
+                    CostStat(stringResource(R.string.incidents), budgets.activeIncidents.size.toString(), Modifier.weight(1f))
+                    CostStat(stringResource(R.string.paused_agents), budgets.pausedAgentCount.toString(), Modifier.weight(1f))
+                    CostStat(stringResource(R.string.paused_projects), budgets.pausedProjectCount.toString(), Modifier.weight(1f))
                 }
             }
             if (budgets.policies.isEmpty()) {
                 item {
                     Text(
-                        "No budget policies configured.",
+                        stringResource(R.string.no_budget_policies_configured),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(16.dp),
@@ -264,8 +267,8 @@ private fun CostAgentRow(a: CostByAgent, onClick: () -> Unit) {
             Text(a.agentName ?: AppState.agentName(a.agentId), style = MaterialTheme.typography.titleSmall)
             Text(
                 buildString {
-                    append("${adminCompact(a.inputTokens)} in · ${adminCompact(a.outputTokens)} out")
-                    if (a.cachedInputTokens > 0) append(" · ${adminCompact(a.cachedInputTokens)} cached")
+                    append(stringResource(R.string.x_in_x_out, adminCompact(a.inputTokens), adminCompact(a.outputTokens)))
+                    if (a.cachedInputTokens > 0) append(stringResource(R.string.x_cached, adminCompact(a.cachedInputTokens)))
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -273,7 +276,7 @@ private fun CostAgentRow(a: CostByAgent, onClick: () -> Unit) {
             val runs = a.apiRunCount + a.subscriptionRunCount
             if (runs > 0) {
                 Text(
-                    "$runs runs" + if (a.subscriptionRunCount > 0) " (${a.subscriptionRunCount} subscription)" else "",
+                    "$runs runs" + if (a.subscriptionRunCount > 0) stringResource(R.string.x_subscription, a.subscriptionRunCount) else "",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

@@ -1,5 +1,10 @@
 package com.bu.paperclip.util
 
+import com.bu.paperclip.R
+import java.time.DayOfWeek
+import java.time.format.TextStyle
+import java.util.Locale
+
 /**
  * Routine schedules as the web UI's presets (every hour/day/weekday/week/month, or custom cron).
  * Weekdays use cron numbering: 0 = Sunday … 6 = Saturday.
@@ -12,7 +17,7 @@ data class Schedule(
     val dayOfMonth: Int = 1,
     val custom: String = "",
 ) {
-    enum class Preset(val label: String) { Hourly("Every hour"), Daily("Every day"), Weekdays("Weekdays"), Weekly("Weekly"), Monthly("Monthly"), Custom("Custom (cron)") }
+    enum class Preset(val label: String) { Hourly(appString(R.string.every_hour)), Daily(appString(R.string.every_day)), Weekdays(appString(R.string.weekdays)), Weekly(appString(R.string.weekly)), Monthly(appString(R.string.monthly)), Custom(appString(R.string.custom_cron)) }
 
     fun toCron(): String = when (preset) {
         Preset.Hourly -> "$minute * * * *"
@@ -24,7 +29,8 @@ data class Schedule(
     }
 
     companion object {
-        val WEEKDAYS = listOf("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+        /** Cron order, in the device language. */
+        val WEEKDAYS = (0..6).map { DayOfWeek.of(if (it == 0) 7 else it).getDisplayName(TextStyle.FULL, Locale.getDefault()).replaceFirstChar { c -> c.uppercase() } }
 
         private fun num(s: String, range: IntRange): Int? = s.toIntOrNull()?.takeIf { it in range }
 
@@ -47,21 +53,22 @@ data class Schedule(
             }
         }
 
+        /** "9:00 AM" in English; translations pick their own form from the same arguments (pt-BR: "09:00"). */
         fun clock(hour: Int, minute: Int): String {
             val h12 = if (hour % 12 == 0) 12 else hour % 12
-            return "%d:%02d %s".format(h12, minute, if (hour < 12) "AM" else "PM")
+            return appString(R.string.clock_time, h12, minute, if (hour < 12) "AM" else "PM", hour)
         }
 
         /** "Every day at 9:00 AM", "Weekdays at 6:30 PM", "Every Monday at …", or the raw cron. */
         fun describe(cron: String?): String {
             val s = parse(cron)
             return when (s.preset) {
-                Preset.Hourly -> if (s.minute == 0) "Every hour" else "Every hour at :%02d".format(s.minute)
-                Preset.Daily -> "Every day at ${clock(s.hour, s.minute)}"
-                Preset.Weekdays -> "Weekdays at ${clock(s.hour, s.minute)}"
-                Preset.Weekly -> "Every ${WEEKDAYS[s.weekday]} at ${clock(s.hour, s.minute)}"
-                Preset.Monthly -> "Monthly on day ${s.dayOfMonth} at ${clock(s.hour, s.minute)}"
-                Preset.Custom -> if (s.custom == "* * * * *") "Every minute" else "Cron: ${s.custom}"
+                Preset.Hourly -> if (s.minute == 0) appString(R.string.every_hour) else appString(R.string.every_hour_at_02d).format(s.minute)
+                Preset.Daily -> appString(R.string.every_day_at_x, clock(s.hour, s.minute))
+                Preset.Weekdays -> appString(R.string.weekdays_at_x, clock(s.hour, s.minute))
+                Preset.Weekly -> appString(R.string.every_x_at_x, WEEKDAYS[s.weekday], clock(s.hour, s.minute))
+                Preset.Monthly -> appString(R.string.monthly_on_day_x_at_x, s.dayOfMonth, clock(s.hour, s.minute))
+                Preset.Custom -> if (s.custom == "* * * * *") appString(R.string.every_minute) else appString(R.string.cron_x, s.custom)
             }
         }
 
@@ -71,9 +78,9 @@ data class Schedule(
         fun validate(cron: String): String? {
             val f = cron.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
             return when {
-                f.isEmpty() -> "Enter a 5-field cron expression."
-                f.size != 5 -> "Use exactly 5 fields; this has ${f.size}."
-                f.any { !cronField.matches(it) } -> "Cron fields must use valid numbers, ranges, lists, wildcards, or steps."
+                f.isEmpty() -> appString(R.string.enter_a_5_field_cron_expression)
+                f.size != 5 -> appString(R.string.use_exactly_5_fields_this_has, f.size)
+                f.any { !cronField.matches(it) } -> appString(R.string.cron_fields_must_use_valid_numbers)
                 else -> null
             }
         }

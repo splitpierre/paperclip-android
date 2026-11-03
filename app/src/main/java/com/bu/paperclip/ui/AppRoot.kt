@@ -56,6 +56,9 @@ import com.bu.paperclip.ui.screens.*
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.util.appString
 
 private sealed class Phase {
     data object Boot : Phase()
@@ -100,13 +103,13 @@ fun AppRoot(pendingLink: String?, onLinkConsumed: () -> Unit) {
         Phase.Setup -> SetupScreen(Api.baseUrl, Api.bearer ?: "") { url, token ->
             scope.launch { AppState.settings.setBaseUrl(url); AppState.settings.setApiToken(token); bootKey++ }
         }
-        Phase.Login -> if (Api.bearer != null) SplashScreen("The API key was rejected.", onRetry = { phase = Phase.Setup }) else SignInScreen(
+        Phase.Login -> if (Api.bearer != null) SplashScreen(stringResource(R.string.the_api_key_was_rejected), onRetry = { phase = Phase.Setup }) else SignInScreen(
             baseUrl = Api.baseUrl,
             onSignedIn = { bootKey++ },
             onChangeServer = { phase = Phase.Setup },
         )
         is Phase.Failed -> SplashScreen(p.message, onRetry = { bootKey++ }, onSignIn = { phase = Phase.Login })
-        Phase.NoCompany -> SplashScreen("Your account has no Paperclip company yet.", onRetry = { bootKey++ })
+        Phase.NoCompany -> SplashScreen(stringResource(R.string.your_account_has_no_paperclip_company), onRetry = { bootKey++ })
         Phase.Ready -> MainShell(pendingLink, onLinkConsumed, onSignedOut = { phase = Phase.Login })
     }
 }

@@ -136,8 +136,12 @@ import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.ui.components.priorityLabel
+import com.bu.paperclip.util.appString
 
-private enum class TaskView(val key: String, val label: String) { List("list", "List"), Tree("tree", "Tree"), Board("board", "Board") }
+private enum class TaskView(val key: String, val label: String) { List("list", appString(R.string.list)), Tree("tree", appString(R.string.tree)), Board("board", appString(R.string.board)) }
 
 /** What every task view renders from: the mirror, the filter and the graph built over them. */
 private class TasksModel(all: Collection<Issue>, val graph: TaskGraph, val filter: TaskFilter, val live: Set<String>) {
@@ -199,9 +203,9 @@ fun IssuesScreen(nav: Nav) {
                 TopAppBar(
                     title = {
                         Column {
-                            Text("Tasks", style = MaterialTheme.typography.headlineSmall)
+                            Text(stringResource(R.string.tasks), style = MaterialTheme.typography.headlineSmall)
                             Text(
-                                "${view.label} · ${model.matched.size} of ${issues.size}",
+                                stringResource(R.string.x_x_of_x, view.label, model.matched.size, issues.size),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -210,28 +214,28 @@ fun IssuesScreen(nav: Nav) {
                     actions = {
                         TaskViewSwitcher(view) { view = it }
                         IconButton(onClick = { searchOpen = !searchOpen; if (!searchOpen) filter = filter.copy(query = "") }) {
-                            Icon(if (searchOpen) Icons.Default.Close else Icons.Default.Search, "Search")
+                            Icon(if (searchOpen) Icons.Default.Close else Icons.Default.Search, stringResource(R.string.search))
                         }
                         IconButton(onClick = { showFilters = true }) {
                             BadgedBox(badge = { if (filter.activeCount > 0) Badge { Text("${filter.activeCount}") } }) {
-                                Icon(Icons.Outlined.FilterList, "Filters")
+                                Icon(Icons.Outlined.FilterList, stringResource(R.string.filters))
                             }
                         }
                         Box {
-                            IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "More") }
+                            IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, stringResource(R.string.more)) }
                             DropdownMenu(menu, { menu = false }) {
                                 if (view == TaskView.Tree) {
-                                    DropdownMenuItem(text = { Text("Expand all") }, onClick = {
+                                    DropdownMenuItem(text = { Text(stringResource(R.string.expand_all)) }, onClick = {
                                         menu = false
                                         graph.forest(filter, focusId).flatMap { taskAllNodes(it) }.forEach { collapsed[it.issue.id] = false }
                                     })
-                                    DropdownMenuItem(text = { Text("Collapse all") }, onClick = {
+                                    DropdownMenuItem(text = { Text(stringResource(R.string.collapse_all)) }, onClick = {
                                         menu = false
                                         graph.forest(filter, focusId).flatMap { taskAllNodes(it) }.filter { it.children.isNotEmpty() }.forEach { collapsed[it.issue.id] = true }
                                     })
                                 }
-                                DropdownMenuItem(text = { Text("Reset filters") }, onClick = { menu = false; filter = TaskFilter(sort = filter.sort, groupBy = filter.groupBy) })
-                                DropdownMenuItem(text = { Text("Reload all tasks") }, onClick = { menu = false; scope.launch { IssueStore.refresh(full = true) } })
+                                DropdownMenuItem(text = { Text(stringResource(R.string.reset_filters)) }, onClick = { menu = false; filter = TaskFilter(sort = filter.sort, groupBy = filter.groupBy) })
+                                DropdownMenuItem(text = { Text(stringResource(R.string.reload_all_tasks)) }, onClick = { menu = false; scope.launch { IssueStore.refresh(full = true) } })
                             }
                         }
                     },
@@ -240,7 +244,7 @@ fun IssuesScreen(nav: Nav) {
                     OutlinedTextField(
                         value = filter.query,
                         onValueChange = { filter = filter.copy(query = it) },
-                        placeholder = { Text("Filter by title or identifier") },
+                        placeholder = { Text(stringResource(R.string.filter_by_title_or_identifier)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
@@ -251,7 +255,7 @@ fun IssuesScreen(nav: Nav) {
             }
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { nav.newIssue(parentId = if (view == TaskView.Tree) focusId else null) }) { Icon(Icons.Default.Add, "New task") }
+            FloatingActionButton(onClick = { nav.newIssue(parentId = if (view == TaskView.Tree) focusId else null) }) { Icon(Icons.Default.Add, stringResource(R.string.new_task)) }
         },
     ) { pad ->
         Box(Modifier.fillMaxSize().padding(pad)) {
@@ -307,13 +311,13 @@ private fun TaskPresetRow(f: TaskFilter, onChange: (TaskFilter) -> Unit) {
         Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        AppFilterChip(f.statuses == ACTIVE_STATUSES, { onChange(f.copy(statuses = ACTIVE_STATUSES)) }, { Text("Active") })
-        AppFilterChip(f.assignees == setOf("me"), { onChange(f.copy(assignees = if (f.assignees == setOf("me")) emptySet() else setOf("me"))) }, { Text("Mine") })
-        AppFilterChip(f.liveOnly, { onChange(f.copy(liveOnly = !f.liveOnly)) }, { Text("Live") })
-        AppFilterChip(f.blockedOnly, { onChange(f.copy(blockedOnly = !f.blockedOnly)) }, { Text("Blocked") })
-        AppFilterChip(f.assignees == setOf("unassigned"), { onChange(f.copy(assignees = if (f.assignees == setOf("unassigned")) emptySet() else setOf("unassigned"))) }, { Text("Unassigned") })
-        AppFilterChip(f.statuses == setOf("done"), { onChange(f.copy(statuses = setOf("done"))) }, { Text("Done") })
-        AppFilterChip(f.statuses.isEmpty(), { onChange(f.copy(statuses = emptySet())) }, { Text("All") })
+        AppFilterChip(f.statuses == ACTIVE_STATUSES, { onChange(f.copy(statuses = ACTIVE_STATUSES)) }, { Text(stringResource(R.string.active)) })
+        AppFilterChip(f.assignees == setOf("me"), { onChange(f.copy(assignees = if (f.assignees == setOf("me")) emptySet() else setOf("me"))) }, { Text(stringResource(R.string.mine)) })
+        AppFilterChip(f.liveOnly, { onChange(f.copy(liveOnly = !f.liveOnly)) }, { Text(stringResource(R.string.live)) })
+        AppFilterChip(f.blockedOnly, { onChange(f.copy(blockedOnly = !f.blockedOnly)) }, { Text(stringResource(R.string.blocked)) })
+        AppFilterChip(f.assignees == setOf("unassigned"), { onChange(f.copy(assignees = if (f.assignees == setOf("unassigned")) emptySet() else setOf("unassigned"))) }, { Text(stringResource(R.string.unassigned)) })
+        AppFilterChip(f.statuses == setOf("done"), { onChange(f.copy(statuses = setOf("done"))) }, { Text(stringResource(R.string.done)) })
+        AppFilterChip(f.statuses.isEmpty(), { onChange(f.copy(statuses = emptySet())) }, { Text(stringResource(R.string.all)) })
     }
 }
 
@@ -322,19 +326,19 @@ private fun TaskActiveChips(f: TaskFilter, onChange: (TaskFilter) -> Unit) {
     val chips = buildList<Pair<String, () -> TaskFilter>> {
         val presetStatus = f.statuses == ACTIVE_STATUSES || f.statuses.isEmpty() || f.statuses == setOf("done")
         if (!presetStatus) add(f.statuses.sortedBy { statusRankOf(it) }.joinToString(", ") { statusLabel(it) } to { f.copy(statuses = ACTIVE_STATUSES) })
-        f.priorities.forEach { p -> add(p.replaceFirstChar { it.uppercase() } to { f.copy(priorities = f.priorities - p) }) }
+        f.priorities.forEach { p -> add(priorityLabel(p) to { f.copy(priorities = f.priorities - p) }) }
         if (f.assignees != setOf("me") && f.assignees != setOf("unassigned")) f.assignees.forEach { a ->
             val label = when {
-                a == "me" -> "Me"
-                a == "unassigned" -> "Unassigned"
+                a == "me" -> stringResource(R.string.me)
+                a == "unassigned" -> stringResource(R.string.unassigned)
                 a.startsWith("user:") -> AppState.userName(a.removePrefix("user:"))
                 else -> AppState.agentName(a)
             }
             add(label to { f.copy(assignees = f.assignees - a) })
         }
-        f.projects.forEach { p -> add((if (p == "none") "No project" else AppState.project(p)?.name ?: "Project") to { f.copy(projects = f.projects - p) }) }
+        f.projects.forEach { p -> add((if (p == "none") stringResource(R.string.no_project) else AppState.project(p)?.name ?: stringResource(R.string.project)) to { f.copy(projects = f.projects - p) }) }
         if (f.labels.isNotEmpty()) add("${f.labels.size} label${if (f.labels.size > 1) "s" else ""}" to { f.copy(labels = emptySet()) })
-        if (f.hideRoutine) add("No routine runs" to { f.copy(hideRoutine = false) })
+        if (f.hideRoutine) add(appString(R.string.no_routine_runs) to { f.copy(hideRoutine = false) })
     }
     if (chips.isEmpty()) { Spacer(Modifier.height(4.dp)); return }
     Row(
@@ -343,9 +347,9 @@ private fun TaskActiveChips(f: TaskFilter, onChange: (TaskFilter) -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         chips.forEach { (label, remove) ->
-            InputChip(selected = true, onClick = { onChange(remove()) }, label = { Text(label, maxLines = 1) }, trailingIcon = { Icon(Icons.Default.Close, "Remove", Modifier.size(16.dp)) })
+            InputChip(selected = true, onClick = { onChange(remove()) }, label = { Text(label, maxLines = 1) }, trailingIcon = { Icon(Icons.Default.Close, stringResource(R.string.remove), Modifier.size(16.dp)) })
         }
-        TextButton(onClick = { onChange(TaskFilter(sort = f.sort, groupBy = f.groupBy, query = f.query)) }) { Text("Clear") }
+        TextButton(onClick = { onChange(TaskFilter(sort = f.sort, groupBy = f.groupBy, query = f.query)) }) { Text(stringResource(R.string.clear)) }
     }
 }
 
@@ -384,30 +388,30 @@ private fun TaskListView(m: TasksModel, nav: Nav, onLongPress: (Issue) -> Unit) 
             "status" -> m.matched.groupBy { it.status }.entries.sortedBy { statusRankOf(it.key) }
                 .map { (k, v) -> TaskGroup(k, statusLabel(k), { StatusIcon(k, 14.dp) }, v) }
             "priority" -> m.matched.groupBy { it.priority }.entries.sortedBy { priorityRankOf(it.key) }
-                .map { (k, v) -> TaskGroup(k, k.replaceFirstChar { it.uppercase() }, { PriorityIcon(k, 16.dp) }, v) }
+                .map { (k, v) -> TaskGroup(k, priorityLabel(k), { PriorityIcon(k, 16.dp) }, v) }
             "assignee" -> m.matched.groupBy { it.assigneeAgentId ?: it.assigneeUserId?.let { u -> "user:$u" } ?: "none" }.entries
                 .sortedWith(compareBy({ it.key == "none" }, { -it.value.size }))
                 .map { (k, v) ->
                     when {
-                        k == "none" -> TaskGroup(k, "Unassigned", {}, v)
+                        k == "none" -> TaskGroup(k, appString(R.string.unassigned), {}, v)
                         k.startsWith("user:") -> TaskGroup(k, AppState.userName(k.removePrefix("user:")), { Avatar(AppState.userName(k.removePrefix("user:")), null, 18.dp, isAgent = false) }, v)
                         else -> TaskGroup(k, AppState.agentName(k), { AgentAvatar(k, 18.dp) }, v)
                     }
                 }
             "project" -> m.matched.groupBy { it.projectId ?: "none" }.entries
                 .sortedWith(compareBy({ it.key == "none" }, { -it.value.size }))
-                .map { (k, v) -> TaskGroup(k, if (k == "none") "No project" else AppState.project(k)?.name ?: "Project", {}, v) }
+                .map { (k, v) -> TaskGroup(k, if (k == "none") appString(R.string.no_project) else AppState.project(k)?.name ?: appString(R.string.project), {}, v) }
             "parent" -> m.matched.groupBy { it.parentId ?: "none" }.entries
                 .sortedWith(compareBy({ it.key == "none" }, { -it.value.size }))
                 .map { (k, v) ->
                     val p = m.graph.byId[k]
-                    TaskGroup(k, if (p == null) "Top level" else (p.identifier?.let { "$it · " } ?: "") + p.title, { if (p != null) StatusIcon(p.status, 14.dp) }, v)
+                    TaskGroup(k, if (p == null) appString(R.string.top_level) else (p.identifier?.let { "$it · " } ?: "") + p.title, { if (p != null) StatusIcon(p.status, 14.dp) }, v)
                 }
             else -> listOf(TaskGroup("all", "", {}, m.matched))
         }
     }
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 96.dp)) {
-        if (m.matched.isEmpty()) item { EmptyState("No tasks match these filters") }
+        if (m.matched.isEmpty()) item { EmptyState(stringResource(R.string.no_tasks_match_these_filters)) }
         groups.forEach { g ->
             val isCollapsed = collapsedGroups[g.key] == true
             if (g.label.isNotEmpty()) stickyHeader(key = "h-${g.key}") {
@@ -491,10 +495,10 @@ private fun TaskTreeView(
                 nextAll.take(3), inFlight,
                 onOpen = { nav.issue(it.identifier ?: it.id) },
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                title = if (focus != null) "Next up in ${focus.ref}" else "Next up",
+                title = if (focus != null) stringResource(R.string.next_up_in_x, focus.ref) else stringResource(R.string.next_up),
             )
         }
-        if (flat.isEmpty()) item { EmptyState(if (focus != null) "No sub-tasks match these filters" else "No tasks match these filters") }
+        if (flat.isEmpty()) item { EmptyState(if (focus != null) stringResource(R.string.no_sub_tasks_match_these_filters) else stringResource(R.string.no_tasks_match_these_filters)) }
         items(flat, key = { "t-" + it.issue.id }) { n ->
             TaskTreeRow(
                 node = n,
@@ -510,7 +514,7 @@ private fun TaskTreeView(
         }
         if (focus == null && flat.isNotEmpty()) item {
             Text(
-                "Long-press a task for quick edits or to focus its subtree.",
+                stringResource(R.string.long_press_a_task_for_quick),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(16.dp),
@@ -525,7 +529,7 @@ private fun TaskBreadcrumbs(ancestors: List<Issue>, focus: Issue, onFocus: (Stri
         Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text("All tasks", color = MaterialTheme.colorScheme.tertiary, style = MaterialTheme.typography.labelLarge, modifier = Modifier.clickable { onFocus(null) })
+        Text(stringResource(R.string.all_tasks), color = MaterialTheme.colorScheme.tertiary, style = MaterialTheme.typography.labelLarge, modifier = Modifier.clickable { onFocus(null) })
         ancestors.forEach { a ->
             Text("  ›  ", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(a.ref, color = MaterialTheme.colorScheme.tertiary, style = MaterialTheme.typography.labelLarge, modifier = Modifier.clickable { onFocus(a.id) })
@@ -591,7 +595,7 @@ private fun TaskBoardView(m: TasksModel, nav: Nav, onLongPress: (Issue) -> Unit)
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             if (cards.isEmpty()) item {
-                                Text("Nothing here", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(8.dp))
+                                Text(stringResource(R.string.nothing_here), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(8.dp))
                             }
                             items(capped, key = { it.id }) { i ->
                                 BoardCard(
@@ -605,7 +609,7 @@ private fun TaskBoardView(m: TasksModel, nav: Nav, onLongPress: (Issue) -> Unit)
                                 )
                             }
                             if (capped.size < cards.size) item {
-                                Text("Showing the 40 most recent", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(8.dp))
+                                Text(stringResource(R.string.showing_the_40_most_recent), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(8.dp))
                             }
                         }
                     }
@@ -638,42 +642,42 @@ private fun TaskQuickSheet(
                 Text(issue.title, style = MaterialTheme.typography.titleMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
                 val blockers = issue.openBlockers(graph.ctx)
                 if (blockers.isNotEmpty()) Text(
-                    "Blocked by " + blockers.joinToString { it.identifier ?: it.title ?: "a task" },
+                    appString(R.string.blocked_by_2) + blockers.joinToString { it.identifier ?: it.title ?: appString(R.string.a_task) },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                 )
                 val r = graph.rollup(issue.id)
                 if (r.total > 0) { Spacer(Modifier.height(6.dp)); RollupBar(r) }
             }
-            Text("Move to", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 20.dp, top = 14.dp, bottom = 6.dp))
+            Text(stringResource(R.string.move_to), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 20.dp, top = 14.dp, bottom = 6.dp))
             FlowRow(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 ISSUE_STATUSES.forEach { s ->
                     AppFilterChip(issue.status == s, { if (issue.status != s) onStatus(s) }, { Text(statusLabel(s)) }, leadingIcon = { StatusIcon(s, 12.dp) })
                 }
             }
-            Text("Priority", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 20.dp, top = 10.dp, bottom = 6.dp))
+            Text(stringResource(R.string.priority), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 20.dp, top = 10.dp, bottom = 6.dp))
             FlowRow(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 PRIORITIES.forEach { p ->
-                    AppFilterChip(issue.priority == p, { if (issue.priority != p) onPriority(p) }, { Text(p.replaceFirstChar { it.uppercase() }) }, leadingIcon = { PriorityIcon(p, 14.dp) })
+                    AppFilterChip(issue.priority == p, { if (issue.priority != p) onPriority(p) }, { Text(priorityLabel(p)) }, leadingIcon = { PriorityIcon(p, 14.dp) })
                 }
             }
             Row(
                 Modifier.fillMaxWidth().clickable { assigning = true }.padding(horizontal = 20.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Assignee", style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.assignee), style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
                 when {
                     issue.assigneeAgentId != null -> { AgentAvatar(issue.assigneeAgentId, 22.dp); Spacer(Modifier.width(8.dp)); Text(AppState.agentName(issue.assigneeAgentId)) }
                     issue.assigneeUserId != null -> Text(AppState.userName(issue.assigneeUserId))
-                    else -> Text("Unassigned", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    else -> Text(stringResource(R.string.unassigned), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Divider()
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = onFocus, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Outlined.AccountTree, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Focus tree")
+                    Icon(Icons.Outlined.AccountTree, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.focus_tree))
                 }
-                Button(onClick = onOpen, modifier = Modifier.weight(1f)) { Text("Open task") }
+                Button(onClick = onOpen, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.open_task)) }
             }
         }
     }
@@ -694,40 +698,40 @@ private fun TaskFilterSheet(f: TaskFilter, onChange: (TaskFilter) -> Unit, onDis
     ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.statusBarsPadding().padding(top = 12.dp), sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = MaterialTheme.colorScheme.surfaceContainerLow) {
         Column(Modifier.navigationBarsPadding().verticalScroll(rememberScrollState()).padding(bottom = 16.dp)) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text("Filters", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-                TextButton(onClick = { onChange(TaskFilter(sort = f.sort, groupBy = f.groupBy)) }) { Text("Reset") }
+                Text(stringResource(R.string.filters), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                TextButton(onClick = { onChange(TaskFilter(sort = f.sort, groupBy = f.groupBy)) }) { Text(stringResource(R.string.reset)) }
             }
-            TaskSheetSection("Status")
+            TaskSheetSection(stringResource(R.string.status))
             FlowRow(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 ISSUE_STATUSES.forEach { s ->
                     AppFilterChip(s in f.statuses, { onChange(f.copy(statuses = f.statuses.toggle(s))) }, { Text(statusLabel(s)) }, leadingIcon = { StatusIcon(s, 12.dp) })
                 }
             }
-            TaskSheetSection("Priority")
+            TaskSheetSection(stringResource(R.string.priority))
             FlowRow(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 PRIORITIES.forEach { p ->
-                    AppFilterChip(p in f.priorities, { onChange(f.copy(priorities = f.priorities.toggle(p))) }, { Text(p.replaceFirstChar { it.uppercase() }) }, leadingIcon = { PriorityIcon(p, 14.dp) })
+                    AppFilterChip(p in f.priorities, { onChange(f.copy(priorities = f.priorities.toggle(p))) }, { Text(priorityLabel(p)) }, leadingIcon = { PriorityIcon(p, 14.dp) })
                 }
             }
-            TaskSheetSection("Assignee")
+            TaskSheetSection(stringResource(R.string.assignee))
             FlowRow(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                AppFilterChip("me" in f.assignees, { onChange(f.copy(assignees = f.assignees.toggle("me"))) }, { Text("Me") })
-                AppFilterChip("unassigned" in f.assignees, { onChange(f.copy(assignees = f.assignees.toggle("unassigned"))) }, { Text("Unassigned") })
+                AppFilterChip("me" in f.assignees, { onChange(f.copy(assignees = f.assignees.toggle("me"))) }, { Text(stringResource(R.string.me)) })
+                AppFilterChip("unassigned" in f.assignees, { onChange(f.copy(assignees = f.assignees.toggle("unassigned"))) }, { Text(stringResource(R.string.unassigned)) })
                 agents.sortedBy { it.name }.forEach { a ->
                     AppFilterChip(a.id in f.assignees, { onChange(f.copy(assignees = f.assignees.toggle(a.id))) }, { Text(a.name) }, leadingIcon = { AgentAvatar(a.id, 18.dp) }, keepIcon = true)
                 }
             }
             if (projects.isNotEmpty()) {
-                TaskSheetSection("Project")
+                TaskSheetSection(stringResource(R.string.project))
                 FlowRow(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    AppFilterChip("none" in f.projects, { onChange(f.copy(projects = f.projects.toggle("none"))) }, { Text("No project") })
+                    AppFilterChip("none" in f.projects, { onChange(f.copy(projects = f.projects.toggle("none"))) }, { Text(stringResource(R.string.no_project)) })
                     projects.filter { it.archivedAt == null }.forEach { p ->
                         AppFilterChip(p.id in f.projects, { onChange(f.copy(projects = f.projects.toggle(p.id))) }, { Text(p.name) })
                     }
                 }
             }
             if (labels.isNotEmpty()) {
-                TaskSheetSection("Labels")
+                TaskSheetSection(stringResource(R.string.labels))
                 FlowRow(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     labels.forEach { l ->
                         AppFilterChip(
@@ -738,26 +742,26 @@ private fun TaskFilterSheet(f: TaskFilter, onChange: (TaskFilter) -> Unit, onDis
                     }
                 }
             }
-            TaskSheetSection("Show")
-            TaskToggleRow("Live now", "Only tasks with an agent run in progress", f.liveOnly) { onChange(f.copy(liveOnly = it)) }
-            TaskToggleRow("Blocked", "Blocked status, or waiting on an open blocker", f.blockedOnly) { onChange(f.copy(blockedOnly = it)) }
-            TaskToggleRow("Hide routine runs", "Tasks created by scheduled routines", f.hideRoutine) { onChange(f.copy(hideRoutine = it)) }
-            TaskSheetSection("Sort")
+            TaskSheetSection(stringResource(R.string.show))
+            TaskToggleRow(stringResource(R.string.live_now), stringResource(R.string.only_tasks_with_an_agent_run), f.liveOnly) { onChange(f.copy(liveOnly = it)) }
+            TaskToggleRow(stringResource(R.string.blocked), stringResource(R.string.blocked_status_or_waiting_on_an), f.blockedOnly) { onChange(f.copy(blockedOnly = it)) }
+            TaskToggleRow(stringResource(R.string.hide_routine_runs), stringResource(R.string.tasks_created_by_scheduled_routines), f.hideRoutine) { onChange(f.copy(hideRoutine = it)) }
+            TaskSheetSection(stringResource(R.string.sort))
             FlowRow(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                listOf("updated" to "Recently active", "priority" to "Priority", "created" to "Newest", "number" to "Number").forEach { (k, label) ->
+                listOf("updated" to stringResource(R.string.recently_active), "priority" to stringResource(R.string.priority), "created" to stringResource(R.string.newest), "number" to stringResource(R.string.number)).forEach { (k, label) ->
                     AppFilterChip(f.sort == k, { onChange(f.copy(sort = k)) }, { Text(label) })
                 }
             }
             if (showGroup) {
-                TaskSheetSection("Group list by")
+                TaskSheetSection(stringResource(R.string.group_list_by))
                 FlowRow(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf("status" to "Status", "priority" to "Priority", "assignee" to "Assignee", "project" to "Project", "parent" to "Parent", "none" to "None").forEach { (k, label) ->
+                    listOf("status" to stringResource(R.string.status), "priority" to stringResource(R.string.priority), "assignee" to stringResource(R.string.assignee), "project" to stringResource(R.string.project), "parent" to stringResource(R.string.parent), "none" to stringResource(R.string.none)).forEach { (k, label) ->
                         AppFilterChip(f.groupBy == k, { onChange(f.copy(groupBy = k)) }, { Text(label) })
                     }
                 }
             }
             Spacer(Modifier.height(12.dp))
-            Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) { Text("Done") }
+            Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) { Text(stringResource(R.string.done)) }
         }
     }
 }

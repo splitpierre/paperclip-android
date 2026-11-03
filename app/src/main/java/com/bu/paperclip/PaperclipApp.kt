@@ -7,11 +7,13 @@ import com.bu.paperclip.data.AppState
 import com.bu.paperclip.data.SettingsStore
 import com.bu.paperclip.net.Api
 import com.bu.paperclip.notify.NotifyWorker
+import com.bu.paperclip.util.AppText
 import kotlinx.coroutines.launch
 
 class PaperclipApp : Application(), ImageLoaderFactory {
     override fun onCreate() {
         super.onCreate()
+        AppText.context = this
         AppState.settings = SettingsStore(this)
         NotifyWorker.ensureChannel(this)
         AppState.scope.launch {

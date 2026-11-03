@@ -1,5 +1,6 @@
 package com.bu.paperclip.ui.components
 
+import com.bu.paperclip.util.appPlural
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -48,6 +49,9 @@ import com.bu.paperclip.data.TaskGraph
 import com.bu.paperclip.data.TaskNode
 import com.bu.paperclip.data.isClosed
 import com.bu.paperclip.ui.theme.LocalStatusColors
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.util.appString
 
 /** Thin progress bar with "closed/total"; green when everything is closed. */
 @Composable
@@ -118,7 +122,7 @@ fun TaskTreeRow(
             if (hasChildren) {
                 Icon(
                     if (expanded) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    contentDescription = if (expanded) stringResource(R.string.collapse) else stringResource(R.string.expand),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(20.dp),
                 )
@@ -133,7 +137,7 @@ fun TaskTreeRow(
                 if (live) { Spacer(Modifier.width(6.dp)); Pill("live", colors.blue) }
                 if (blocked && i.status != "blocked") {
                     Spacer(Modifier.width(6.dp))
-                    Icon(Icons.Default.Block, "Waiting on a blocker", tint = colors.red, modifier = Modifier.size(13.dp))
+                    Icon(Icons.Default.Block, stringResource(R.string.waiting_on_a_blocker), tint = colors.red, modifier = Modifier.size(13.dp))
                 }
             }
             Text(
@@ -168,7 +172,7 @@ fun NextUpCard(
     inFlight: List<Issue>,
     onOpen: (Issue) -> Unit,
     modifier: Modifier = Modifier,
-    title: String = "Next up",
+    title: String = stringResource(R.string.next_up),
 ) {
     if (next.isEmpty() && inFlight.isEmpty()) return
     val colors = LocalStatusColors.current
@@ -203,14 +207,14 @@ fun NextUpCard(
                 Spacer(Modifier.width(4.dp))
                 Icon(
                     if (expanded) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    contentDescription = if (expanded) stringResource(R.string.collapse) else stringResource(R.string.expand),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(18.dp),
                 )
             }
             if (!expanded) return@Column
             if (next.isEmpty()) Text(
-                "Nothing ready: every open task is blocked, in flight, or waiting on sub-tasks.",
+                stringResource(R.string.nothing_ready_every_open_task_is),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp),
@@ -238,7 +242,16 @@ fun NextUpCard(
                                         r == "Unassigned" -> colors.yellow
                                         else -> colors.gray
                                     }
-                                    Pill(r, c)
+                                    // TaskGraph keeps these as English keys; translate only for display.
+                                    val label = when {
+                                        r.startsWith("Unblocks") -> appPlural(R.plurals.unblocks_n, n.unblocks, n.unblocks)
+                                        r == "Critical" -> stringResource(R.string.priority_critical)
+                                        r == "High" -> stringResource(R.string.priority_high)
+                                        r == "Backlog" -> stringResource(R.string.status_backlog)
+                                        r == "Unassigned" -> stringResource(R.string.unassigned)
+                                        else -> r
+                                    }
+                                    Pill(label, c)
                                 }
                             }
                         }
@@ -253,7 +266,7 @@ fun NextUpCard(
             if (inFlight.isNotEmpty()) {
                 Divider()
                 Text(
-                    "In flight",
+                    stringResource(R.string.in_flight),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 14.dp, top = 8.dp, bottom = 2.dp),
@@ -276,7 +289,7 @@ fun NextUpCard(
                     }
                 }
                 if (inFlight.size > 3) Text(
-                    "+${inFlight.size - 3} more",
+                    stringResource(R.string.x_more, inFlight.size - 3),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp),
@@ -302,7 +315,7 @@ fun BoardCard(issue: Issue, parent: Issue?, rollup: Rollup, live: Boolean, block
                 Spacer(Modifier.width(4.dp))
                 Text(issue.ref, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (live) { Spacer(Modifier.width(6.dp)); Pill("live", colors.blue) }
-                if (blocked && issue.status != "blocked") { Spacer(Modifier.width(6.dp)); Icon(Icons.Default.Block, "Waiting on a blocker", tint = colors.red, modifier = Modifier.size(13.dp)) }
+                if (blocked && issue.status != "blocked") { Spacer(Modifier.width(6.dp)); Icon(Icons.Default.Block, stringResource(R.string.waiting_on_a_blocker), tint = colors.red, modifier = Modifier.size(13.dp)) }
                 Spacer(Modifier.weight(1f))
                 when {
                     issue.assigneeAgentId != null -> AgentAvatar(issue.assigneeAgentId, 20.dp)

@@ -17,6 +17,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import com.bu.paperclip.net.Api
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.util.appString
 
 object Routes {
     const val DASHBOARD = "dashboard"
@@ -51,11 +54,11 @@ data class AppTab(val route: String, val label: String, val icon: ImageVector, v
 
 /** The bottom-bar tabs, in order. */
 val AppTabs = listOf(
-    AppTab(Routes.DASHBOARD, "Home", Icons.Outlined.Home, Icons.Filled.Home),
-    AppTab(Routes.DECISIONS, "Decisions", Icons.Outlined.HowToVote, Icons.Filled.HowToVote),
-    AppTab(Routes.ISSUES, "Tasks", Icons.Outlined.Checklist, Icons.Filled.Checklist),
-    AppTab(Routes.AGENTS, "Agents", Icons.Outlined.SmartToy, Icons.Filled.SmartToy),
-    AppTab(Routes.MORE, "More", Icons.Outlined.Menu, Icons.Filled.Menu),
+    AppTab(Routes.DASHBOARD, appString(R.string.home), Icons.Outlined.Home, Icons.Filled.Home),
+    AppTab(Routes.DECISIONS, appString(R.string.decisions), Icons.Outlined.HowToVote, Icons.Filled.HowToVote),
+    AppTab(Routes.ISSUES, appString(R.string.tasks), Icons.Outlined.Checklist, Icons.Filled.Checklist),
+    AppTab(Routes.AGENTS, appString(R.string.agents), Icons.Outlined.SmartToy, Icons.Filled.SmartToy),
+    AppTab(Routes.MORE, appString(R.string.more), Icons.Outlined.Menu, Icons.Filled.Menu),
 )
 
 /** A decision to open when the Decisions screen next shows (from a notification or link). */

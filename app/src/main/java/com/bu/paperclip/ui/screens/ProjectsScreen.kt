@@ -72,6 +72,10 @@ import com.bu.paperclip.ui.components.statusLabel
 import com.bu.paperclip.util.relativeTime
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.util.appString
+import com.bu.paperclip.util.appPlural
 
 private const val ADMIN_ACTIVE_ISSUE_STATUSES = "backlog,todo,in_progress,in_review,blocked"
 
@@ -85,12 +89,12 @@ fun ProjectsScreen(nav: Nav) {
     val loader = rememberLoader(cid) { Repo.projects(cid).also { AppState.projects.value = it } }
     LiveRefresh(filter = { it.type == "activity.logged" && it.s("entityType") == "project" }) { loader.refresh() }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Projects") }, navigationIcon = { BackIcon { nav.back() } }) }) { pad ->
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.projects)) }, navigationIcon = { BackIcon { nav.back() } }) }) { pad ->
         LoadContent(loader, Modifier.padding(pad)) { list ->
             val visible = list.filter { it.archivedAt == null }
                 .sortedWith(compareBy<Project> { adminProjectStatusRank(it.status) }.thenByDescending { it.updatedAt })
             LazyColumn(Modifier.fillMaxSize()) {
-                if (visible.isEmpty()) item { EmptyState("No projects yet.", Icons.Outlined.FolderOpen) }
+                if (visible.isEmpty()) item { EmptyState(stringResource(R.string.no_projects_yet), Icons.Outlined.FolderOpen) }
                 items(visible, key = { it.id }) { p -> ProjectRow(p) { nav.project(p.id) } }
             }
         }
@@ -149,7 +153,7 @@ fun ProjectDetailScreen(nav: Nav, id: String) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(loader.value?.project?.name ?: "Project", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                title = { Text(loader.value?.project?.name ?: stringResource(R.string.project), maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 navigationIcon = { BackIcon { nav.back() } },
             )
         },
@@ -158,7 +162,7 @@ fun ProjectDetailScreen(nav: Nav, id: String) {
                 ExtendedFloatingActionButton(
                     onClick = { nav.newIssue(projectId = p.id) },
                     icon = { Icon(Icons.Default.Add, null) },
-                    text = { Text("New task") },
+                    text = { Text(stringResource(R.string.new_task)) },
                 )
             }
         },
@@ -180,12 +184,12 @@ fun ProjectDetailScreen(nav: Nav, id: String) {
                             Row(Modifier.clickable { nav.agent(lead.id) }, verticalAlignment = Alignment.CenterVertically) {
                                 AgentAvatar(lead.id, 24.dp)
                                 Spacer(Modifier.width(8.dp))
-                                Text("Lead: ${lead.name}", style = MaterialTheme.typography.bodyMedium)
+                                Text(stringResource(R.string.lead_x, lead.name), style = MaterialTheme.typography.bodyMedium)
                             }
                         }
                         if (p.targetDate != null) {
                             Spacer(Modifier.height(6.dp))
-                            Text("Target ${p.targetDate.take(10)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.target_x, p.targetDate.take(10)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         if (!p.description.isNullOrBlank()) {
                             Spacer(Modifier.height(10.dp))
@@ -193,7 +197,7 @@ fun ProjectDetailScreen(nav: Nav, id: String) {
                                 val long = p.description.length > 400
                                 Markdown(if (long && !expanded) p.description.take(400) + "…" else p.description)
                                 if (long) {
-                                    TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "Show less" else "Show more") }
+                                    TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) stringResource(R.string.show_less) else stringResource(R.string.show_more)) }
                                 }
                             }
                         }
@@ -201,12 +205,12 @@ fun ProjectDetailScreen(nav: Nav, id: String) {
                 }
                 item {
                     SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
-                        listOf("Active", "All").forEachIndexed { i, label ->
+                        listOf(stringResource(R.string.active), stringResource(R.string.all)).forEachIndexed { i, label ->
                             SegmentedButton(selected = seg == i, onClick = { seg = i }, shape = SegmentedButtonDefaults.itemShape(i, 2)) { Text(label) }
                         }
                     }
                 }
-                if (b.issues.isEmpty()) item { EmptyState(if (seg == 0) "No active tasks in this project." else "No tasks in this project yet.") }
+                if (b.issues.isEmpty()) item { EmptyState(if (seg == 0) stringResource(R.string.no_active_tasks_in_this_project) else stringResource(R.string.no_tasks_in_this_project_yet)) }
                 items(b.issues, key = { it.id }) { issue -> IssueRow(issue, onClick = { nav.issue(issue.identifier ?: issue.id) }, showProject = false) }
                 item { Spacer(Modifier.height(88.dp)) }
             }
@@ -226,12 +230,12 @@ fun GoalsScreen(nav: Nav) {
     val loader = rememberLoader(cid) { Repo.goals(cid) }
     LiveRefresh(filter = { it.type == "activity.logged" && it.s("entityType") == "goal" }) { loader.refresh() }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Goals") }, navigationIcon = { BackIcon { nav.back() } }) }) { pad ->
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.goals)) }, navigationIcon = { BackIcon { nav.back() } }) }) { pad ->
         LoadContent(loader, Modifier.padding(pad)) { goals ->
             val grouped = goals.groupBy { it.level }
             val order = goalLevels + grouped.keys.filter { it !in goalLevels }
             LazyColumn(Modifier.fillMaxSize()) {
-                if (goals.isEmpty()) item { EmptyState("No goals yet.", Icons.Outlined.Flag) }
+                if (goals.isEmpty()) item { EmptyState(stringResource(R.string.no_goals_yet), Icons.Outlined.Flag) }
                 order.forEach { level ->
                     val list = grouped[level].orEmpty()
                     if (list.isNotEmpty()) {
@@ -298,12 +302,12 @@ fun RoutinesScreen(nav: Nav) {
     var confirmRun by remember { mutableStateOf<Routine?>(null) }
     LiveRefresh(filter = { it.type == "activity.logged" && (it.s("entityType")?.startsWith("routine") == true) }) { loader.refresh() }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Routines") }, navigationIcon = { BackIcon { nav.back() } }) }) { pad ->
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.routines)) }, navigationIcon = { BackIcon { nav.back() } }) }) { pad ->
         LoadContent(loader, Modifier.padding(pad)) { routines ->
             val list = routines.filter { it.status != "archived" }
                 .sortedWith(compareBy<Routine> { if (it.status == "active") 0 else 1 }.thenBy { it.title.lowercase() })
             LazyColumn(Modifier.fillMaxSize()) {
-                if (list.isEmpty()) item { EmptyState("No routines yet.", Icons.Outlined.Repeat) }
+                if (list.isEmpty()) item { EmptyState(stringResource(R.string.no_routines_yet), Icons.Outlined.Repeat) }
                 items(list, key = { it.id }) { r ->
                     RoutineRow(
                         nav = nav,
@@ -318,7 +322,7 @@ fun RoutinesScreen(nav: Nav) {
                                 } finally {
                                     loader.refresh()
                                 }
-                            }, if (next == "paused") "Paused ${r.title}" else "Resumed ${r.title}")
+                            }, if (next == "paused") appString(R.string.paused_x_2, r.title) else appString(R.string.resumed_x, r.title))
                         },
                     )
                 }
@@ -329,15 +333,15 @@ fun RoutinesScreen(nav: Nav) {
     confirmRun?.let { r ->
         AlertDialog(
             onDismissRequest = { confirmRun = null },
-            title = { Text("Run now?") },
-            text = { Text("Start \"${r.title}\" now${AppState.agent(r.assigneeAgentId)?.let { " — it will be assigned to ${it.name}" } ?: ""}.") },
+            title = { Text(stringResource(R.string.run_now_2)) },
+            text = { Text(AppState.agent(r.assigneeAgentId)?.let { appString(R.string.start_x_now_assigned_to_x, r.title, it.name) } ?: appString(R.string.start_x_now, r.title)) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmRun = null
-                    act({ Repo.runRoutine(r.id); loader.refresh() }, "Started ${r.title}")
-                }) { Text("Run") }
+                    act({ Repo.runRoutine(r.id); loader.refresh() }, appString(R.string.started_x, r.title))
+                }) { Text(stringResource(R.string.run)) }
             },
-            dismissButton = { TextButton(onClick = { confirmRun = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { confirmRun = null }) { Text(stringResource(R.string.cancel)) } },
         )
     }
 }
@@ -364,10 +368,10 @@ private fun RoutineRow(nav: Nav, r: Routine, onRun: () -> Unit, onToggle: () -> 
                 Icon(Icons.Outlined.Schedule, null, Modifier.padding(end = 6.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(
                     buildString {
-                        append(t.label ?: t.cronExpression ?: "Schedule")
+                        append(t.label ?: t.cronExpression ?: stringResource(R.string.schedule))
                         if (t.label != null && t.cronExpression != null) append(" (${t.cronExpression})")
-                        if (!t.enabled) append(" · disabled")
-                        else if (t.nextRunAt != null) append(" · next ${relativeTime(t.nextRunAt)}")
+                        if (!t.enabled) append(stringResource(R.string.disabled))
+                        else if (t.nextRunAt != null) append(stringResource(R.string.next_x, relativeTime(t.nextRunAt)))
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -376,13 +380,13 @@ private fun RoutineRow(nav: Nav, r: Routine, onRun: () -> Unit, onToggle: () -> 
         }
         val other = r.triggers.orEmpty().filter { it.kind != "schedule" }.map { it.kind }.distinct()
         if (other.isNotEmpty()) {
-            Text("Also triggered by ${other.joinToString(", ")}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp))
+            Text(appString(R.string.also_triggered_by_x, other.joinToString(", ")), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp))
         }
         val last = r.lastRun
         if (last?.createdAt != null || r.lastTriggeredAt != null) {
             Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "Last run ${relativeTime(last?.createdAt ?: r.lastTriggeredAt)}",
+                    stringResource(R.string.last_run_x, relativeTime(last?.createdAt ?: r.lastTriggeredAt)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -396,12 +400,12 @@ private fun RoutineRow(nav: Nav, r: Routine, onRun: () -> Unit, onToggle: () -> 
             FilledTonalButton(onClick = onRun) {
                 Icon(Icons.Outlined.PlayArrow, null)
                 Spacer(Modifier.width(4.dp))
-                Text("Run now")
+                Text(stringResource(R.string.run_now))
             }
             OutlinedButton(onClick = onToggle) {
                 Icon(if (r.status == "active") Icons.Outlined.Pause else Icons.Outlined.PlayArrow, null)
                 Spacer(Modifier.width(4.dp))
-                Text(if (r.status == "active") "Pause" else "Resume")
+                Text(if (r.status == "active") stringResource(R.string.pause) else stringResource(R.string.resume))
             }
         }
     }

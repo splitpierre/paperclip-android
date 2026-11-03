@@ -108,11 +108,15 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.temporal.TemporalAdjusters
 import java.util.UUID
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.util.appString
+import com.bu.paperclip.util.appPlural
 
 private data class DeskData(val items: List<AttentionItem>, val openDecisions: Map<String, Decision>)
 
 /** Desk shelves, as on the web: decide-by due first, then today's arrivals, then the rest. */
-internal enum class Shelf(val label: String) { DecideNow("Decide now"), NewToday("New today"), Earlier("Earlier") }
+internal enum class Shelf(val label: String) { DecideNow(appString(R.string.decide_now)), NewToday(appString(R.string.new_today)), Earlier(appString(R.string.earlier)) }
 
 /** End of the decide-by window in UTC (the server counts the badge in UTC days), or null for "whenever". */
 internal fun decideByDeadline(decideBy: String?, now: Instant = Instant.now()): Instant? {
@@ -135,12 +139,14 @@ internal fun shelfOf(item: AttentionItem, now: Instant = Instant.now()): Shelf {
     return if (created != null && !created.isBefore(startOfToday)) Shelf.NewToday else Shelf.Earlier
 }
 
-private fun decideByLabel(decideBy: String?): String? = when (decideBy) {
+private fun decideByShort(decideBy: String?): String? = when (decideBy) {
     null, "", "whenever" -> null
-    "today" -> "Due today"
-    "this_week" -> "Due this week"
-    else -> runCatching { "Due " + LocalDate.parse(decideBy).let { "${it.dayOfMonth} ${it.month.name.take(3).lowercase().replaceFirstChar { c -> c.uppercase() }}" } }.getOrNull()
+    "today" -> appString(R.string.decide_today)
+    "this_week" -> appString(R.string.decide_this_week)
+    else -> runCatching { LocalDate.parse(decideBy).format(java.time.format.DateTimeFormatter.ofPattern("d MMM", java.util.Locale.getDefault())) }.getOrNull()
 }
+
+private fun decideByLabel(decideBy: String?): String? = decideByShort(decideBy)?.let { appString(R.string.due_x, it) }
 
 private val INLINE_KINDS = setOf("approval", "decision", "issue_thread_interaction", "join_request")
 
@@ -176,7 +182,7 @@ fun DecisionsScreen(nav: Nav) {
             try {
                 call()
                 refreshAll()
-                val res = snackbar.showSnackbar(message, actionLabel = if (undo != null) "Undo" else null, duration = SnackbarDuration.Short)
+                val res = snackbar.showSnackbar(message, actionLabel = if (undo != null) appString(R.string.undo) else null, duration = SnackbarDuration.Short)
                 if (res == SnackbarResult.ActionPerformed && undo != null) { undo(); refreshAll() }
             } catch (c: CancellationException) { throw c } catch (t: Throwable) {
                 snackbar.showSnackbar(errorMessage(t))
@@ -189,23 +195,23 @@ fun DecisionsScreen(nav: Nav) {
 
     fun dismiss(item: AttentionItem) {
         val key = item.dismissalKey ?: return
-        act(item, "Dismissed", undo = { Repo.undismiss(cid, key) }) { Repo.dismiss(cid, key) }
+        act(item, appString(R.string.dismissed), undo = { Repo.undismiss(cid, key) }) { Repo.dismiss(cid, key) }
     }
     fun snooze(item: AttentionItem, until: Instant, label: String) {
         val key = item.dismissalKey ?: return
-        act(item, "Snoozed $label", undo = { Repo.undismiss(cid, key) }) { Repo.snooze(cid, key, until.toString()) }
+        act(item, appString(R.string.snoozed_x, label), undo = { Repo.undismiss(cid, key) }) { Repo.snooze(cid, key, until.toString()) }
     }
     fun restore(item: AttentionItem) {
         val key = item.dismissalKey ?: return
-        act(item, "Back on the desk") { Repo.undismiss(cid, key) }
+        act(item, appString(R.string.back_on_the_desk)) { Repo.undismiss(cid, key) }
     }
     fun setDecideBy(item: AttentionItem, value: String?) =
-        act(null, if (value == null) "Cleared" else "Decide ${decideByLabel(value)?.removePrefix("Due ") ?: "whenever"}") {
+        act(null, if (value == null) appString(R.string.cleared) else appString(R.string.decide_x, decideByShort(value) ?: appString(R.string.decide_whenever))) {
             Repo.setDecideBy(cid, item.sourceKind, item.subject.id, value)
         }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Decisions", style = MaterialTheme.typography.headlineSmall) }) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.decisions), style = MaterialTheme.typography.headlineSmall) }) },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { pad ->
         LoadContent(loader, Modifier.padding(pad)) { data ->
@@ -232,7 +238,7 @@ fun DecisionsScreen(nav: Nav) {
             LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 32.dp)) {
                 if (kinds.size > 1) item(key = "filters") {
                     Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        FilterChip(selected = kindFilter == null, onClick = { kindFilter = null }, label = { Text("All ${desk.size}") })
+                        FilterChip(selected = kindFilter == null, onClick = { kindFilter = null }, label = { Text(stringResource(R.string.all_x, desk.size)) })
                         kinds.forEach { (k, n) ->
                             val sample = desk.first { it.sourceKind == k }
                             FilterChip(selected = kindFilter == k, onClick = { kindFilter = if (kindFilter == k) null else k }, label = { Text("${deskKindLabel(sample)} $n") })
@@ -240,7 +246,7 @@ fun DecisionsScreen(nav: Nav) {
                     }
                 }
                 if (desk.isEmpty()) item(key = "empty") {
-                    EmptyState("You're all caught up.\nNothing needs a decision from you right now.", Icons.Outlined.TaskAlt)
+                    EmptyState(stringResource(R.string.you_re_all_caught_up_nnothing), Icons.Outlined.TaskAlt)
                 }
                 Shelf.entries.forEach { shelf ->
                     val rows = shelves[shelf].orEmpty().let { list ->
@@ -250,7 +256,7 @@ fun DecisionsScreen(nav: Nav) {
                     if (rows.isNotEmpty()) {
                         item(key = "shelf-${shelf.name}") { DeskHeader(shelf.label, rows.size, urgent = shelf == Shelf.DecideNow) }
                         items(rows, key = { it.id }) { item ->
-                            InboxSwipeable(enabled = item.dismissalKey != null, icon = Icons.Outlined.DoneAll, label = "Dismiss", onSwiped = { dismiss(item) }) {
+                            InboxSwipeable(enabled = item.dismissalKey != null, icon = Icons.Outlined.DoneAll, label = stringResource(R.string.dismiss), onSwiped = { dismiss(item) }) {
                                 DeskCard(
                                     item = item,
                                     decision = data.openDecisions[item.subject.id].takeIf { item.sourceKind == "decision" },
@@ -269,29 +275,29 @@ fun DecisionsScreen(nav: Nav) {
                     }
                 }
                 listOf(
-                    Triple("snoozed", "Snoozed", snoozed),
-                    Triple("dismissed", "Dismissed", dismissed),
-                    Triple("aging", "Aging · idle 30+ days", aging),
+                    Triple("snoozed", appString(R.string.snoozed), snoozed),
+                    Triple("dismissed", appString(R.string.dismissed), dismissed),
+                    Triple("aging", appString(R.string.aging_idle_30_days), aging),
                 ).forEach { (key, label, rows) ->
                     if (rows.isNotEmpty()) {
                         item(key = "sec-$key") { SectionToggle(label, rows.size, openSections[key] == true) { openSections[key] = openSections[key] != true } }
                         if (openSections[key] == true) items(rows, key = { "$key-${it.id}" }) { item ->
                             CompactRow(item, nav, trailing = {
                                 if (key != "aging") TextButton(onClick = { restore(item) }) {
-                                    Icon(Icons.Outlined.Restore, null, Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text("Restore")
+                                    Icon(Icons.Outlined.Restore, null, Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text(stringResource(R.string.restore))
                                 }
                             }, note = item.dismissal?.snoozedUntil?.let { "until ${relativeTime(it)}" })
                         }
                     }
                 }
-                listOf("decided" to "Decided", "expired" to "Expired").forEach { (status, label) ->
+                listOf("decided" to appString(R.string.decided), "expired" to appString(R.string.expired)).forEach { (status, label) ->
                     item(key = "hist-$status") {
                         HistorySection(cid, status, label, open = openSections[status] == true, nav = nav) { openSections[status] = openSections[status] != true }
                     }
                 }
                 item(key = "inbox-link") {
                     TextButton(onClick = { nav.inbox() }, modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
-                        Icon(Icons.Outlined.Inbox, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Unread and assigned tasks are in Inbox")
+                        Icon(Icons.Outlined.Inbox, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.unread_and_assigned_tasks_are_in))
                     }
                 }
             }
@@ -300,14 +306,14 @@ fun DecisionsScreen(nav: Nav) {
 }
 
 private fun deskKindLabel(item: AttentionItem): String = when (item.sourceKind) {
-    "issue_thread_interaction" -> "Requests"
-    "approval" -> "Approvals"
-    "decision" -> "Decisions"
-    "failed_run" -> "Failed runs"
-    "join_request" -> "Join requests"
-    "blocker_attention" -> "Blocked"
-    "agent_error_alert" -> "Agent errors"
-    "budget_alert" -> "Budget"
+    "issue_thread_interaction" -> appString(R.string.requests)
+    "approval" -> appString(R.string.approvals)
+    "decision" -> appString(R.string.decisions)
+    "failed_run" -> appString(R.string.failed_runs)
+    "join_request" -> appString(R.string.join_requests)
+    "blocker_attention" -> appString(R.string.blocked)
+    "agent_error_alert" -> appString(R.string.agent_errors)
+    "budget_alert" -> appString(R.string.budget)
     else -> inboxKindLabel(item)
 }
 
@@ -329,7 +335,7 @@ private fun SectionToggle(label: String, count: Int, open: Boolean, onClick: () 
     Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(label, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
         if (count > 0) { Badge(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest, contentColor = MaterialTheme.colorScheme.onSurfaceVariant) { Text(if (count > 50) "50+" else "$count") }; Spacer(Modifier.width(8.dp)) }
-        Icon(if (open) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, if (open) "Collapse" else "Expand", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(if (open) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore, if (open) stringResource(R.string.collapse) else stringResource(R.string.expand), tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -345,7 +351,7 @@ private fun CompactRow(item: AttentionItem, nav: Nav, trailing: @Composable () -
         Icon(inboxIcon(item), null, Modifier.size(18.dp), tint = severityColor(item.severity))
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(item.subject.title ?: item.relatedIssue?.title ?: "Untitled", style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(item.subject.title ?: item.relatedIssue?.title ?: stringResource(R.string.untitled), style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(listOfNotNull(inboxKindLabel(item), note).joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         trailing()
@@ -409,7 +415,7 @@ private fun DeskCard(
                     }
                     Spacer(Modifier.height(3.dp))
                     Text(
-                        item.subject.title ?: item.relatedIssue?.title ?: "Untitled",
+                        item.subject.title ?: item.relatedIssue?.title ?: stringResource(R.string.untitled),
                         style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp, lineHeight = 21.sp, fontWeight = FontWeight.Medium),
                         maxLines = if (expanded) 6 else 2, overflow = TextOverflow.Ellipsis,
                     )
@@ -433,10 +439,10 @@ private fun DeskCard(
                 }
             }
             DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                DropdownMenuItem(text = { Text("Open") }, leadingIcon = { Icon(Icons.AutoMirrored.Outlined.OpenInNew, null) }, onClick = { menu = false; inboxOpenAttention(nav, item) })
+                DropdownMenuItem(text = { Text(stringResource(R.string.open)) }, leadingIcon = { Icon(Icons.AutoMirrored.Outlined.OpenInNew, null) }, onClick = { menu = false; inboxOpenAttention(nav, item) })
                 if (item.dismissalKey != null) {
                     SnoozeItems(onSnooze) { menu = false }
-                    DropdownMenuItem(text = { Text("Dismiss") }, leadingIcon = { Icon(Icons.Outlined.DoneAll, null) }, onClick = { menu = false; onDismiss() })
+                    DropdownMenuItem(text = { Text(stringResource(R.string.dismiss)) }, leadingIcon = { Icon(Icons.Outlined.DoneAll, null) }, onClick = { menu = false; onDismiss() })
                 }
             }
         }
@@ -446,27 +452,27 @@ private fun DeskCard(
                 when {
                     item.sourceKind == "decision" && decision != null ->
                         DecisionBody(decision, busy, onDecide = { opt, inputs ->
-                            run("Decided: ${opt.label}") { Repo.decide(decision.id, opt.id, inputs, UUID.randomUUID().toString()) }
-                        }, onDismissDecision = { run("Decision dismissed") { Repo.dismissDecision(decision.id) } })
+                            run(appString(R.string.decided_x, opt.label)) { Repo.decide(decision.id, opt.id, inputs, UUID.randomUUID().toString()) }
+                        }, onDismissDecision = { run(appString(R.string.decision_dismissed)) { Repo.dismissDecision(decision.id) } })
                     item.sourceKind == "decision" ->
-                        Text("This decision is no longer open.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.this_decision_is_no_longer_open), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     item.sourceKind == "approval" && item.inlineResolvable -> FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(enabled = !busy, onClick = { run("Approved") { Repo.decideApproval(item.subject.id, "approve", null) } }) { Text("Approve") }
-                        OutlinedButton(enabled = !busy, onClick = { run("Revision requested") { Repo.decideApproval(item.subject.id, "request-revision", null) } }) { Text("Request changes") }
-                        OutlinedButton(enabled = !busy, onClick = { run("Rejected") { Repo.decideApproval(item.subject.id, "reject", null) } },
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text("Reject") }
+                        Button(enabled = !busy, onClick = { run(appString(R.string.approved)) { Repo.decideApproval(item.subject.id, "approve", null) } }) { Text(appString(R.string.approve)) }
+                        OutlinedButton(enabled = !busy, onClick = { run(appString(R.string.revision_requested)) { Repo.decideApproval(item.subject.id, "request-revision", null) } }) { Text(appString(R.string.request_changes)) }
+                        OutlinedButton(enabled = !busy, onClick = { run(appString(R.string.rejected)) { Repo.decideApproval(item.subject.id, "reject", null) } },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text(stringResource(R.string.reject)) }
                     }
                     item.sourceKind == "join_request" && item.inlineResolvable -> FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(enabled = !busy, onClick = { run("Join request approved") { Repo.decideJoinRequest(cid, item.subject.id, true) } }) { Text("Approve") }
-                        OutlinedButton(enabled = !busy, onClick = { run("Join request rejected") { Repo.decideJoinRequest(cid, item.subject.id, false) } }) { Text("Reject") }
+                        Button(enabled = !busy, onClick = { run(appString(R.string.join_request_approved)) { Repo.decideJoinRequest(cid, item.subject.id, true) } }) { Text(appString(R.string.approve)) }
+                        OutlinedButton(enabled = !busy, onClick = { run(appString(R.string.join_request_rejected)) { Repo.decideJoinRequest(cid, item.subject.id, false) } }) { Text(appString(R.string.reject)) }
                     }
                     item.sourceKind == "issue_thread_interaction" && inboxDetailKind(item) in setOf("confirmation", "plan_approval") -> {
                         val issueId = (item.subject.metadata?.get("issueId") as? JsonPrimitive)?.contentOrNull ?: item.relatedIssue?.id
                         val excerpt = (item.detail?.get("promptExcerpt") ?: item.detail?.get("summaryExcerpt")) as? JsonPrimitive
                         excerpt?.contentOrNull?.let { Markdown(it, fontSizeSp = 14f) }
                         if (issueId != null) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            val accept = item.decisionVerbs.firstOrNull { it.id == "accept" }?.label ?: "Confirm"
-                            val reject = item.decisionVerbs.firstOrNull { it.id == "reject" }?.label ?: "Decline"
+                            val accept = item.decisionVerbs.firstOrNull { it.id == "accept" }?.label ?: stringResource(R.string.confirm)
+                            val reject = item.decisionVerbs.firstOrNull { it.id == "reject" }?.label ?: stringResource(R.string.decline)
                             Button(enabled = !busy, onClick = { run(accept) { Repo.accept(issueId, item.subject.id) } }) { Text(accept) }
                             OutlinedButton(enabled = !busy, onClick = { run(reject) { Repo.reject(issueId, item.subject.id, null) } }) { Text(reject) }
                         }
@@ -479,7 +485,7 @@ private fun DeskCard(
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = { inboxOpenAttention(nav, item) }) {
-                        Text(if (item.sourceKind in INLINE_KINDS && item.sourceKind != "decision") "Open details" else "Open")
+                        Text(if (item.sourceKind in INLINE_KINDS && item.sourceKind != "decision") stringResource(R.string.open_details) else stringResource(R.string.open))
                     }
                     Spacer(Modifier.weight(1f))
                     DecideByMenu(item.decideBy, onDecideBy)
@@ -493,10 +499,10 @@ private fun DeskCard(
 private fun SnoozeItems(onSnooze: (Instant, String) -> Unit, close: () -> Unit) {
     val zone = ZoneId.systemDefault()
     listOf(
-        Triple("Snooze 1 hour", "for 1 hour") { Instant.now().plusSeconds(3600) },
-        Triple("Snooze 4 hours", "for 4 hours") { Instant.now().plusSeconds(4 * 3600) },
-        Triple("Snooze until tomorrow", "until tomorrow 9:00") { LocalDate.now(zone).plusDays(1).atTime(LocalTime.of(9, 0)).atZone(zone).toInstant() },
-        Triple("Snooze until next week", "until next Monday") {
+        Triple(stringResource(R.string.snooze_1_hour), stringResource(R.string.for_1_hour)) { Instant.now().plusSeconds(3600) },
+        Triple(stringResource(R.string.snooze_4_hours), stringResource(R.string.for_4_hours)) { Instant.now().plusSeconds(4 * 3600) },
+        Triple(stringResource(R.string.snooze_until_tomorrow), stringResource(R.string.until_tomorrow_9_00)) { LocalDate.now(zone).plusDays(1).atTime(LocalTime.of(9, 0)).atZone(zone).toInstant() },
+        Triple(stringResource(R.string.snooze_until_next_week), stringResource(R.string.until_next_monday)) {
             LocalDate.now(zone).with(TemporalAdjusters.next(DayOfWeek.MONDAY)).atTime(LocalTime.of(9, 0)).atZone(zone).toInstant()
         },
     ).forEach { (text, label, at) ->
@@ -508,9 +514,9 @@ private fun SnoozeItems(onSnooze: (Instant, String) -> Unit, close: () -> Unit) 
 private fun DecideByMenu(current: String?, onPick: (String?) -> Unit) {
     var open by remember { mutableStateOf(false) }
     Box {
-        TextButton(onClick = { open = true }) { Text(decideByLabel(current) ?: "When to decide…") }
+        TextButton(onClick = { open = true }) { Text(decideByLabel(current) ?: stringResource(R.string.when_to_decide)) }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            listOf("today" to "Today", "this_week" to "This week", "whenever" to "Whenever").forEach { (v, label) ->
+            listOf("today" to stringResource(R.string.today), "this_week" to stringResource(R.string.this_week), "whenever" to stringResource(R.string.whenever)).forEach { (v, label) ->
                 DropdownMenuItem(
                     text = { Text(if (current == v) "$label ✓" else label) },
                     onClick = { open = false; onPick(if (current == v) null else v) },
@@ -531,7 +537,7 @@ private fun DecisionBody(d: Decision, busy: Boolean, onDecide: (DecisionOption, 
     if (stale.isNotEmpty()) Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(Icons.Outlined.WarningAmber, null, Modifier.size(16.dp), tint = LocalStatusColors.current.orange)
         Spacer(Modifier.width(6.dp))
-        Text("A task this affects changed since it was proposed. Some options may be blocked.", style = MaterialTheme.typography.bodySmall, color = LocalStatusColors.current.orange)
+        Text(stringResource(R.string.a_task_this_affects_changed_since), style = MaterialTheme.typography.bodySmall, color = LocalStatusColors.current.orange)
     }
     d.inputs.orEmpty().forEach { input ->
         OutlinedTextField(
@@ -556,11 +562,11 @@ private fun DecisionBody(d: Decision, busy: Boolean, onDecide: (DecisionOption, 
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text(opt.label) }
                     else -> OutlinedButton(onClick = click, enabled = enabled, modifier = Modifier.fillMaxWidth()) { Text(opt.label) }
                 }
-                val note = listOfNotNull(opt.description?.takeIf { it.isNotBlank() }, if (blocked) "Blocked · target changed" else null).joinToString(" · ")
+                val note = listOfNotNull(opt.description?.takeIf { it.isNotBlank() }, if (blocked) stringResource(R.string.blocked_target_changed) else null).joinToString(" · ")
                 if (note.isNotEmpty()) Text(note, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp, top = 2.dp))
             }
         }
-        if (d.options.none { it.effects.isEmpty() }) TextButton(onClick = onDismissDecision, enabled = !busy) { Text("Dismiss — no effects") }
+        if (d.options.none { it.effects.isEmpty() }) TextButton(onClick = onDismissDecision, enabled = !busy) { Text(stringResource(R.string.dismiss_no_effects)) }
     }
     confirmCancel?.let { opt ->
         val targets = opt.effects.mapNotNull { (it["targetIssueId"] as? JsonPrimitive)?.contentOrNull }.distinct()
@@ -572,16 +578,16 @@ private fun DecisionBody(d: Decision, busy: Boolean, onDecide: (DecisionOption, 
             title = { Text(opt.label) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("This cancels $label and its sub-tasks ($count task${if (count == 1) "" else "s"}). Type $label to confirm.")
+                    Text(appString(R.string.cancel_tree_confirm, label, appPlural(R.plurals.n_tasks, count, count)))
                     OutlinedTextField(value = typed, onValueChange = { typed = it }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 }
             },
             confirmButton = {
                 TextButton(enabled = typed.trim().equals(label, ignoreCase = true), onClick = { confirmCancel = null; onDecide(opt, inputs.toMap()) }) {
-                    Text("Cancel tasks", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.cancel_tasks), color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton = { TextButton(onClick = { confirmCancel = null }) { Text("Keep") } },
+            dismissButton = { TextButton(onClick = { confirmCancel = null }) { Text(stringResource(R.string.keep)) } },
         )
     }
 }
@@ -599,19 +605,19 @@ private fun HistorySection(cid: String, status: String, label: String, open: Boo
         SectionToggle(label, rows?.size ?: 0, open, onToggle)
         if (open) when {
             error != null -> Text(error!!, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(horizontal = 16.dp))
-            rows == null -> Text("Loading…", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
-            rows!!.isEmpty() -> Text("No ${label.lowercase()} decisions.", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
+            rows == null -> Text(stringResource(R.string.loading), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
+            rows!!.isEmpty() -> Text(stringResource(R.string.no_x_decisions, label.lowercase()), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
             else -> rows!!.take(50).forEach { d ->
                 val chosen = d.options.firstOrNull { it.id == d.chosenOptionId }?.label
                 val outcome = when {
-                    d.chosenOptionId == "dismissed" || d.metadata?.get("dismissed")?.let { (it as? JsonPrimitive)?.contentOrNull } == "true" -> "Dismissed"
+                    d.chosenOptionId == "dismissed" || d.metadata?.get("dismissed")?.let { (it as? JsonPrimitive)?.contentOrNull } == "true" -> stringResource(R.string.dismissed)
                     status == "expired" -> when ((d.metadata?.get("expiredReason") as? JsonPrimitive)?.contentOrNull) {
-                        "target_gone" -> "Expired · task removed"; "target_completed" -> "Expired · task finished"; else -> "Expired"
+                        "target_gone" -> stringResource(R.string.expired_task_removed); "target_completed" -> stringResource(R.string.expired_task_finished); else -> stringResource(R.string.expired)
                     }
-                    d.executionStatus == "failed" -> "Failed"
-                    d.executionStatus == "partial" -> "Partly applied"
-                    chosen != null -> "Chose: $chosen"
-                    else -> "Decided"
+                    d.executionStatus == "failed" -> stringResource(R.string.failed)
+                    d.executionStatus == "partial" -> stringResource(R.string.partly_applied)
+                    chosen != null -> stringResource(R.string.chose_x, chosen)
+                    else -> stringResource(R.string.decided)
                 }
                 Row(
                     Modifier.fillMaxWidth().clickable(enabled = d.originIssueId != null) { d.originIssueId?.let { nav.issue(IssueStore.get(it)?.identifier ?: it) } }

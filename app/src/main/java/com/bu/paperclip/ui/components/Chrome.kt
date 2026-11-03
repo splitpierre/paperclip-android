@@ -53,6 +53,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bu.paperclip.ui.theme.LocalStatusColors
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.util.appString
 
 /**
  * The app's filter/choice chip: a pill that inverts when selected. A selected chip swaps its leading
@@ -208,7 +211,7 @@ fun BrandMark(size: androidx.compose.ui.unit.Dp = 56.dp) {
     ) {
         Icon(
             androidx.compose.ui.res.painterResource(com.bu.paperclip.R.drawable.ic_paperclip),
-            "Paperclip",
+            stringResource(R.string.paperclip),
             tint = cs.surface,
             modifier = Modifier.size(size * 0.56f),
         )

@@ -105,6 +105,9 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.util.appString
 
 private const val INBOX_MINE_STATUSES = "backlog,todo,in_progress,in_review,blocked,done"
 
@@ -121,12 +124,12 @@ fun InboxScreen(nav: Nav) {
     val scope = rememberCoroutineScope()
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Inbox", style = MaterialTheme.typography.headlineSmall) }, navigationIcon = { BackIcon { nav.back() } }) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.inbox), style = MaterialTheme.typography.headlineSmall) }, navigationIcon = { BackIcon { nav.back() } }) },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { pad ->
         Column(Modifier.fillMaxSize().padding(pad)) {
             PrimaryTabRow(selectedTabIndex = tab, containerColor = MaterialTheme.colorScheme.surface) {
-                listOf("Needs me", "Unread", "Mine").forEachIndexed { i, label ->
+                listOf(stringResource(R.string.needs_me), stringResource(R.string.unread), stringResource(R.string.mine)).forEachIndexed { i, label ->
                     Tab(
                         selected = tab == i,
                         onClick = { tab = i },
@@ -180,7 +183,7 @@ private fun InboxNeedsMe(nav: Nav, cid: String, snackbar: SnackbarHostState, sco
             try {
                 call(key)
                 AppState.refreshBadges()
-                val res = snackbar.showSnackbar(message, actionLabel = "Undo", duration = SnackbarDuration.Short)
+                val res = snackbar.showSnackbar(message, actionLabel = appString(R.string.undo), duration = SnackbarDuration.Short)
                 if (res == SnackbarResult.ActionPerformed) {
                     Api.delete("/companies/$cid/inbox-dismissals/" + Uri.encode(key))
                     hidden = hidden - item.id
@@ -193,9 +196,9 @@ private fun InboxNeedsMe(nav: Nav, cid: String, snackbar: SnackbarHostState, sco
         }
     }
 
-    fun dismiss(item: AttentionItem) = hideWithUndo(item, "Dismissed") { Repo.dismiss(cid, it) }
+    fun dismiss(item: AttentionItem) = hideWithUndo(item, appString(R.string.dismissed)) { Repo.dismiss(cid, it) }
     fun snooze(item: AttentionItem, until: Instant, label: String) =
-        hideWithUndo(item, "Snoozed $label") { Repo.snooze(cid, it, until.toString()) }
+        hideWithUndo(item, appString(R.string.snoozed_x, label)) { Repo.snooze(cid, it, until.toString()) }
 
     LoadContent(loader) { page ->
         val items = (page.items + more).distinctBy { it.id }.filter { it.id !in hidden }
@@ -203,7 +206,7 @@ private fun InboxNeedsMe(nav: Nav, cid: String, snackbar: SnackbarHostState, sco
             if (items.isEmpty()) {
                 item {
                     EmptyState(
-                        "Nothing needs you right now.\nAgent questions, approvals and failures show up here.",
+                        stringResource(R.string.nothing_needs_you_right_now_nagent),
                         Icons.Outlined.TaskAlt,
                     )
                 }
@@ -212,7 +215,7 @@ private fun InboxNeedsMe(nav: Nav, cid: String, snackbar: SnackbarHostState, sco
                 InboxSwipeable(
                     enabled = item.dismissalKey != null,
                     icon = Icons.Outlined.DoneAll,
-                    label = "Dismiss",
+                    label = stringResource(R.string.dismiss),
                     onSwiped = { dismiss(item) },
                 ) {
                     InboxAttentionRow(
@@ -243,7 +246,7 @@ private fun InboxNeedsMe(nav: Nav, cid: String, snackbar: SnackbarHostState, sco
                                     }
                                 }
                             },
-                        ) { Text(if (loadingMore) "Loading…" else "Load more") }
+                        ) { Text(if (loadingMore) stringResource(R.string.loading) else stringResource(R.string.load_more)) }
                     }
                 }
             }
@@ -293,22 +296,22 @@ internal fun inboxIcon(item: AttentionItem): ImageVector = when (item.sourceKind
 
 internal fun inboxKindLabel(item: AttentionItem): String = when (item.sourceKind) {
     "issue_thread_interaction" -> when (inboxDetailKind(item)) {
-        "questions" -> "Question"
-        "plan_approval" -> "Plan approval"
-        "suggested_tasks" -> "Suggested tasks"
-        "checkbox_confirmation" -> "Choose options"
-        "item_verdicts" -> "Review items"
-        else -> "Confirmation"
+        "questions" -> appString(R.string.question)
+        "plan_approval" -> appString(R.string.plan_approval)
+        "suggested_tasks" -> appString(R.string.suggested_tasks)
+        "checkbox_confirmation" -> appString(R.string.choose_options)
+        "item_verdicts" -> appString(R.string.review_items)
+        else -> appString(R.string.confirmation)
     }
-    "approval" -> "Approval"
-    "decision" -> "Decision"
-    "failed_run" -> "Failed run"
-    "budget_alert" -> "Budget"
-    "agent_error_alert" -> "Agent error"
-    "blocker_attention" -> "Blocked"
-    "review", "productivity_review" -> "Review"
-    "recovery_action" -> "Recovery"
-    "join_request" -> "Join request"
+    "approval" -> appString(R.string.approval)
+    "decision" -> appString(R.string.decision)
+    "failed_run" -> appString(R.string.failed_run)
+    "budget_alert" -> appString(R.string.budget)
+    "agent_error_alert" -> appString(R.string.agent_error)
+    "blocker_attention" -> appString(R.string.blocked)
+    "review", "productivity_review" -> appString(R.string.review)
+    "recovery_action" -> appString(R.string.recovery)
+    "join_request" -> appString(R.string.join_request)
     else -> item.sourceKind.replace('_', ' ').replaceFirstChar { it.uppercase() }
 }
 
@@ -359,7 +362,7 @@ private fun InboxAttentionRow(
                 }
                 Spacer(Modifier.height(3.dp))
                 Text(
-                    item.subject.title ?: item.relatedIssue?.title ?: "Untitled",
+                    item.subject.title ?: item.relatedIssue?.title ?: stringResource(R.string.untitled),
                     style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp, lineHeight = 21.sp, fontWeight = FontWeight.Medium),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -388,25 +391,25 @@ private fun InboxAttentionRow(
             }
         }
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-            DropdownMenuItem(text = { Text("Open") }, onClick = { menu = false; onClick() })
+            DropdownMenuItem(text = { Text(stringResource(R.string.open)) }, onClick = { menu = false; onClick() })
             if (item.dismissalKey != null) {
                 DropdownMenuItem(
-                    text = { Text("Snooze 1 hour") },
+                    text = { Text(stringResource(R.string.snooze_1_hour)) },
                     leadingIcon = { Icon(Icons.Outlined.Snooze, null) },
-                    onClick = { menu = false; onSnooze(Instant.now().plusSeconds(3600), "for 1 hour") },
+                    onClick = { menu = false; onSnooze(Instant.now().plusSeconds(3600), appString(R.string.for_1_hour)) },
                 )
                 DropdownMenuItem(
-                    text = { Text("Snooze until tomorrow") },
+                    text = { Text(stringResource(R.string.snooze_until_tomorrow)) },
                     leadingIcon = { Icon(Icons.Outlined.Snooze, null) },
                     onClick = {
                         menu = false
                         val zone = ZoneId.systemDefault()
                         val t = LocalDate.now(zone).plusDays(1).atTime(LocalTime.of(9, 0)).atZone(zone).toInstant()
-                        onSnooze(t, "until tomorrow 9:00")
+                        onSnooze(t, appString(R.string.until_tomorrow_9_00))
                     },
                 )
                 DropdownMenuItem(
-                    text = { Text("Dismiss") },
+                    text = { Text(stringResource(R.string.dismiss)) },
                     leadingIcon = { Icon(Icons.Outlined.DoneAll, null) },
                     onClick = { menu = false; onDismiss() },
                 )
@@ -471,7 +474,7 @@ private fun InboxUnread(nav: Nav, cid: String) {
         val list = issues.filter { it.isUnreadForMe != false }
         LazyColumn(Modifier.fillMaxSize()) {
             if (list.isEmpty()) {
-                item { EmptyState("You're all caught up.", Icons.Outlined.MarkEmailRead) }
+                item { EmptyState(stringResource(R.string.you_re_all_caught_up), Icons.Outlined.MarkEmailRead) }
             } else {
                 item {
                     Row(
@@ -493,7 +496,7 @@ private fun InboxUnread(nav: Nav, cid: String) {
                                         list.forEach { runCatching { Repo.markRead(it.id) } }
                                         loader.set(emptyList())
                                         AppState.refreshBadges()
-                                        AppState.toast("Marked ${list.size} as read")
+                                        AppState.toast(appString(R.string.marked_x_as_read, list.size))
                                     } finally {
                                         marking = false
                                         loader.refresh()
@@ -503,7 +506,7 @@ private fun InboxUnread(nav: Nav, cid: String) {
                         ) {
                             Icon(Icons.Outlined.DoneAll, null, Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text(if (marking) "Marking…" else "Mark all read")
+                            Text(if (marking) stringResource(R.string.marking) else stringResource(R.string.mark_all_read))
                         }
                     }
                 }
@@ -533,7 +536,7 @@ private fun InboxMine(nav: Nav, cid: String, snackbar: SnackbarHostState, scope:
             try {
                 Repo.archiveFromInbox(issue.id)
                 AppState.refreshBadges()
-                val res = snackbar.showSnackbar("Archived ${issue.ref}", actionLabel = "Undo", duration = SnackbarDuration.Short)
+                val res = snackbar.showSnackbar(appString(R.string.archived_x, issue.ref), actionLabel = appString(R.string.undo), duration = SnackbarDuration.Short)
                 if (res == SnackbarResult.ActionPerformed) {
                     Repo.unarchiveFromInbox(issue.id)
                     hidden = hidden - issue.id
@@ -550,21 +553,21 @@ private fun InboxMine(nav: Nav, cid: String, snackbar: SnackbarHostState, scope:
         val list = issues.filter { it.id !in hidden }
         LazyColumn(Modifier.fillMaxSize()) {
             if (list.isEmpty()) {
-                item { EmptyState("Tasks you created, commented on or were assigned show up here.", Icons.Outlined.Archive) }
+                item { EmptyState(stringResource(R.string.tasks_you_created_commented_on_or), Icons.Outlined.Archive) }
             } else {
                 item {
                     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                         Dot(MaterialTheme.colorScheme.tertiary, 7.dp)
                         Spacer(Modifier.width(6.dp))
                         Text(
-                            "${list.count { it.isUnreadForMe == true }} unread · swipe to archive",
+                            stringResource(R.string.x_unread_swipe_to_archive, list.count { it.isUnreadForMe == true }),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
                 items(list, key = { it.id }) { issue ->
-                    InboxSwipeable(enabled = true, icon = Icons.Outlined.Archive, label = "Archive", onSwiped = { archive(issue) }) {
+                    InboxSwipeable(enabled = true, icon = Icons.Outlined.Archive, label = stringResource(R.string.archive), onSwiped = { archive(issue) }) {
                         Box(Modifier.background(MaterialTheme.colorScheme.background)) {
                             IssueRow(issue, onClick = { nav.issue(issue.identifier ?: issue.id) })
                         }

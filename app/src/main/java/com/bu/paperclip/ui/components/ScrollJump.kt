@@ -24,6 +24,9 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.util.appString
 
 /** Which end of a long list the jump button currently targets. */
 enum class JumpTarget { Bottom, Top }
@@ -74,7 +77,7 @@ fun ScrollJumpButton(
     val target = rememberJumpTarget(state)
     val canMove = if (target == JumpTarget.Bottom) state.canScrollForward else state.canScrollBackward
     val rotation by animateFloatAsState(if (target == JumpTarget.Top) 180f else 0f, label = "jump-rotation")
-    val description = if (target == JumpTarget.Top) "Jump to top" else "Jump to latest"
+    val description = if (target == JumpTarget.Top) stringResource(R.string.jump_to_top) else stringResource(R.string.jump_to_latest)
     val click = {
         onJump(target)
         scope.launch { state.jumpTo(target) }

@@ -74,16 +74,20 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.util.appString
+import com.bu.paperclip.util.appPlural
 
 private const val ISSUE_OTHER_ID = "__paperclip_other__"
 
 private fun issueInteractionLabel(kind: String): String = when (kind) {
-    "ask_user_questions" -> "Questions"
-    "request_confirmation" -> "Confirmation"
-    "request_checkbox_confirmation" -> "Choose options"
-    "suggest_tasks" -> "Suggested tasks"
-    "request_item_verdicts" -> "Review items"
-    "connection_intent" -> "Connection request"
+    "ask_user_questions" -> appString(R.string.questions)
+    "request_confirmation" -> appString(R.string.confirmation)
+    "request_checkbox_confirmation" -> appString(R.string.choose_options)
+    "suggest_tasks" -> appString(R.string.suggested_tasks)
+    "request_item_verdicts" -> appString(R.string.review_items)
+    "connection_intent" -> appString(R.string.connection_request)
     else -> kind.replace('_', ' ')
 }
 
@@ -158,14 +162,14 @@ internal fun IssueInteractionCard(issueId: String, interaction: Interaction, nav
                 Spacer(Modifier.width(8.dp))
                 Text(issueInteractionLabel(interaction.kind).uppercase(), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.width(8.dp))
-                Pill(if (pending) "Waiting for you" else interaction.status.replace('_', ' '), accent)
+                Pill(if (pending) stringResource(R.string.waiting_for_you) else interaction.status.replace('_', ' '), accent)
                 Spacer(Modifier.weight(1f))
                 Text(relativeTime(interaction.createdAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (pending) Box {
-                    IconButton(onClick = { menu = true }, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.MoreVert, "More") }
+                    IconButton(onClick = { menu = true }, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.MoreVert, stringResource(R.string.more)) }
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                        DropdownMenuItem(text = { Text("Skip") }, onClick = { menu = false; run { issueSkipInteraction(issueId, interaction.id) } })
-                        DropdownMenuItem(text = { Text("Cancel request") }, onClick = { menu = false; run { issueCancelInteraction(issueId, interaction.id) } })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.skip)) }, onClick = { menu = false; run { issueSkipInteraction(issueId, interaction.id) } })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.cancel_request)) }, onClick = { menu = false; run { issueCancelInteraction(issueId, interaction.id) } })
                     }
                 }
             }
@@ -174,7 +178,7 @@ internal fun IssueInteractionCard(issueId: String, interaction: Interaction, nav
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     AgentAvatar(interaction.createdByAgentId, 18.dp)
                     Spacer(Modifier.width(6.dp))
-                    Text("From ${AppState.agentName(interaction.createdByAgentId)}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.from_x, AppState.agentName(interaction.createdByAgentId)), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             interaction.title?.takeIf { it.isNotBlank() }?.let {
@@ -193,7 +197,7 @@ internal fun IssueInteractionCard(issueId: String, interaction: Interaction, nav
                 "suggest_tasks" -> IssueSuggestTasksBody(issueId, interaction, pending, work, run, nav)
                 "request_item_verdicts" -> IssueVerdictsBody(issueId, interaction, pending, work, run)
                 "connection_intent" -> IssueConnectionBody(issueId, interaction, pending, work, run)
-                else -> Text("This request type isn't supported in the app yet; open it in the web UI.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                else -> Text(stringResource(R.string.this_request_type_isn_t_supported), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (!pending) IssueResolvedFooter(interaction)
             work.error?.let {
@@ -233,7 +237,7 @@ private fun IssueAcceptRejectRow(
     payload: JsonObject?,
     work: IssueCardWork,
     acceptEnabled: Boolean = true,
-    acceptDefault: String = "Approve",
+    acceptDefault: String = stringResource(R.string.approve),
     extraActions: @Composable () -> Unit = {},
     onAccept: () -> Unit,
     onReject: (String?) -> Unit,
@@ -242,12 +246,12 @@ private fun IssueAcceptRejectRow(
     var reason by remember { mutableStateOf("") }
     val allowReason = payload.issueBool("allowDeclineReason") != false
     val reasonRequired = payload.issueBool("rejectRequiresReason") == true
-    val rejectLabel = payload.issueStr("rejectLabel") ?: "Request changes"
+    val rejectLabel = payload.issueStr("rejectLabel") ?: stringResource(R.string.request_changes)
     if (rejecting && (allowReason || reasonRequired)) {
         OutlinedTextField(
             value = reason,
             onValueChange = { reason = it },
-            label = { Text(payload.issueStr("rejectReasonLabel") ?: if (reasonRequired) "Reason (required)" else "Reason (optional)") },
+            label = { Text(payload.issueStr("rejectReasonLabel") ?: if (reasonRequired) stringResource(R.string.reason_required) else stringResource(R.string.reason_optional)) },
             placeholder = { payload.issueStr("declineReasonPlaceholder")?.let { Text(it) } },
             minLines = 2,
             modifier = Modifier.fillMaxWidth(),
@@ -258,7 +262,7 @@ private fun IssueAcceptRejectRow(
                 onClick = { onReject(reason.trim().ifEmpty { null }) },
                 enabled = !work.working && (!reasonRequired || reason.isNotBlank()),
             ) { Text(rejectLabel) }
-            TextButton(onClick = { rejecting = false }) { Text("Back") }
+            TextButton(onClick = { rejecting = false }) { Text(stringResource(R.string.back)) }
             if (work.working) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
         }
     } else {
@@ -279,13 +283,13 @@ private fun IssueAcceptRejectRow(
 }
 
 @Composable
-private fun IssueCollapsibleMarkdown(text: String, label: String = "Details") {
+private fun IssueCollapsibleMarkdown(text: String, label: String = stringResource(R.string.details)) {
     var open by remember { mutableStateOf(text.length < 500) }
     if (open) {
         Markdown(text, fontSizeSp = 14f)
-        if (text.length >= 500) TextButton(onClick = { open = false }) { Text("Hide $label".lowercase().replaceFirstChar { it.uppercase() }) }
+        if (text.length >= 500) TextButton(onClick = { open = false }) { Text(stringResource(R.string.hide_x, label).lowercase().replaceFirstChar { it.uppercase() }) }
     } else {
-        TextButton(onClick = { open = true }) { Text("Show ${label.lowercase()}") }
+        TextButton(onClick = { open = true }) { Text(stringResource(R.string.show_x, label.lowercase())) }
     }
 }
 
@@ -307,7 +311,7 @@ private fun IssueQuestionsBody(issueId: String, it: Interaction, pending: Boolea
             val other = a.issueStr("otherText")
             Text(q.issueStr("prompt") ?: "", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
             Text(
-                (labels + listOfNotNull(other)).joinToString(", ").ifEmpty { "No answer" },
+                (labels + listOfNotNull(other)).joinToString(", ").ifEmpty { stringResource(R.string.no_answer) },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -362,7 +366,7 @@ private fun IssueQuestionsBody(issueId: String, it: Interaction, pending: Boolea
                     Column(Modifier.weight(1f)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(o.issueStr("label") ?: oid, style = MaterialTheme.typography.bodyMedium)
-                            if (oid in recommended) { Spacer(Modifier.width(6.dp)); Pill("Recommended", LocalStatusColors.current.green) }
+                            if (oid in recommended) { Spacer(Modifier.width(6.dp)); Pill(stringResource(R.string.recommended), LocalStatusColors.current.green) }
                         }
                         o.issueStr("description")?.takeIf { d -> d.isNotBlank() }?.let { d ->
                             Text(d, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -378,12 +382,12 @@ private fun IssueQuestionsBody(issueId: String, it: Interaction, pending: Boolea
                 ) {
                     if (multi) Checkbox(checked = checked, onCheckedChange = { _ -> issueToggleOption(qid, ISSUE_OTHER_ID, multi, true, selected, otherActive) })
                     else RadioButton(selected = checked, onClick = { issueToggleOption(qid, ISSUE_OTHER_ID, multi, true, selected, otherActive) })
-                    Text("Other…", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.other_2), style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }
         if (otherActive[qid] == true) {
-            val placeholder = setQ.issueObj("customAnswer").issueStr("placeholder") ?: if (textOnly) "Your answer" else "Type your answer"
+            val placeholder = setQ.issueObj("customAnswer").issueStr("placeholder") ?: if (textOnly) stringResource(R.string.your_answer) else stringResource(R.string.type_your_answer)
             OutlinedTextField(
                 value = otherText[qid] ?: "",
                 onValueChange = { v -> otherText[qid] = v },
@@ -414,7 +418,7 @@ private fun IssueQuestionsBody(issueId: String, it: Interaction, pending: Boolea
                 })
                 run { Repo.respond(issueId, it.id, answers) }
             },
-        ) { Text(payload.issueStr("submitLabel") ?: payload.issueObj("questionSet").issueStr("submitLabel") ?: "Submit answers") }
+        ) { Text(payload.issueStr("submitLabel") ?: payload.issueObj("questionSet").issueStr("submitLabel") ?: stringResource(R.string.submit_answers)) }
         if (work.working) { Spacer(Modifier.width(10.dp)); CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp) }
     }
 }
@@ -448,26 +452,26 @@ private fun IssueConfirmationBody(issueId: String, it: Interaction, pending: Boo
     if (tool != null) {
         Spacer(Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(tool.issueStr("toolDisplayName") ?: tool.issueStr("toolName") ?: "Tool", fontWeight = FontWeight.SemiBold)
+            Text(tool.issueStr("toolDisplayName") ?: tool.issueStr("toolName") ?: stringResource(R.string.tool), fontWeight = FontWeight.SemiBold)
             tool.issueStr("appDisplayName")?.let { a -> Text("  ·  $a", color = MaterialTheme.colorScheme.onSurfaceVariant) }
             Spacer(Modifier.width(8.dp))
             val risk = tool.issueStr("risk") ?: "read"
             val c = LocalStatusColors.current
             Pill(risk, when (risk) { "destructive" -> c.red; "write" -> c.orange; else -> c.green })
         }
-        tool.issueStr("previewMarkdown")?.takeIf { s -> s.isNotBlank() }?.let { s -> Spacer(Modifier.height(4.dp)); IssueCollapsibleMarkdown(s, "Preview") }
+        tool.issueStr("previewMarkdown")?.takeIf { s -> s.isNotBlank() }?.let { s -> Spacer(Modifier.height(4.dp)); IssueCollapsibleMarkdown(s, stringResource(R.string.preview)) }
     }
     if (secret != null) {
         Spacer(Modifier.height(8.dp))
-        Text("Bind secret “${secret.issueStr("sourceSecretLabel") ?: "?"}” to ${secret.issueStr("targetAgentName") ?: "agent"} at ${secret.issueStr("configPath") ?: ""}", style = MaterialTheme.typography.bodyMedium)
+        Text(appString(R.string.bind_secret_x_to_x_at_x, secret.issueStr("sourceSecretLabel") ?: "?", secret.issueStr("targetAgentName") ?: appString(R.string.agent_fallback), secret.issueStr("configPath") ?: ""), style = MaterialTheme.typography.bodyMedium)
         secret.issueStr("justification")?.let { j -> Text(j, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
     p.issueStr("detailsMarkdown")?.takeIf { d -> d.isNotBlank() }?.let { d -> Spacer(Modifier.height(6.dp)); IssueCollapsibleMarkdown(d) }
     val target = p.issueObj("target")
     if (target != null) {
         Spacer(Modifier.height(6.dp))
-        val label = target.issueStr("label") ?: if (target.issueStr("type") == "issue_document") "Open ${target.issueStr("key")} document" else "Open"
-        val rev = target.issueInt("revisionNumber")?.let { r -> " (rev $r)" } ?: ""
+        val label = target.issueStr("label") ?: if (target.issueStr("type") == "issue_document") appString(R.string.open_x_document, target.issueStr("key") ?: "") else stringResource(R.string.open)
+        val rev = target.issueInt("revisionNumber")?.let { r -> stringResource(R.string.rev_x, r) } ?: ""
         OutlinedButton(onClick = {
             if (target.issueStr("type") == "issue_document" && target.issueStr("key") != null) {
                 nav.document(target.issueStr("issueId") ?: issueId, target.issueStr("key")!!)
@@ -480,24 +484,24 @@ private fun IssueConfirmationBody(issueId: String, it: Interaction, pending: Boo
         tool?.let { _ ->
             it.result.issueObj("toolAction")?.let { tr ->
                 Spacer(Modifier.height(4.dp))
-                Text("Tool: ${tr.issueStr("status") ?: ""}" + (tr.issueStr("resultSummary")?.let { s -> " — $s" } ?: ""), style = MaterialTheme.typography.bodySmall)
+                Text(appString(R.string.tool_x, tr.issueStr("status") ?: "") + (tr.issueStr("resultSummary")?.let { s -> " — $s" } ?: ""), style = MaterialTheme.typography.bodySmall)
             }
         }
         return
     }
     Spacer(Modifier.height(10.dp))
     if (p.issueObj("connectionAuthorization") != null) {
-        Text("This authorization has to be completed in the web UI.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.this_authorization_has_to_be_completed), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(6.dp))
     }
     IssueAcceptRejectRow(
         payload = p,
         work = work,
         acceptEnabled = p.issueObj("connectionAuthorization") == null,
-        acceptDefault = if (tool != null) "Allow once" else if (secret != null) "Approve & bind" else "Approve",
+        acceptDefault = if (tool != null) stringResource(R.string.allow_once) else if (secret != null) stringResource(R.string.approve_bind) else stringResource(R.string.approve),
         extraActions = {
             if (tool != null && tool["rememberActionScope"] != null) {
-                TextButton(onClick = { run { Repo.accept(issueId, it.id, jsonOf("rememberAction" to true)) } }, enabled = !work.working) { Text("Always allow") }
+                TextButton(onClick = { run { Repo.accept(issueId, it.id, jsonOf("rememberAction" to true)) } }, enabled = !work.working) { Text(stringResource(R.string.always_allow)) }
             }
         },
         onAccept = { run { Repo.accept(issueId, it.id) } },
@@ -520,8 +524,8 @@ private fun IssueCheckboxBody(issueId: String, it: Interaction, pending: Boolean
     Spacer(Modifier.height(6.dp))
     if (pending && options.size > 3) {
         Row {
-            TextButton(onClick = { options.forEach { o -> o.issueStr("id")?.let { id -> chosen[id] = true } } }) { Text("Select all") }
-            TextButton(onClick = { chosen.clear() }) { Text("Clear") }
+            TextButton(onClick = { options.forEach { o -> o.issueStr("id")?.let { id -> chosen[id] = true } } }) { Text(stringResource(R.string.select_all)) }
+            TextButton(onClick = { chosen.clear() }) { Text(stringResource(R.string.clear)) }
         }
     }
     options.forEach { o ->
@@ -545,8 +549,8 @@ private fun IssueCheckboxBody(issueId: String, it: Interaction, pending: Boolean
         Text(
             buildString {
                 append("$count selected")
-                if (min > 0) append(" · min $min")
-                if (max != null) append(" · max $max")
+                if (min > 0) append(stringResource(R.string.min_x, min))
+                if (max != null) append(stringResource(R.string.max_x, max))
             },
             style = MaterialTheme.typography.labelMedium,
             color = if (valid) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
@@ -573,7 +577,7 @@ private fun IssueSuggestTasksBody(issueId: String, it: Interaction, pending: Boo
     if (!pending) {
         val created = it.result.issueObjs("createdTasks")
         if (created.isNotEmpty()) {
-            Text("Created ${created.size} task${if (created.size == 1) "" else "s"}", style = MaterialTheme.typography.labelMedium)
+            Text(appPlural(R.plurals.created_n_tasks, created.size, created.size), style = MaterialTheme.typography.labelMedium)
             created.forEach { c ->
                 Text(
                     "${c.issueStr("identifier") ?: ""}  ${c.issueStr("title") ?: ""}",
@@ -614,7 +618,7 @@ private fun IssueSuggestTasksBody(issueId: String, it: Interaction, pending: Boo
                 }
                 val desc = t.issueStr("description")
                 if (expanded && !desc.isNullOrBlank()) Markdown(desc, fontSizeSp = 13f)
-                else if (!desc.isNullOrBlank()) Text("Tap to read description", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
+                else if (!desc.isNullOrBlank()) Text(stringResource(R.string.tap_to_read_description), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
             }
         }
         (children[key] ?: emptyList()).forEach { c -> Node(c, depth + 1) }
@@ -626,7 +630,7 @@ private fun IssueSuggestTasksBody(issueId: String, it: Interaction, pending: Boo
         payload = it.payload,
         work = work,
         acceptEnabled = count > 0,
-        acceptDefault = "Create $count task${if (count == 1) "" else "s"}",
+        acceptDefault = appPlural(R.plurals.create_n_tasks, count, count),
         onAccept = {
             val chosen = tasks.mapNotNull { t -> t.issueStr("clientKey") }.filter { k -> selected[k] == true }
             run { Repo.accept(issueId, it.id, jsonOf("selectedClientKeys" to chosen)) }
@@ -657,10 +661,10 @@ private fun IssueVerdictsBody(issueId: String, it: Interaction, pending: Boolean
         Column(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(item.issueStr("label") ?: id, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                item.issueStr("href")?.let { h -> TextButton(onClick = { Links.handler(h) }) { Text("Open") } }
+                item.issueStr("href")?.let { h -> TextButton(onClick = { Links.handler(h) }) { Text(stringResource(R.string.open)) } }
             }
             item.issueStr("description")?.let { d -> Text(d, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-            item.issueStr("previewMarkdown")?.takeIf { m -> m.isNotBlank() }?.let { m -> IssueCollapsibleMarkdown(m, "Preview") }
+            item.issueStr("previewMarkdown")?.takeIf { m -> m.isNotBlank() }?.let { m -> IssueCollapsibleMarkdown(m, stringResource(R.string.preview)) }
             if (done != null) {
                 val v = done.issueStr("verdict") ?: ""
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -683,7 +687,7 @@ private fun IssueVerdictsBody(issueId: String, it: Interaction, pending: Boolean
                     OutlinedTextField(
                         value = reasons[id] ?: "",
                         onValueChange = { r -> reasons[id] = r },
-                        label = { Text((p.issueStr("reasonLabel") ?: "Reason") + if (v in requireReason) " (required)" else " (optional)") },
+                        label = { Text((p.issueStr("reasonLabel") ?: stringResource(R.string.reason)) + if (v in requireReason) " (required)" else " (optional)") },
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                     )
                 }
@@ -702,9 +706,9 @@ private fun IssueVerdictsBody(issueId: String, it: Interaction, pending: Boolean
                 val arr = JsonArray(ready.map { (id, v) -> jsonOf("id" to id, "verdict" to v, "reason" to reasons[id]?.trim()?.ifEmpty { null }) })
                 run { Repo.verdicts(issueId, it.id, arr) }
             },
-        ) { Text("Submit ${ready.size}/${pendingIds.size}") }
+        ) { Text(stringResource(R.string.submit_x_x, ready.size, pendingIds.size)) }
         if (p.issueBool("allowBulkApprove") != false && "approve" in verdictOptions) {
-            OutlinedButton(onClick = { pendingIds.forEach { id -> verdicts[id] = "approve" } }, enabled = !work.working) { Text("Approve all") }
+            OutlinedButton(onClick = { pendingIds.forEach { id -> verdicts[id] = "approve" } }, enabled = !work.working) { Text(stringResource(R.string.approve_all)) }
         }
         if (work.working) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
     }
@@ -716,13 +720,13 @@ private fun IssueVerdictsBody(issueId: String, it: Interaction, pending: Boolean
 private fun IssueConnectionBody(issueId: String, it: Interaction, pending: Boolean, work: IssueCardWork, run: (suspend () -> Interaction) -> Unit) {
     val p = it.payload
     Text(
-        "${p.issueStr("requestingAgentName") ?: "An agent"} wants to connect ${p.issueStr("serviceName") ?: p.issueStr("serviceSlug") ?: "a service"}.",
+        appString(R.string.x_wants_to_connect_x, p.issueStr("requestingAgentName") ?: appString(R.string.an_agent), p.issueStr("serviceName") ?: p.issueStr("serviceSlug") ?: appString(R.string.a_service)),
         style = MaterialTheme.typography.bodyMedium,
     )
     if (!pending) return
     Spacer(Modifier.height(4.dp))
     Text(
-        "Connecting needs the sign-in flow of the web UI. Open the task there to finish, or decline here.",
+        stringResource(R.string.connecting_needs_the_sign_in_flow),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -733,8 +737,8 @@ private fun IssueConnectionBody(issueId: String, it: Interaction, pending: Boole
             val company = AppState.company.value
             val url = com.bu.paperclip.net.Api.baseUrl + "/" + (company?.issuePrefix ?: "") + "/issues/" + issueId
             runCatching { ctx.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))) }
-        }) { Text("Open web UI") }
-        OutlinedButton(onClick = { run { issueRejectInteraction(issueId, it.id, null) } }, enabled = !work.working) { Text("Decline") }
+        }) { Text(stringResource(R.string.open_web_ui)) }
+        OutlinedButton(onClick = { run { issueRejectInteraction(issueId, it.id, null) } }, enabled = !work.working) { Text(stringResource(R.string.decline)) }
         if (work.working) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
     }
 }
@@ -746,7 +750,7 @@ internal fun IssuePinnedMarker(interaction: Interaction) {
         Icon(issueInteractionIcon(interaction.kind), null, Modifier.size(16.dp), tint = LocalStatusColors.current.yellow)
         Spacer(Modifier.width(8.dp))
         Text(
-            "${AppState.agentName(interaction.createdByAgentId)} asked for ${issueInteractionLabel(interaction.kind).lowercase()} — pinned above",
+            stringResource(R.string.x_asked_for_x_pinned_above, AppState.agentName(interaction.createdByAgentId), issueInteractionLabel(interaction.kind).lowercase()),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontFamily = FontFamily.Default,

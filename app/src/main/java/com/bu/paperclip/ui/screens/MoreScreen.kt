@@ -45,6 +45,9 @@ import com.bu.paperclip.ui.components.Card
 import com.bu.paperclip.ui.components.Divider
 import com.bu.paperclip.ui.components.SectionHeader
 import com.bu.paperclip.util.formatCents
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.util.appString
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,40 +57,40 @@ fun MoreScreen(nav: Nav) {
     val me by AppState.me.collectAsState()
     val badges by AppState.badges.collectAsState()
 
-    Scaffold(topBar = { TopAppBar(title = { Text("More", style = MaterialTheme.typography.headlineSmall) }) }) { pad ->
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.more), style = MaterialTheme.typography.headlineSmall) }) }) { pad ->
         Column(Modifier.fillMaxSize().padding(pad).verticalScroll(rememberScrollState())) {
             Card(Modifier.padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Avatar(company?.name ?: "?", company?.logoUrl, 44.dp)
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(company?.name ?: "Company", style = MaterialTheme.typography.titleMedium)
+                        Text(company?.name ?: stringResource(R.string.company), style = MaterialTheme.typography.titleMedium)
                         val sub = listOfNotNull(
                             company?.issuePrefix?.ifEmpty { null },
-                            company?.budgetMonthlyCents?.takeIf { it > 0 }?.let { "${formatCents(company?.spentMonthlyCents)} of ${formatCents(it)} this month" },
+                            company?.budgetMonthlyCents?.takeIf { it > 0 }?.let { stringResource(R.string.x_of_x_this_month, formatCents(company?.spentMonthlyCents), formatCents(it)) },
                         ).joinToString(" · ")
                         if (sub.isNotEmpty()) Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         val who = me?.name?.ifBlank { null } ?: me?.email
-                        if (who != null) Text("Signed in as $who", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (who != null) Text(stringResource(R.string.signed_in_as_x, who), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
 
-            SectionHeader("Work")
-            MoreRow(Icons.Outlined.Inbox, "Inbox", badges.inbox) { nav.inbox() }
-            MoreRow(Icons.Outlined.Gavel, "Approvals", badges.approvals) { nav.approvals() }
-            MoreRow(Icons.Outlined.FolderOpen, "Projects") { nav.projects() }
-            MoreRow(Icons.Outlined.Flag, "Goals") { nav.goals() }
-            MoreRow(Icons.Outlined.Repeat, "Routines") { nav.routines() }
+            SectionHeader(stringResource(R.string.work))
+            MoreRow(Icons.Outlined.Inbox, stringResource(R.string.inbox), badges.inbox) { nav.inbox() }
+            MoreRow(Icons.Outlined.Gavel, stringResource(R.string.approvals), badges.approvals) { nav.approvals() }
+            MoreRow(Icons.Outlined.FolderOpen, stringResource(R.string.projects)) { nav.projects() }
+            MoreRow(Icons.Outlined.Flag, stringResource(R.string.goals)) { nav.goals() }
+            MoreRow(Icons.Outlined.Repeat, stringResource(R.string.routines)) { nav.routines() }
 
-            SectionHeader("Insight")
-            MoreRow(Icons.Outlined.AttachMoney, "Costs & quotas") { nav.costs() }
-            MoreRow(Icons.Outlined.History, "Activity") { nav.activity() }
-            MoreRow(Icons.Outlined.Search, "Search") { nav.search() }
+            SectionHeader(stringResource(R.string.insight))
+            MoreRow(Icons.Outlined.AttachMoney, stringResource(R.string.costs_quotas)) { nav.costs() }
+            MoreRow(Icons.Outlined.History, stringResource(R.string.activity)) { nav.activity() }
+            MoreRow(Icons.Outlined.Search, stringResource(R.string.search)) { nav.search() }
 
-            SectionHeader("App")
-            MoreRow(Icons.Outlined.Settings, "Settings") { nav.settings() }
-            MoreRow(Icons.AutoMirrored.Outlined.OpenInNew, "Open web UI") {
+            SectionHeader(stringResource(R.string.app))
+            MoreRow(Icons.Outlined.Settings, stringResource(R.string.settings)) { nav.settings() }
+            MoreRow(Icons.AutoMirrored.Outlined.OpenInNew, stringResource(R.string.open_web_ui)) {
                 runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(Api.baseUrl + "/"))) }
             }
             Divider()

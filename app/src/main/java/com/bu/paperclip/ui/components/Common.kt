@@ -67,6 +67,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.util.appString
 
 // ---------- Loading ----------
 
@@ -88,9 +91,9 @@ class Loader<T>(
 }
 
 fun errorMessage(t: Throwable): String = when (t) {
-    is ApiException.AuthRequired -> t.message ?: "Sign-in required"
-    is ApiException.Http -> t.message ?: "Request failed"
-    is ApiException.Network -> "Can't reach the server: ${t.message}"
+    is ApiException.AuthRequired -> t.message ?: appString(R.string.sign_in_required)
+    is ApiException.Http -> t.message ?: appString(R.string.request_failed)
+    is ApiException.Network -> appString(R.string.can_t_reach_the_server_x, t.message)
     else -> t.message ?: t.javaClass.simpleName
 }
 
@@ -178,11 +181,11 @@ fun ErrorState(message: String, modifier: Modifier = Modifier, onRetry: () -> Un
     ) {
         StateIcon(Icons.Outlined.CloudOff)
         Spacer(Modifier.height(16.dp))
-        Text("Something went wrong", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.something_went_wrong), style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(4.dp))
         Text(message, textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(20.dp))
-        Button(onClick = onRetry) { Text("Try again") }
+        Button(onClick = onRetry) { Text(stringResource(R.string.try_again)) }
     }
 }
 
@@ -244,14 +247,37 @@ fun issueStatusColor(status: String): Color {
 }
 
 fun statusLabel(status: String): String = when (status) {
-    "in_progress" -> "In progress"
-    "in_review" -> "In review"
-    "todo" -> "Todo"
-    "pending_approval" -> "Pending approval"
-    "scheduled_retry" -> "Retry scheduled"
-    "timed_out" -> "Timed out"
-    "revision_requested" -> "Revision requested"
+    "in_progress" -> appString(R.string.in_progress)
+    "in_review" -> appString(R.string.in_review)
+    "todo" -> appString(R.string.todo)
+    "pending_approval" -> appString(R.string.pending_approval)
+    "scheduled_retry" -> appString(R.string.retry_scheduled)
+    "timed_out" -> appString(R.string.timed_out)
+    "revision_requested" -> appString(R.string.revision_requested)
+    "backlog" -> appString(R.string.status_backlog)
+    "blocked" -> appString(R.string.blocked)
+    "done" -> appString(R.string.done)
+    "cancelled" -> appString(R.string.status_cancelled)
+    "queued" -> appString(R.string.status_queued)
+    "running" -> appString(R.string.status_running)
+    "succeeded" -> appString(R.string.status_succeeded)
+    "failed" -> appString(R.string.status_failed)
+    "error" -> appString(R.string.status_error)
+    "paused" -> appString(R.string.status_paused)
+    "idle" -> appString(R.string.status_idle)
+    "active" -> appString(R.string.status_active)
+    "pending" -> appString(R.string.status_pending)
+    "approved" -> appString(R.string.status_approved)
+    "rejected" -> appString(R.string.status_rejected)
     else -> status.replace('_', ' ').replaceFirstChar { it.uppercase() }
+}
+
+fun priorityLabel(priority: String): String = when (priority) {
+    "critical" -> appString(R.string.priority_critical)
+    "high" -> appString(R.string.priority_high)
+    "medium" -> appString(R.string.priority_medium)
+    "low" -> appString(R.string.priority_low)
+    else -> priority.replaceFirstChar { it.uppercase() }
 }
 
 val ISSUE_STATUSES = listOf("backlog", "todo", "in_progress", "in_review", "blocked", "done", "cancelled")
@@ -384,7 +410,7 @@ fun Avatar(name: String, imageUrl: String? = null, size: Dp = 28.dp, isAgent: Bo
 fun AgentAvatar(agentId: String?, size: Dp = 28.dp) {
     val a = AppState.agent(agentId)
     Box {
-        Avatar(a?.name ?: "Agent", a?.avatarUrl, size)
+        Avatar(a?.name ?: stringResource(R.string.agent), a?.avatarUrl, size)
         if (a != null && a.status == "running") {
             Dot(LocalStatusColors.current.blue, size / 3.2f, Modifier.align(Alignment.BottomEnd).border(1.5.dp, MaterialTheme.colorScheme.surface, CircleShape))
         }

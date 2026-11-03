@@ -118,9 +118,14 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import java.time.Instant
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.ui.components.priorityLabel
+import com.bu.paperclip.util.appString
+import com.bu.paperclip.util.appPlural
 
 private const val ISSUE_COMMENT_PAGE = 50
-private val ISSUE_TABS = listOf("Thread", "Docs", "Sub-tasks", "Files", "Activity")
+private val ISSUE_TABS = listOf(appString(R.string.thread), appString(R.string.docs), appString(R.string.sub_tasks), appString(R.string.files), appString(R.string.activity))
 
 private sealed class IssueThreadEntry(val at: Instant, val key: String) {
     class C(val c: IssueComment, at: Instant) : IssueThreadEntry(at, "c-" + c.id)
@@ -347,9 +352,9 @@ fun IssueDetailScreen(nav: Nav, id: String) {
                 navigationIcon = { BackIcon { nav.back() } },
                 title = {
                     Column {
-                        Text(i?.identifier ?: "Task", style = MaterialTheme.typography.titleMedium)
+                        Text(i?.identifier ?: stringResource(R.string.task), style = MaterialTheme.typography.titleMedium)
                         if (i != null) Text(
-                            statusLabel(i.status) + (if (runLive) " · agent working" else ""),
+                            statusLabel(i.status) + (if (runLive) stringResource(R.string.agent_working) else ""),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -357,25 +362,25 @@ fun IssueDetailScreen(nav: Nav, id: String) {
                 },
                 actions = {
                     Box {
-                        IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "More") }
+                        IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, stringResource(R.string.more)) }
                         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                            DropdownMenuItem(text = { Text("Copy link") }, enabled = linkUrl != null, onClick = {
+                            DropdownMenuItem(text = { Text(stringResource(R.string.copy_link)) }, enabled = linkUrl != null, onClick = {
                                 menu = false
                                 (ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("link", linkUrl))
-                                AppState.toast("Link copied")
+                                AppState.toast(appString(R.string.link_copied))
                             })
-                            DropdownMenuItem(text = { Text("Open in browser") }, enabled = linkUrl != null, onClick = {
+                            DropdownMenuItem(text = { Text(stringResource(R.string.open_in_browser)) }, enabled = linkUrl != null, onClick = {
                                 menu = false
                                 runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(linkUrl))) }
                             })
-                            DropdownMenuItem(text = { Text("Mark unread") }, enabled = i != null, onClick = {
+                            DropdownMenuItem(text = { Text(stringResource(R.string.mark_unread)) }, enabled = i != null, onClick = {
                                 menu = false
-                                safe { Repo.markUnread(i!!.id); AppState.refreshBadges(); AppState.toast("Marked unread"); nav.back() }
+                                safe { Repo.markUnread(i!!.id); AppState.refreshBadges(); AppState.toast(appString(R.string.marked_unread)); nav.back() }
                             })
-                            DropdownMenuItem(text = { Text("New sub-task") }, enabled = i != null, onClick = {
+                            DropdownMenuItem(text = { Text(stringResource(R.string.new_sub_task)) }, enabled = i != null, onClick = {
                                 menu = false; nav.newIssue(parentId = i!!.id, projectId = i.projectId)
                             })
-                            DropdownMenuItem(text = { Text("Refresh") }, onClick = { menu = false; reloadTick++ })
+                            DropdownMenuItem(text = { Text(stringResource(R.string.refresh)) }, onClick = { menu = false; reloadTick++ })
                         }
                     }
                 },
@@ -430,7 +435,7 @@ fun IssueDetailScreen(nav: Nav, id: String) {
                             fallbackAgentId = i.activeRun?.agentId ?: i.assigneeAgentId,
                             fallbackStatus = i.activeRun?.status,
                             onWatch = { nav.run(it) },
-                            onStop = { runId -> safe { Repo.cancelRun(runId); AppState.toast("Stopping run"); loadLiveRuns() } },
+                            onStop = { runId -> safe { Repo.cancelRun(runId); AppState.toast(appString(R.string.stopping_run)); loadLiveRuns() } },
                         )
                     }
                     stickyHeader(key = "tabs") {
@@ -485,7 +490,7 @@ fun IssueDetailScreen(nav: Nav, id: String) {
                                 }
                             }.sortedBy { it.at }
                             if (!commentsLoaded) item { IssueTabLoading() }
-                            else if (timeline.isEmpty()) item { EmptyState("No comments yet. Say something to the assignee below.") }
+                            else if (timeline.isEmpty()) item { EmptyState(stringResource(R.string.no_comments_yet_say_something_to)) }
                             items(timeline, key = { it.key }) { entry ->
                                 when (entry) {
                                     is IssueThreadEntry.C -> {
@@ -524,22 +529,22 @@ fun IssueDetailScreen(nav: Nav, id: String) {
         var v by remember { mutableStateOf(i.title) }
         AlertDialog(
             onDismissRequest = { editTitle = false },
-            title = { Text("Title") },
+            title = { Text(stringResource(R.string.title)) },
             text = { OutlinedTextField(v, { v = it }, modifier = Modifier.fillMaxWidth()) },
             confirmButton = {
                 TextButton(enabled = v.isNotBlank(), onClick = {
                     editTitle = false
                     patch(i.copy(title = v.trim()), jsonOf("title" to v.trim()))
-                }) { Text("Save") }
+                }) { Text(stringResource(R.string.save)) }
             },
-            dismissButton = { TextButton(onClick = { editTitle = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { editTitle = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
     if (i != null && editDescription) {
         var v by remember { mutableStateOf(i.description ?: "") }
         AlertDialog(
             onDismissRequest = { editDescription = false },
-            title = { Text("Description") },
+            title = { Text(stringResource(R.string.description)) },
             text = {
                 OutlinedTextField(
                     v, { v = it },
@@ -551,9 +556,9 @@ fun IssueDetailScreen(nav: Nav, id: String) {
                 TextButton(onClick = {
                     editDescription = false
                     patch(i.copy(description = v), jsonOf("description" to v))
-                }) { Text("Save") }
+                }) { Text(stringResource(R.string.save)) }
             },
-            dismissButton = { TextButton(onClick = { editDescription = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { editDescription = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
     if (i != null) when (sheet) {
@@ -591,7 +596,7 @@ private fun IssueHeader(
                 ancestors.forEachIndexed { idx, a ->
                     if (idx > 0) Text(" › ", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelMedium)
                     Text(
-                        a.identifier ?: a.title ?: "Parent",
+                        a.identifier ?: a.title ?: stringResource(R.string.parent),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.tertiary,
                         modifier = Modifier.clickable { nav.issue(a.identifier ?: a.id) }.padding(vertical = 6.dp),
@@ -608,7 +613,7 @@ private fun IssueHeader(
         Spacer(Modifier.height(6.dp))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             PropertyChip(onClick = { onSheet("status") }, label = { Text(statusLabel(issue.status)) }, leadingIcon = { StatusIcon(issue.status, 14.dp) })
-            PropertyChip(onClick = { onSheet("priority") }, label = { Text(issue.priority.replaceFirstChar { it.uppercase() }) }, leadingIcon = { PriorityIcon(issue.priority, 16.dp) })
+            PropertyChip(onClick = { onSheet("priority") }, label = { Text(priorityLabel(issue.priority)) }, leadingIcon = { PriorityIcon(issue.priority, 16.dp) })
             PropertyChip(
                 onClick = { onSheet("assignee") },
                 label = {
@@ -616,7 +621,7 @@ private fun IssueHeader(
                         when {
                             issue.assigneeAgentId != null -> AppState.agentName(issue.assigneeAgentId)
                             issue.assigneeUserId != null -> AppState.userName(issue.assigneeUserId)
-                            else -> "Unassigned"
+                            else -> stringResource(R.string.unassigned)
                         },
                     )
                 },
@@ -631,7 +636,7 @@ private fun IssueHeader(
             val project = issue.project ?: AppState.project(issue.projectId)?.let { ProjectRef(it.id, it.name, it.color) }
             PropertyChip(
                 onClick = { onSheet("project") },
-                label = { Text(project?.name ?: "No project", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                label = { Text(project?.name ?: stringResource(R.string.no_project), maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 leadingIcon = { Icon(Icons.Outlined.FolderOpen, null, Modifier.size(18.dp), tint = parseIssueColor(project?.color) ?: MaterialTheme.colorScheme.onSurfaceVariant) },
             )
             issue.labels.orEmpty().forEach { l ->
@@ -644,7 +649,7 @@ private fun IssueHeader(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.Block, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.error)
                 Spacer(Modifier.width(6.dp))
-                Text("Blocked by", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.blocked_by), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             blockedBy.forEach { b ->
                 Row(
@@ -660,10 +665,10 @@ private fun IssueHeader(
             }
         }
         val meta = buildList {
-            issue.createdByAgentId?.let { add("Created by ${AppState.agentName(it)}") } ?: issue.createdByUserId?.let { add("Created by ${AppState.userName(it)}") }
+            issue.createdByAgentId?.let { add(stringResource(R.string.created_by_x, AppState.agentName(it))) } ?: issue.createdByUserId?.let { add(stringResource(R.string.created_by_x, AppState.userName(it))) }
             issue.createdAt?.let { add(relativeTime(it)) }
             cost?.takeIf { it.runCount > 0 || it.costCents > 0 }?.let { c ->
-                add("${formatCents(c.costCents)} · ${c.runCount} run${if (c.runCount == 1) "" else "s"}")
+                add(formatCents(c.costCents) + " · " + appPlural(R.plurals.n_runs, c.runCount, c.runCount))
             }
         }
         if (meta.isNotEmpty()) {
@@ -673,7 +678,7 @@ private fun IssueHeader(
         Spacer(Modifier.height(10.dp))
         val desc = issue.description
         if (desc.isNullOrBlank()) {
-            TextButton(onClick = onEditDescription) { Icon(Icons.Outlined.Edit, null, Modifier.size(16.dp)); Spacer(Modifier.width(6.dp)); Text("Add description") }
+            TextButton(onClick = onEditDescription) { Icon(Icons.Outlined.Edit, null, Modifier.size(16.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.add_description)) }
         } else {
             var expanded by remember(issue.id) { mutableStateOf(desc.length < 700) }
             Surface(
@@ -686,9 +691,9 @@ private fun IssueHeader(
                         Markdown(desc, fontSizeSp = 15f)
                     }
                     Row {
-                        if (desc.length >= 700) TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "Show less" else "Show more") }
+                        if (desc.length >= 700) TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) stringResource(R.string.show_less) else stringResource(R.string.show_more)) }
                         Spacer(Modifier.weight(1f))
-                        TextButton(onClick = onEditDescription) { Icon(Icons.Outlined.Edit, null, Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text("Edit") }
+                        TextButton(onClick = onEditDescription) { Icon(Icons.Outlined.Edit, null, Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text(stringResource(R.string.edit)) }
                     }
                 }
             }
@@ -729,15 +734,15 @@ private fun IssueLiveBanner(
                         Spacer(Modifier.weight(1f))
                         Text(durationLabel(r.startedAt ?: r.createdAt, null), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    val line = r.currentStatusMessage ?: r.currentToolName?.let { "Using $it" } ?: r.lastAssistantSnippet
+                    val line = r.currentStatusMessage ?: r.currentToolName?.let { stringResource(R.string.using_x, it) } ?: r.lastAssistantSnippet
                     if (!line.isNullOrBlank()) {
                         Spacer(Modifier.height(6.dp))
                         Text(line, style = MaterialTheme.typography.bodySmall, maxLines = 3, overflow = TextOverflow.Ellipsis)
                     }
                     Spacer(Modifier.height(6.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilledTonalButton(onClick = { onWatch(r.id) }) { Icon(Icons.Outlined.Visibility, null, Modifier.size(16.dp)); Spacer(Modifier.width(6.dp)); Text("Watch") }
-                        OutlinedButton(onClick = { onStop(r.id) }) { Icon(Icons.Outlined.Stop, null, Modifier.size(16.dp)); Spacer(Modifier.width(6.dp)); Text("Stop") }
+                        FilledTonalButton(onClick = { onWatch(r.id) }) { Icon(Icons.Outlined.Visibility, null, Modifier.size(16.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.watch)) }
+                        OutlinedButton(onClick = { onStop(r.id) }) { Icon(Icons.Outlined.Stop, null, Modifier.size(16.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.stop)) }
                     }
                 }
             }

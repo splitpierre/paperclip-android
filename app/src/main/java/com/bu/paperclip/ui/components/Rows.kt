@@ -25,6 +25,9 @@ import com.bu.paperclip.data.LiveRun
 import com.bu.paperclip.ui.theme.LocalStatusColors
 import com.bu.paperclip.util.durationLabel
 import com.bu.paperclip.util.relativeTime
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.util.appString
 
 /** Standard issue row: status, identifier, title, assignee, priority, recency, live/unread markers. */
 @OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
@@ -107,7 +110,7 @@ fun LiveRunRow(run: LiveRun, onClick: () -> Unit, issueLabel: String? = null) {
                 Spacer(Modifier.weight(1f))
                 Text(durationLabel(run.startedAt ?: run.createdAt, run.finishedAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            val line = run.currentStatusMessage ?: run.lastAssistantSnippet ?: run.currentToolName?.let { "Using $it" }
+            val line = run.currentStatusMessage ?: run.lastAssistantSnippet ?: run.currentToolName?.let { stringResource(R.string.using_x, it) }
             if (issueLabel != null) Text(issueLabel, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (!line.isNullOrBlank()) Text(line, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }

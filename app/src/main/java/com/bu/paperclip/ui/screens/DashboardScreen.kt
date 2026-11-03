@@ -78,6 +78,10 @@ import com.bu.paperclip.ui.components.rememberMinuteTick
 import com.bu.paperclip.ui.theme.LocalStatusColors
 import com.bu.paperclip.util.formatCents
 import com.bu.paperclip.util.relativeTime
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.util.appString
+import com.bu.paperclip.util.appPlural
 
 private data class DashData(val summary: DashboardSummary, val live: List<LiveRun>, val activity: List<ActivityEvent>)
 
@@ -112,14 +116,14 @@ fun DashboardScreen(nav: Nav) {
             TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(company?.name ?: "Paperclip", style = MaterialTheme.typography.headlineSmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                        Text(company?.name ?: stringResource(R.string.paperclip), style = MaterialTheme.typography.headlineSmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                         Spacer(Modifier.width(8.dp))
                         Dot(if (connected) LocalStatusColors.current.green else LocalStatusColors.current.yellow, 8.dp)
                     }
                 },
                 actions = {
-                    IconButton(onClick = { nav.search() }) { Icon(Icons.Outlined.Search, "Search") }
-                    IconButton(onClick = { nav.settings() }) { Icon(Icons.Outlined.Settings, "Settings") }
+                    IconButton(onClick = { nav.search() }) { Icon(Icons.Outlined.Search, stringResource(R.string.search)) }
+                    IconButton(onClick = { nav.settings() }) { Icon(Icons.Outlined.Settings, stringResource(R.string.settings)) }
                 },
             )
         },
@@ -135,35 +139,35 @@ fun DashboardScreen(nav: Nav) {
                                 paused.forEach { Repo.resume(it.id) }
                                 AppState.refreshAgents()
                                 loader.refresh()
-                            }, "Resumed ${paused.size} agent${if (paused.size == 1) "" else "s"}")
+                            }, appPlural(R.plurals.resumed_n_agents, paused.size, paused.size))
                         }
                     }
                 }
                 item(key = "metrics") { DashMetrics(d.summary, nav) }
                 item(key = "live-h") {
-                    SectionHeader("Live now") {
-                        SectionAction("Agents") { nav.tab(Routes.AGENTS) }
+                    SectionHeader(stringResource(R.string.live_now)) {
+                        SectionAction(stringResource(R.string.agents)) { nav.tab(Routes.AGENTS) }
                     }
                 }
                 if (d.live.isEmpty()) {
-                    item(key = "live-empty") { EmptyState("No runs right now") }
+                    item(key = "live-empty") { EmptyState(stringResource(R.string.no_runs_right_now)) }
                 } else {
                     items(d.live, key = { "live-" + it.id }) { r ->
                         LiveRunRow(r, onClick = { nav.run(r.id) }, issueLabel = r.issueId?.let { issueLabels[it] })
                     }
                 }
-                item(key = "chart-h") { SectionHeader("Run activity · 14 days") }
+                item(key = "chart-h") { SectionHeader(stringResource(R.string.run_activity_14_days)) }
                 item(key = "chart") {
                     Card(Modifier.padding(horizontal = 16.dp)) {
                         DashRunActivityChart(d.summary.runActivity)
                     }
                 }
                 item(key = "act-h") {
-                    SectionHeader("Recent activity") {
-                        SectionAction("See all") { nav.activity() }
+                    SectionHeader(stringResource(R.string.recent_activity)) {
+                        SectionAction(stringResource(R.string.see_all)) { nav.activity() }
                     }
                 }
-                if (d.activity.isEmpty()) item(key = "act-empty") { EmptyState("Nothing has happened yet") }
+                if (d.activity.isEmpty()) item(key = "act-empty") { EmptyState(stringResource(R.string.nothing_has_happened_yet)) }
                 items(d.activity) { e -> DashActivityRow(e) }
             }
         }
@@ -183,11 +187,11 @@ private fun DashPausedBanner(count: Int, onResume: () -> Unit) {
             Icon(Icons.Outlined.PauseCircle, null, tint = yellow, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(10.dp))
             Text(
-                "$count agent${if (count == 1) " is" else "s are"} paused",
+                appPlural(R.plurals.n_agents_paused, count, count),
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                 modifier = Modifier.weight(1f),
             )
-            TextButton(onClick = onResume) { Text("Resume all", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold) }
+            TextButton(onClick = onResume) { Text(stringResource(R.string.resume_all), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold) }
         }
     }
 }
@@ -200,14 +204,14 @@ private fun DashMetrics(s: DashboardSummary, nav: Nav) {
     Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             DashMetric(
-                "Agents", "$enabled", Icons.Outlined.SmartToy,
-                if (s.agents.running > 0) "${s.agents.running} running" else "none running",
+                stringResource(R.string.agents), "$enabled", Icons.Outlined.SmartToy,
+                if (s.agents.running > 0) "${s.agents.running} running" else stringResource(R.string.none_running),
                 Modifier.weight(1f),
                 accent = if (s.agents.error > 0) st.red else null,
-                extra = if (s.agents.error > 0) "${s.agents.error} in error" else null,
+                extra = if (s.agents.error > 0) stringResource(R.string.x_in_error, s.agents.error) else null,
             ) { nav.tab(Routes.AGENTS) }
             DashMetric(
-                "In progress", "${s.tasks.inProgress}", Icons.Outlined.Timelapse,
+                stringResource(R.string.in_progress), "${s.tasks.inProgress}", Icons.Outlined.Timelapse,
                 if (s.tasks.blocked > 0) "${s.tasks.blocked} blocked" else "${s.tasks.open} open",
                 Modifier.weight(1f),
                 accent = if (s.tasks.blocked > 0) st.red else null,
@@ -216,8 +220,8 @@ private fun DashMetrics(s: DashboardSummary, nav: Nav) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             val pct = s.costs.monthUtilizationPercent
             DashMetric(
-                "Month spend", formatCents(s.costs.monthSpendCents), Icons.Outlined.Payments,
-                if (s.costs.monthBudgetCents > 0) "of ${formatCents(s.costs.monthBudgetCents)}" else "no budget set",
+                stringResource(R.string.month_spend), formatCents(s.costs.monthSpendCents), Icons.Outlined.Payments,
+                if (s.costs.monthBudgetCents > 0) "of ${formatCents(s.costs.monthBudgetCents)}" else stringResource(R.string.no_budget_set),
                 Modifier.weight(1f),
                 progress = if (s.costs.monthBudgetCents > 0) (pct / 100.0).toFloat().coerceIn(0f, 1f) else null,
                 progressColor = when {
@@ -227,8 +231,8 @@ private fun DashMetrics(s: DashboardSummary, nav: Nav) {
                 },
             ) { nav.costs() }
             DashMetric(
-                "Approvals", "$approvals", Icons.Outlined.Gavel,
-                if (s.budgets.activeIncidents > 0) "${s.budgets.activeIncidents} budget incident${if (s.budgets.activeIncidents == 1) "" else "s"}" else "waiting on you",
+                stringResource(R.string.approvals), "$approvals", Icons.Outlined.Gavel,
+                if (s.budgets.activeIncidents > 0) appPlural(R.plurals.n_budget_incidents, s.budgets.activeIncidents, s.budgets.activeIncidents) else stringResource(R.string.waiting_on_you),
                 Modifier.weight(1f),
                 accent = if (approvals > 0) st.violet else null,
             ) { nav.approvals() }

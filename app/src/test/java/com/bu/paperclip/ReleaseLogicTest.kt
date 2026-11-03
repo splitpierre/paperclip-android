@@ -17,6 +17,10 @@ import org.junit.Test
 import java.time.Instant
 
 class ReleaseLogicTest {
+    init {
+        TestStrings.install()
+    }
+
     // ---- markdown tables ----
 
     @Test fun tablesAreSplitFromProse() {

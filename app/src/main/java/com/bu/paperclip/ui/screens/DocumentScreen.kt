@@ -48,6 +48,10 @@ import com.bu.paperclip.ui.components.rememberLoader
 import com.bu.paperclip.util.relativeTime
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.util.appString
+import com.bu.paperclip.util.appPlural
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,12 +78,12 @@ fun DocumentScreen(nav: Nav, issueId: String, key: String) {
                 val saved = Repo.saveDocument(issueId, key, titleDraft.trim().ifEmpty { null }, draft, d.latestRevisionId)
                 loader.set(saved)
                 editing = false
-                AppState.toast("Saved revision ${saved.latestRevisionNumber ?: ""}".trim())
+                AppState.toast(appString(R.string.saved_revision_x, saved.latestRevisionNumber ?: "").trim())
             } catch (c: CancellationException) {
                 throw c
             } catch (t: Throwable) {
                 if (t is ApiException.Http && t.status == 409) {
-                    AppState.toast("Someone changed this document meanwhile. Reloaded the latest version; your edit is still in the editor.")
+                    AppState.toast(appString(R.string.someone_changed_this_document_meanwhile_reloaded))
                     runCatching { loader.set(Repo.document(issueId, key)) }
                 } else AppState.toast(errorMessage(t))
             } finally {
@@ -108,8 +112,8 @@ fun DocumentScreen(nav: Nav, issueId: String, key: String) {
                     if (doc != null) {
                         if (editing) {
                             if (saving) CircularProgressIndicator(Modifier.padding(end = 16.dp).size(22.dp), strokeWidth = 2.dp)
-                            else TextButton(onClick = { save(doc) }) { Text("Save") }
-                        } else IconButton(onClick = { startEdit(doc) }) { Icon(Icons.Outlined.Edit, "Edit") }
+                            else TextButton(onClick = { save(doc) }) { Text(stringResource(R.string.save)) }
+                        } else IconButton(onClick = { startEdit(doc) }) { Icon(Icons.Outlined.Edit, stringResource(R.string.edit)) }
                     }
                 },
             )
@@ -119,7 +123,7 @@ fun DocumentScreen(nav: Nav, issueId: String, key: String) {
             LoadContent(loader) { d ->
                 if (editing) {
                     Column(Modifier.fillMaxSize().imePadding().padding(12.dp)) {
-                        OutlinedTextField(titleDraft, { titleDraft = it }, label = { Text("Title") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(titleDraft, { titleDraft = it }, label = { Text(stringResource(R.string.title)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
                         Spacer(Modifier.height(8.dp))
                         OutlinedTextField(
                             value = draft,
@@ -130,7 +134,7 @@ fun DocumentScreen(nav: Nav, issueId: String, key: String) {
                     }
                 } else {
                     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-                        if (d.body.isBlank()) Text("This document is empty.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (d.body.isBlank()) Text(stringResource(R.string.this_document_is_empty), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         else Markdown(d.body, fontSizeSp = 15f)
                         Spacer(Modifier.height(48.dp))
                     }
@@ -142,9 +146,9 @@ fun DocumentScreen(nav: Nav, issueId: String, key: String) {
     if (confirmDiscard) {
         AlertDialog(
             onDismissRequest = { confirmDiscard = false },
-            title = { Text("Discard changes?") },
-            confirmButton = { TextButton(onClick = { confirmDiscard = false; editing = false }) { Text("Discard") } },
-            dismissButton = { TextButton(onClick = { confirmDiscard = false }) { Text("Keep editing") } },
+            title = { Text(stringResource(R.string.discard_changes)) },
+            confirmButton = { TextButton(onClick = { confirmDiscard = false; editing = false }) { Text(stringResource(R.string.discard)) } },
+            dismissButton = { TextButton(onClick = { confirmDiscard = false }) { Text(stringResource(R.string.keep_editing)) } },
         )
     }
 }

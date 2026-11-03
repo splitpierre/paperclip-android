@@ -71,10 +71,14 @@ import com.bu.paperclip.ui.components.rememberMinuteTick
 import com.bu.paperclip.util.relativeTime
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.util.appString
+import com.bu.paperclip.util.appPlural
 
 // ---------------- Activity ----------------
 
-private val activityFilters = listOf("All", "Agents", "People", "System")
+private val activityFilters = listOf(appString(R.string.all), appString(R.string.agents), appString(R.string.people), appString(R.string.system))
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -85,7 +89,7 @@ fun ActivityScreen(nav: Nav) {
     val loader = rememberLoader(cid) { Repo.activity(cid, limit = 100) }
     LiveRefresh(debounceMs = 1000, filter = { it.type == "activity.logged" }) { loader.refresh() }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Activity") }, navigationIcon = { BackIcon { nav.back() } }) }) { pad ->
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.activity)) }, navigationIcon = { BackIcon { nav.back() } }) }) { pad ->
         Column(Modifier.fillMaxSize().padding(pad)) {
             Row(
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 4.dp),
@@ -105,7 +109,7 @@ fun ActivityScreen(nav: Nav) {
                     }
                 }
                 LazyColumn(Modifier.fillMaxSize()) {
-                    if (shown.isEmpty()) item { EmptyState("No activity yet.", Icons.Outlined.History) }
+                    if (shown.isEmpty()) item { EmptyState(stringResource(R.string.no_activity_yet), Icons.Outlined.History) }
                     items(shown, key = { e -> e.id.ifEmpty { "${e.createdAt}${e.action}${e.entityId}" } }) { e ->
                         ActivityRow(e) { activityLink(e)?.let { Links.handler(it) } }
                     }
@@ -125,7 +129,7 @@ private fun ActivityRow(e: ActivityEvent, onClick: () -> Unit) {
         when (e.actorType) {
             "agent" -> AgentAvatar(e.actorId ?: e.agentId, 30.dp)
             "user" -> Avatar(activityActor(e), AppState.users.collectAsState().value[e.actorId]?.image, 30.dp, isAgent = false)
-            else -> Avatar("Paperclip", null, 30.dp)
+            else -> Avatar(stringResource(R.string.paperclip), null, 30.dp)
         }
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
@@ -147,12 +151,12 @@ private sealed class AdminSearchState {
 private val adminTagRe = Regex("<[^>]+>")
 
 private fun adminSearchTypeLabel(type: String) = when (type) {
-    "issue" -> "Tasks"
-    "comment" -> "Comments"
-    "document" -> "Documents"
-    "artifact" -> "Artifacts"
-    "agent" -> "Agents"
-    "project" -> "Projects"
+    "issue" -> appString(R.string.tasks)
+    "comment" -> appString(R.string.comments)
+    "document" -> appString(R.string.documents)
+    "artifact" -> appString(R.string.artifacts)
+    "agent" -> appString(R.string.agents)
+    "project" -> appString(R.string.projects)
     else -> type.replace('_', ' ').replaceFirstChar { it.uppercase() } + "s"
 }
 
@@ -192,13 +196,13 @@ fun SearchScreen(nav: Nav) {
                     TextField(
                         value = query,
                         onValueChange = { query = it },
-                        placeholder = { Text("Search tasks, comments, docs…") },
+                        placeholder = { Text(stringResource(R.string.search_tasks_comments_docs)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth().focusRequester(focus),
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),
                         trailingIcon = {
-                            if (query.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(Icons.Default.Close, "Clear") }
+                            if (query.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(Icons.Default.Close, stringResource(R.string.clear)) }
                         },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
@@ -213,14 +217,14 @@ fun SearchScreen(nav: Nav) {
     ) { pad ->
         Box(Modifier.fillMaxSize().padding(pad)) {
             when (val s = state) {
-                AdminSearchState.Idle -> EmptyState("Type at least two characters to search across ${company?.name ?: "the company"}.", Icons.Outlined.Search)
+                AdminSearchState.Idle -> EmptyState(appString(R.string.type_two_characters_to_search_x, company?.name ?: appString(R.string.the_company)), Icons.Outlined.Search)
                 AdminSearchState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
                     CircularProgressIndicator(Modifier.padding(32.dp))
                 }
                 is AdminSearchState.Failed -> EmptyState(s.message)
                 is AdminSearchState.Done -> {
                     if (s.results.isEmpty()) {
-                        EmptyState("No results for \"${query.trim()}\".", Icons.Outlined.Search)
+                        EmptyState(stringResource(R.string.no_results_for_x, query.trim()), Icons.Outlined.Search)
                     } else {
                         val grouped = s.results.groupBy { it.type }
                         LazyColumn(Modifier.fillMaxSize()) {
@@ -271,7 +275,7 @@ private fun SearchResultRow(r: SearchResult, onClick: () -> Unit) {
                 }
             }
             Text(
-                adminTagRe.replace(r.title ?: r.issue?.title ?: "Untitled", ""),
+                adminTagRe.replace(r.title ?: r.issue?.title ?: stringResource(R.string.untitled), ""),
                 style = MaterialTheme.typography.bodyLarge,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,

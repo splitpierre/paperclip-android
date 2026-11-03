@@ -93,6 +93,9 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
 import okhttp3.Request
 import java.io.File
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.R
+import com.bu.paperclip.util.appString
 
 private val ISSUE_SYSTEM_DOC_KEYS = setOf("continuation-summary", "pipeline-case-body")
 
@@ -100,7 +103,7 @@ private val ISSUE_SYSTEM_DOC_KEYS = setOf("continuation-summary", "pipeline-case
 internal fun IssueDocsTab(issue: Issue, docs: List<IssueDocument>?, nav: Nav) {
     val list = docs ?: issue.documentSummaries?.map { IssueDocument(id = it.id, key = it.key, title = it.title, latestRevisionNumber = it.latestRevisionNumber, updatedAt = it.updatedAt) }
     if (list == null) { IssueTabLoading(); return }
-    if (list.isEmpty()) { EmptyState("No documents on this task", Icons.Outlined.Description); return }
+    if (list.isEmpty()) { EmptyState(stringResource(R.string.no_documents_on_this_task), Icons.Outlined.Description); return }
     val sorted = list.sortedWith(compareBy<IssueDocument>({ it.key in ISSUE_SYSTEM_DOC_KEYS }, { it.key != "plan" }, { it.key }))
     Column {
         sorted.forEach { d ->
@@ -138,10 +141,10 @@ internal fun IssueSubtasksTab(issue: Issue, children: List<Issue>?, nav: Nav) {
     Column {
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             OutlinedButton(onClick = { nav.newIssue(parentId = issue.id, projectId = issue.projectId) }) {
-                Icon(Icons.Outlined.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("New sub-task")
+                Icon(Icons.Outlined.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.new_sub_task))
             }
             Spacer(Modifier.weight(1f))
-            Text("Show closed", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.show_closed), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(6.dp))
             androidx.compose.material3.Switch(showClosed, { showClosed = it })
         }
@@ -149,17 +152,17 @@ internal fun IssueSubtasksTab(issue: Issue, children: List<Issue>?, nav: Nav) {
             // Mirror still loading: plain list of direct children.
             when {
                 children == null -> IssueTabLoading()
-                children.isEmpty() -> EmptyState("No sub-tasks")
+                children.isEmpty() -> EmptyState(stringResource(R.string.no_sub_tasks))
                 else -> children.forEach { c -> IssueRow(c, onClick = { nav.issue(c.identifier ?: c.id) }, showProject = false); Divider() }
             }
             return@Column
         }
         val rollup = graph.rollup(issue.id)
-        if (rollup.total == 0) { EmptyState("No sub-tasks"); return@Column }
+        if (rollup.total == 0) { EmptyState(stringResource(R.string.no_sub_tasks)); return@Column }
         Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
             com.bu.paperclip.ui.components.RollupBar(rollup)
             Text(
-                "${rollup.open} open · ${rollup.inFlight} in flight · ${rollup.blocked} blocked · ${rollup.closed} closed",
+                stringResource(R.string.x_open_x_in_flight_x, rollup.open, rollup.inFlight, rollup.blocked, rollup.closed),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp),
@@ -178,7 +181,7 @@ internal fun IssueSubtasksTab(issue: Issue, children: List<Issue>?, nav: Nav) {
         val forest = graph.forest(filter, issue.id)
         if (forest.isEmpty()) {
             Text(
-                "All ${rollup.total} sub-tasks are closed.",
+                stringResource(R.string.all_x_sub_tasks_are_closed, rollup.total),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(16.dp),
             )
@@ -211,18 +214,18 @@ internal fun IssueFilesTab(attachments: List<Attachment>?, workProducts: List<Wo
     var viewing by remember { mutableStateOf<Attachment?>(null) }
     var opening by remember { mutableStateOf<String?>(null) }
     Column {
-        SectionHeader("Output")
+        SectionHeader(stringResource(R.string.output))
         when {
             workProducts == null -> IssueTabLoading()
-            workProducts.isEmpty() -> Text("Nothing published yet", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            workProducts.isEmpty() -> Text(stringResource(R.string.nothing_published_yet), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
             else -> Column(Modifier.padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 workProducts.sortedByDescending { it.isPrimary }.forEach { IssueWorkProductCard(it) }
             }
         }
-        SectionHeader("Attachments")
+        SectionHeader(stringResource(R.string.attachments))
         when {
             attachments == null -> IssueTabLoading()
-            attachments.isEmpty() -> Text("No attachments", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            attachments.isEmpty() -> Text(stringResource(R.string.no_attachments), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
             else -> {
                 val (images, files) = attachments.partition { it.contentType?.startsWith("image/") == true }
                 if (images.isNotEmpty()) {
@@ -244,7 +247,7 @@ internal fun IssueFilesTab(attachments: List<Attachment>?, workProducts: List<Wo
                         Modifier.fillMaxWidth().clickable(enabled = opening == null) {
                             opening = a.id
                             scope.launch {
-                                try { issueOpenAttachment(ctx, a) } catch (t: Throwable) { AppState.toast("Couldn't open: ${errorMessage(t)}") }
+                                try { issueOpenAttachment(ctx, a) } catch (t: Throwable) { AppState.toast(appString(R.string.couldn_t_open_x, errorMessage(t))) }
                                 opening = null
                             }
                         }.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -272,7 +275,7 @@ internal fun IssueFilesTab(attachments: List<Attachment>?, workProducts: List<Wo
 private fun issueSize(b: Long): String = when {
     b < 1024 -> "$b B"
     b < 1024 * 1024 -> "${b / 1024} KB"
-    else -> String.format("%.1f MB", b / 1048576.0)
+    else -> String.format(appString(R.string.t_1f_mb), b / 1048576.0)
 }
 
 /** Downloads with the session cookies (the browser has none) and hands the file to another app. */
@@ -292,7 +295,7 @@ private suspend fun issueOpenAttachment(ctx: Context, a: Attachment) {
     }
     val uri = FileProvider.getUriForFile(ctx, ctx.packageName + ".files", file)
     val intent = Intent(Intent.ACTION_VIEW).setDataAndType(uri, a.contentType ?: "*/*").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    ctx.startActivity(Intent.createChooser(intent, a.originalFilename ?: "Open"))
+    ctx.startActivity(Intent.createChooser(intent, a.originalFilename ?: appString(R.string.open)))
 }
 
 @Composable
@@ -316,7 +319,7 @@ internal fun IssueImageViewer(url: String, title: String?, onClose: () -> Unit) 
             )
             Row(Modifier.fillMaxWidth().statusBarsPadding().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(title ?: "", color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).padding(start = 8.dp))
-                IconButton(onClick = onClose) { Icon(Icons.Default.Close, "Close", tint = Color.White) }
+                IconButton(onClick = onClose) { Icon(Icons.Default.Close, stringResource(R.string.close), tint = Color.White) }
             }
         }
     }
@@ -364,10 +367,10 @@ private fun IssueWorkProductCard(wp: WorkProduct) {
 @Composable
 internal fun IssueActivityTab(events: List<ActivityEvent>?, runs: List<JsonObject>?, nav: Nav) {
     Column {
-        SectionHeader("Runs")
+        SectionHeader(stringResource(R.string.runs))
         when {
             runs == null -> IssueTabLoading()
-            runs.isEmpty() -> Text("No runs yet", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            runs.isEmpty() -> Text(stringResource(R.string.no_runs_yet), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
             else -> runs.take(30).forEach { r ->
                 val runId = r.issueStr("runId") ?: r.issueStr("id") ?: return@forEach
                 val status = r.issueStr("status") ?: ""
@@ -391,10 +394,10 @@ internal fun IssueActivityTab(events: List<ActivityEvent>?, runs: List<JsonObjec
                 }
             }
         }
-        SectionHeader("Activity")
+        SectionHeader(stringResource(R.string.activity))
         when {
             events == null -> IssueTabLoading()
-            events.isEmpty() -> Text("No activity", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            events.isEmpty() -> Text(stringResource(R.string.no_activity), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
             else -> events.forEach { e ->
                 Row(
                     Modifier.fillMaxWidth().clickable {

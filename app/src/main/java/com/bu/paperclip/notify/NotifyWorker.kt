@@ -29,6 +29,9 @@ import com.bu.paperclip.net.ApiException
 import com.bu.paperclip.util.parseInstant
 import java.time.Instant
 import java.util.concurrent.TimeUnit
+import androidx.compose.ui.res.stringResource
+import com.bu.paperclip.util.appString
+import com.bu.paperclip.util.appPlural
 
 /** Periodically checks the attention feed and notifies about items that arrived since the last check. */
 class NotifyWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
@@ -43,13 +46,13 @@ class NotifyWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
             val fresh = feed.items.filter { (parseInstant(it.activityAt ?: it.createdAt) ?: Instant.EPOCH).isAfter(since) }
             fresh.take(5).forEach { item ->
                 val title = when (item.sourceKind) {
-                    "issue_thread_interaction" -> "${item.originAgentName ?: "An agent"} needs your input"
-                    "approval" -> "Approval requested"
-                    "failed_run" -> "Run failed"
-                    "budget_alert" -> "Budget alert"
-                    "agent_error_alert" -> "Agent error"
-                    "decision" -> "Decision needed"
-                    else -> "Needs attention"
+                    "issue_thread_interaction" -> appString(R.string.x_needs_your_input, item.originAgentName ?: appString(R.string.an_agent))
+                    "approval" -> appString(R.string.approval_requested)
+                    "failed_run" -> appString(R.string.run_failed)
+                    "budget_alert" -> appString(R.string.budget_alert)
+                    "agent_error_alert" -> appString(R.string.agent_error)
+                    "decision" -> appString(R.string.decision_needed)
+                    else -> appString(R.string.needs_attention)
                 }
                 val ref = item.relatedIssue?.identifier ?: item.subject.identifier
                 val body = listOfNotNull(ref, item.subject.title ?: item.relatedIssue?.title, item.whyNow).joinToString(" · ")
@@ -57,12 +60,12 @@ class NotifyWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
                     else item.relatedIssue?.identifier?.let { "/issues/$it" } ?: item.subject.href
                 notify(applicationContext, item.id.hashCode(), title, body, link)
             }
-            if (fresh.size > 5) notify(applicationContext, 1, "${fresh.size} items need attention", "Open Decisions to review them", "/decisions")
+            if (fresh.size > 5) notify(applicationContext, 1, appString(R.string.x_items_need_attention, fresh.size), appString(R.string.open_decisions_to_review_them), "/decisions")
             AppState.settings.setLastNotifiedAt(Instant.now().toString())
             Result.success()
         } catch (e: ApiException.AuthRequired) {
             if (s.lastNotifiedAt != "auth") {
-                notify(applicationContext, 2, "Paperclip sign-in expired", "Open the app to sign in again so notifications keep working.", null)
+                notify(applicationContext, 2, appString(R.string.paperclip_sign_in_expired), appString(R.string.open_the_app_to_sign_in), null)
                 AppState.settings.setLastNotifiedAt("auth")
             }
             Result.success()
@@ -78,7 +81,7 @@ class NotifyWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
         fun ensureChannel(ctx: Context) {
             if (Build.VERSION.SDK_INT >= 26) {
                 val nm = ctx.getSystemService(NotificationManager::class.java)
-                nm.createNotificationChannel(NotificationChannel(CHANNEL, "Agent requests", NotificationManager.IMPORTANCE_DEFAULT))
+                nm.createNotificationChannel(NotificationChannel(CHANNEL, appString(R.string.agent_requests), NotificationManager.IMPORTANCE_DEFAULT))
             }
         }
 
