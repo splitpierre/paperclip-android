@@ -188,7 +188,7 @@
     <string name="if_these_instructions_are_generated_by">Se estas instruções forem geradas por um script de sincronização ou outra ferramenta, a próxima execução dela vai sobrescrever o que for editado aqui.</string>
     <string name="ignore_triggers_until_the_open_run">Ignora gatilhos até a execução aberta terminar.</string>
     <string name="in_flight">Em andamento</string>
-    <string name="in_progress">Em andamento</string>
+    <string name="status_in_progress">Em andamento</string>
     <string name="in_progress_tasks_need_an_assignee">Tarefas em andamento precisam de um responsável.</string>
     <string name="in_review">Em revisão</string>
     <string name="inbox">Caixa de entrada</string>

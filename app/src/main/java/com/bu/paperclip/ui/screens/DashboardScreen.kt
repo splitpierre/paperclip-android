@@ -211,7 +211,7 @@ private fun DashMetrics(s: DashboardSummary, nav: Nav) {
                 extra = if (s.agents.error > 0) stringResource(R.string.x_in_error, s.agents.error) else null,
             ) { nav.tab(Routes.AGENTS) }
             DashMetric(
-                stringResource(R.string.in_progress), "${s.tasks.inProgress}", Icons.Outlined.Timelapse,
+                stringResource(R.string.status_in_progress), "${s.tasks.inProgress}", Icons.Outlined.Timelapse,
                 if (s.tasks.blocked > 0) "${s.tasks.blocked} blocked" else "${s.tasks.open} open",
                 Modifier.weight(1f),
                 accent = if (s.tasks.blocked > 0) st.red else null,

@@ -247,7 +247,7 @@ fun issueStatusColor(status: String): Color {
 }
 
 fun statusLabel(status: String): String = when (status) {
-    "in_progress" -> appString(R.string.in_progress)
+    "in_progress" -> appString(R.string.status_in_progress)
     "in_review" -> appString(R.string.in_review)
     "todo" -> appString(R.string.todo)
     "pending_approval" -> appString(R.string.pending_approval)
