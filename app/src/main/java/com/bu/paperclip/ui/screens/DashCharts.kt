@@ -31,6 +31,9 @@ import com.bu.paperclip.ui.components.Dot
 import com.bu.paperclip.ui.theme.LocalStatusColors
 import androidx.compose.ui.res.stringResource
 import com.bu.paperclip.R
+import java.time.Month
+import java.time.format.TextStyle
+import java.util.Locale
 import com.bu.paperclip.util.appString
 
 /**
@@ -149,7 +152,7 @@ private fun DrawScope.dashBarSegment(color: Color, x: Float, top: Float, w: Floa
     drawPath(path, color)
 }
 
-private val dashMonths = (1..12).map { java.time.Month.of(it).getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.getDefault()) }
+private val dashMonths = (1..12).map { Month.of(it).getDisplayName(TextStyle.SHORT, Locale.getDefault()) }
 
 internal fun dashDayLabel(date: String, long: Boolean = false): String {
     val parts = date.take(10).split("-")

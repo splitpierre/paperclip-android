@@ -683,4 +683,8 @@
     <!-- 24-hour clock: uses the hour (arg 4) instead of the 12-hour hour and AM/PM (args 1 and 3). -->
     <string name="clock_time" tools:ignore="StringFormatCount">%4$02d:%2$02d</string>
     <string name="no_routine_runs">Sem execuções de rotinas</string>
+    <string name="a_sign_in_page">uma página de login</string>
+    <string name="someone">Alguém</string>
+    <string name="you">Você</string>
+    <string name="user">Usuário</string>
 </resources>

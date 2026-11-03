@@ -683,4 +683,8 @@
     </plurals>
     <string name="clock_time">%1$d:%2$02d %3$s</string>
     <string name="no_routine_runs">No routine runs</string>
+    <string name="a_sign_in_page">a sign-in page</string>
+    <string name="someone">Someone</string>
+    <string name="you">You</string>
+    <string name="user">User</string>
 </resources>

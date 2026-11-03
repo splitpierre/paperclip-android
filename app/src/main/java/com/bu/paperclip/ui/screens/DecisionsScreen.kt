@@ -107,6 +107,8 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.temporal.TemporalAdjusters
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import java.util.UUID
 import androidx.compose.ui.res.stringResource
 import com.bu.paperclip.R
@@ -143,7 +145,7 @@ private fun decideByShort(decideBy: String?): String? = when (decideBy) {
     null, "", "whenever" -> null
     "today" -> appString(R.string.decide_today)
     "this_week" -> appString(R.string.decide_this_week)
-    else -> runCatching { LocalDate.parse(decideBy).format(java.time.format.DateTimeFormatter.ofPattern("d MMM", java.util.Locale.getDefault())) }.getOrNull()
+    else -> runCatching { LocalDate.parse(decideBy).format(DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())) }.getOrNull()
 }
 
 private fun decideByLabel(decideBy: String?): String? = decideByShort(decideBy)?.let { appString(R.string.due_x, it) }

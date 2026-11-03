@@ -25,6 +25,8 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import com.bu.paperclip.R
+import com.bu.paperclip.util.appString
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
@@ -232,8 +234,8 @@ object Api {
         val r = execute(Request.Builder().url(url("/health")).get().build())
         return r.use {
             when {
-                it.code in 300..399 -> it.header("Location")?.let { loc -> runCatching { loc.toHttpUrl().host }.getOrNull() } ?: "a sign-in page"
-                it.header("Content-Type").orEmpty().contains("text/html") -> "a sign-in page"
+                it.code in 300..399 -> it.header("Location")?.let { loc -> runCatching { loc.toHttpUrl().host }.getOrNull() } ?: appString(R.string.a_sign_in_page)
+                it.header("Content-Type").orEmpty().contains("text/html") -> appString(R.string.a_sign_in_page)
                 else -> null
             }
         }

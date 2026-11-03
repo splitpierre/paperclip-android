@@ -6,6 +6,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import com.bu.paperclip.R
+import com.bu.paperclip.util.appString
 
 /** Process-wide cache of the selected company and the lookups every screen needs (names, avatars). */
 object AppState {
@@ -30,12 +32,12 @@ object AppState {
     val cid: String get() = company.value?.id ?: ""
 
     fun agent(id: String?): Agent? = id?.let { i -> agents.value.firstOrNull { it.id == i } }
-    fun agentName(id: String?): String = agent(id)?.name ?: "Agent"
+    fun agentName(id: String?): String = agent(id)?.name ?: appString(R.string.agent)
     fun userName(id: String?): String {
-        if (id == null) return "Someone"
-        if (id == me.value?.id) return "You"
+        if (id == null) return appString(R.string.someone)
+        if (id == me.value?.id) return appString(R.string.you)
         val u = users.value[id]
-        return u?.name?.takeIf { it.isNotBlank() } ?: u?.email ?: "User"
+        return u?.name?.takeIf { it.isNotBlank() } ?: u?.email ?: appString(R.string.user)
     }
     fun project(id: String?): Project? = id?.let { i -> projects.value.firstOrNull { it.id == i } }
 
