@@ -49,7 +49,7 @@ CID = uid("company")
 ME = "user-alex"
 COMPANY = {
     "id": CID, "name": "Lumen Labs", "description": "Makers of Orbit, a shared calendar for small teams.",
-    "status": "active", "issuePrefix": "LUM", "budgetMonthlyCents": 60000, "spentMonthlyCents": 21840,
+    "status": "active", "issuePrefix": "LUM", "budgetMonthlyCents": 60000, "spentMonthlyCents": 21840.4335444,
 }
 USER = {"id": ME, "email": "alex@lumen.example", "name": "Alex Rivera", "image": None}
 USERS = {"users": [
@@ -78,7 +78,7 @@ for i, (k, name, role, title, adapter, model, palette, status, boss) in enumerat
         "avatarUrl": f"/api/agent-avatars/cap-v1/{palette}/rest.png?size=512&scale=1",
         "status": status, "reportsTo": A[boss] if boss else None, "adapterType": adapter,
         "adapterConfig": {"model": model, "cwd": "/srv/orbit"},
-        "budgetMonthlyCents": 0, "spentMonthlyCents": 0,
+        "budgetMonthlyCents": 5000, "spentMonthlyCents": round(1234.5678 + i * 211.3333333, 7),
         "pauseReason": "manual" if status == "paused" else None, "pausedAt": ago(hours=5) if status == "paused" else None,
         "errorReason": None, "lastHeartbeatAt": ago(minutes=2 + i * 7), "createdAt": ago(days=40 - i),
     })
@@ -642,7 +642,7 @@ def dashboard():
 COST_BY_AGENT = [
     {"agentId": A[k], "agentName": AGENT_BY_ID[A[k]]["name"], "agentStatus": AGENT_BY_ID[A[k]]["status"], "costCents": c,
      "inputTokens": c * 900, "cachedInputTokens": c * 21000, "outputTokens": c * 230, "apiRunCount": api, "subscriptionRunCount": sub}
-    for k, c, api, sub in [("atlas", 6420, 0, 212), ("kai", 5310, 140, 0), ("mira", 3980, 0, 160), ("nova", 2770, 0, 88),
+    for k, c, api, sub in [("atlas", 6420.8765432, 0, 212), ("kai", 5310, 140, 0), ("mira", 3980, 0, 160), ("nova", 2770, 0, 88),
                            ("juno", 1640, 52, 0), ("rex", 1130, 61, 0), ("iris", 410, 0, 37), ("sol", 180, 0, 9)]
 ]
 COST_BY_PROVIDER = [
