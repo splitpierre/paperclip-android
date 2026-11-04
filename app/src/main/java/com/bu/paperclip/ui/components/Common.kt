@@ -1,5 +1,9 @@
 package com.bu.paperclip.ui.components
 
+import com.bu.paperclip.util.L10n
+import com.bu.paperclip.R
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -88,9 +92,9 @@ class Loader<T>(
 }
 
 fun errorMessage(t: Throwable): String = when (t) {
-    is ApiException.AuthRequired -> t.message ?: "Sign-in required"
-    is ApiException.Http -> t.message ?: "Request failed"
-    is ApiException.Network -> "Can't reach the server: ${t.message}"
+    is ApiException.AuthRequired -> t.message ?: L10n.str(R.string.error_sign_in_required)
+    is ApiException.Http -> t.message ?: L10n.str(R.string.error_request_failed)
+    is ApiException.Network -> L10n.str(R.string.error_cant_reach_server, t.message ?: "")
     else -> t.message ?: t.javaClass.simpleName
 }
 
@@ -178,11 +182,11 @@ fun ErrorState(message: String, modifier: Modifier = Modifier, onRetry: () -> Un
     ) {
         StateIcon(Icons.Outlined.CloudOff)
         Spacer(Modifier.height(16.dp))
-        Text("Something went wrong", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.component_error_title), style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(4.dp))
         Text(message, textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(20.dp))
-        Button(onClick = onRetry) { Text("Try again") }
+        Button(onClick = onRetry) { Text(stringResource(R.string.common_try_again)) }
     }
 }
 
@@ -243,15 +247,47 @@ fun issueStatusColor(status: String): Color {
     }
 }
 
-fun statusLabel(status: String): String = when (status) {
-    "in_progress" -> "In progress"
-    "in_review" -> "In review"
-    "todo" -> "Todo"
-    "pending_approval" -> "Pending approval"
-    "scheduled_retry" -> "Retry scheduled"
-    "timed_out" -> "Timed out"
-    "revision_requested" -> "Revision requested"
-    else -> status.replace('_', ' ').replaceFirstChar { it.uppercase() }
+fun statusLabel(status: String): String =
+    statusLabelRes(status)?.let { L10n.str(it) } ?: status.replace('_', ' ').replaceFirstChar { it.uppercase() }
+
+@StringRes
+fun statusLabelRes(status: String): Int? = when (status) {
+    "backlog" -> R.string.status_backlog
+    "todo" -> R.string.status_todo
+    "in_progress" -> R.string.status_in_progress
+    "in_review" -> R.string.status_in_review
+    "blocked" -> R.string.status_blocked
+    "done" -> R.string.status_done
+    "cancelled" -> R.string.status_cancelled
+    "pending_approval" -> R.string.status_pending_approval
+    "scheduled_retry" -> R.string.status_scheduled_retry
+    "timed_out" -> R.string.status_timed_out
+    "revision_requested" -> R.string.status_revision_requested
+    "running" -> R.string.status_running
+    "queued" -> R.string.status_queued
+    "succeeded" -> R.string.status_succeeded
+    "failed" -> R.string.status_failed
+    "interrupted" -> R.string.status_interrupted
+    "active" -> R.string.status_active
+    "idle" -> R.string.status_idle
+    "paused" -> R.string.status_paused
+    "error" -> R.string.status_error
+    "terminated" -> R.string.status_terminated
+    "pending" -> R.string.status_pending
+    "approved" -> R.string.status_approved
+    "rejected" -> R.string.status_rejected
+    "planned" -> R.string.status_planned
+    "completed" -> R.string.status_completed
+    "achieved" -> R.string.status_achieved
+    "archived" -> R.string.status_archived
+    "ok" -> R.string.status_ok
+    "warning" -> R.string.status_warning
+    "hard_stop" -> R.string.status_hard_stop
+    "skipped" -> R.string.status_skipped
+    "issue_created" -> R.string.status_issue_created
+    "received" -> R.string.status_received
+    "coalesced" -> R.string.status_coalesced
+    else -> null
 }
 
 val ISSUE_STATUSES = listOf("backlog", "todo", "in_progress", "in_review", "blocked", "done", "cancelled")
@@ -311,7 +347,7 @@ fun priorityIcon(p: String): ImageVector = when (p) {
 
 @Composable
 fun PriorityIcon(p: String, size: Dp = 16.dp) {
-    Icon(priorityIcon(p), contentDescription = p, tint = priorityColor(p), modifier = Modifier.size(size))
+    Icon(priorityIcon(p), contentDescription = taskPriorityLabel(p), tint = priorityColor(p), modifier = Modifier.size(size))
 }
 
 @Composable
@@ -384,7 +420,7 @@ fun Avatar(name: String, imageUrl: String? = null, size: Dp = 28.dp, isAgent: Bo
 fun AgentAvatar(agentId: String?, size: Dp = 28.dp) {
     val a = AppState.agent(agentId)
     Box {
-        Avatar(a?.name ?: "Agent", a?.avatarUrl, size)
+        Avatar(a?.name ?: stringResource(R.string.common_agent), a?.avatarUrl, size)
         if (a != null && a.status == "running") {
             Dot(LocalStatusColors.current.blue, size / 3.2f, Modifier.align(Alignment.BottomEnd).border(1.5.dp, MaterialTheme.colorScheme.surface, CircleShape))
         }

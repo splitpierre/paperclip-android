@@ -1,5 +1,7 @@
 package com.bu.paperclip.ui
 
+import com.bu.paperclip.R
+import androidx.annotation.StringRes
 import android.net.Uri
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Checklist
@@ -47,15 +49,15 @@ object Routes {
     const val SETTINGS = "settings"
 }
 
-data class AppTab(val route: String, val label: String, val icon: ImageVector, val selectedIcon: ImageVector)
+data class AppTab(val route: String, @StringRes val label: Int, val icon: ImageVector, val selectedIcon: ImageVector)
 
 /** The bottom-bar tabs, in order. */
 val AppTabs = listOf(
-    AppTab(Routes.DASHBOARD, "Home", Icons.Outlined.Home, Icons.Filled.Home),
-    AppTab(Routes.DECISIONS, "Decisions", Icons.Outlined.HowToVote, Icons.Filled.HowToVote),
-    AppTab(Routes.ISSUES, "Tasks", Icons.Outlined.Checklist, Icons.Filled.Checklist),
-    AppTab(Routes.AGENTS, "Agents", Icons.Outlined.SmartToy, Icons.Filled.SmartToy),
-    AppTab(Routes.MORE, "More", Icons.Outlined.Menu, Icons.Filled.Menu),
+    AppTab(Routes.DASHBOARD, R.string.tab_home, Icons.Outlined.Home, Icons.Filled.Home),
+    AppTab(Routes.DECISIONS, R.string.tab_decisions, Icons.Outlined.HowToVote, Icons.Filled.HowToVote),
+    AppTab(Routes.ISSUES, R.string.tab_tasks, Icons.Outlined.Checklist, Icons.Filled.Checklist),
+    AppTab(Routes.AGENTS, R.string.tab_agents, Icons.Outlined.SmartToy, Icons.Filled.SmartToy),
+    AppTab(Routes.MORE, R.string.tab_more, Icons.Outlined.Menu, Icons.Filled.Menu),
 )
 
 /** A decision to open when the Decisions screen next shows (from a notification or link). */

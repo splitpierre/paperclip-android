@@ -2,10 +2,10 @@ package com.bu.paperclip
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -20,7 +20,8 @@ import com.bu.paperclip.data.AppState
 import com.bu.paperclip.ui.AppRoot
 import com.bu.paperclip.ui.theme.PaperclipTheme
 
-class MainActivity : ComponentActivity() {
+/** AppCompat so the in-app language (AppCompatDelegate.setApplicationLocales) also applies below Android 13. */
+class MainActivity : AppCompatActivity() {
     private val pendingLink = mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -69,11 +69,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.bu.paperclip.R
 import com.bu.paperclip.data.AppState
 import com.bu.paperclip.ui.components.AgentAvatar
 import androidx.compose.ui.unit.sp
@@ -96,6 +99,7 @@ import com.bu.paperclip.ui.components.errorMessage
 import com.bu.paperclip.ui.components.rememberLoader
 import com.bu.paperclip.ui.components.rememberMinuteTick
 import com.bu.paperclip.ui.theme.LocalStatusColors
+import com.bu.paperclip.util.L10n
 import com.bu.paperclip.util.relativeTime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -121,12 +125,12 @@ fun InboxScreen(nav: Nav) {
     val scope = rememberCoroutineScope()
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Inbox", style = MaterialTheme.typography.headlineSmall) }, navigationIcon = { BackIcon { nav.back() } }) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.inbox_title), style = MaterialTheme.typography.headlineSmall) }, navigationIcon = { BackIcon { nav.back() } }) },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { pad ->
         Column(Modifier.fillMaxSize().padding(pad)) {
             PrimaryTabRow(selectedTabIndex = tab, containerColor = MaterialTheme.colorScheme.surface) {
-                listOf("Needs me", "Unread", "Mine").forEachIndexed { i, label ->
+                listOf(stringResource(R.string.inbox_tab_needs_me), stringResource(R.string.inbox_tab_unread), stringResource(R.string.inbox_tab_mine)).forEachIndexed { i, label ->
                     Tab(
                         selected = tab == i,
                         onClick = { tab = i },
@@ -180,7 +184,7 @@ private fun InboxNeedsMe(nav: Nav, cid: String, snackbar: SnackbarHostState, sco
             try {
                 call(key)
                 AppState.refreshBadges()
-                val res = snackbar.showSnackbar(message, actionLabel = "Undo", duration = SnackbarDuration.Short)
+                val res = snackbar.showSnackbar(message, actionLabel = L10n.str(R.string.inbox_undo), duration = SnackbarDuration.Short)
                 if (res == SnackbarResult.ActionPerformed) {
                     Api.delete("/companies/$cid/inbox-dismissals/" + Uri.encode(key))
                     hidden = hidden - item.id
@@ -193,9 +197,9 @@ private fun InboxNeedsMe(nav: Nav, cid: String, snackbar: SnackbarHostState, sco
         }
     }
 
-    fun dismiss(item: AttentionItem) = hideWithUndo(item, "Dismissed") { Repo.dismiss(cid, it) }
-    fun snooze(item: AttentionItem, until: Instant, label: String) =
-        hideWithUndo(item, "Snoozed $label") { Repo.snooze(cid, it, until.toString()) }
+    fun dismiss(item: AttentionItem) = hideWithUndo(item, L10n.str(R.string.inbox_dismissed)) { Repo.dismiss(cid, it) }
+    fun snooze(item: AttentionItem, until: Instant, message: String) =
+        hideWithUndo(item, message) { Repo.snooze(cid, it, until.toString()) }
 
     LoadContent(loader) { page ->
         val items = (page.items + more).distinctBy { it.id }.filter { it.id !in hidden }
@@ -203,7 +207,7 @@ private fun InboxNeedsMe(nav: Nav, cid: String, snackbar: SnackbarHostState, sco
             if (items.isEmpty()) {
                 item {
                     EmptyState(
-                        "Nothing needs you right now.\nAgent questions, approvals and failures show up here.",
+                        stringResource(R.string.inbox_needs_me_empty),
                         Icons.Outlined.TaskAlt,
                     )
                 }
@@ -212,7 +216,7 @@ private fun InboxNeedsMe(nav: Nav, cid: String, snackbar: SnackbarHostState, sco
                 InboxSwipeable(
                     enabled = item.dismissalKey != null,
                     icon = Icons.Outlined.DoneAll,
-                    label = "Dismiss",
+                    label = stringResource(R.string.inbox_dismiss),
                     onSwiped = { dismiss(item) },
                 ) {
                     InboxAttentionRow(
@@ -243,7 +247,7 @@ private fun InboxNeedsMe(nav: Nav, cid: String, snackbar: SnackbarHostState, sco
                                     }
                                 }
                             },
-                        ) { Text(if (loadingMore) "Loading…" else "Load more") }
+                        ) { Text(stringResource(if (loadingMore) R.string.common_loading else R.string.inbox_load_more)) }
                     }
                 }
             }
@@ -293,22 +297,22 @@ internal fun inboxIcon(item: AttentionItem): ImageVector = when (item.sourceKind
 
 internal fun inboxKindLabel(item: AttentionItem): String = when (item.sourceKind) {
     "issue_thread_interaction" -> when (inboxDetailKind(item)) {
-        "questions" -> "Question"
-        "plan_approval" -> "Plan approval"
-        "suggested_tasks" -> "Suggested tasks"
-        "checkbox_confirmation" -> "Choose options"
-        "item_verdicts" -> "Review items"
-        else -> "Confirmation"
+        "questions" -> L10n.str(R.string.inbox_kind_question)
+        "plan_approval" -> L10n.str(R.string.inbox_kind_plan_approval)
+        "suggested_tasks" -> L10n.str(R.string.inbox_kind_suggested_tasks)
+        "checkbox_confirmation" -> L10n.str(R.string.inbox_kind_choose_options)
+        "item_verdicts" -> L10n.str(R.string.inbox_kind_review_items)
+        else -> L10n.str(R.string.inbox_kind_confirmation)
     }
-    "approval" -> "Approval"
-    "decision" -> "Decision"
-    "failed_run" -> "Failed run"
-    "budget_alert" -> "Budget"
-    "agent_error_alert" -> "Agent error"
-    "blocker_attention" -> "Blocked"
-    "review", "productivity_review" -> "Review"
-    "recovery_action" -> "Recovery"
-    "join_request" -> "Join request"
+    "approval" -> L10n.str(R.string.inbox_kind_approval)
+    "decision" -> L10n.str(R.string.inbox_kind_decision)
+    "failed_run" -> L10n.str(R.string.inbox_kind_failed_run)
+    "budget_alert" -> L10n.str(R.string.inbox_kind_budget)
+    "agent_error_alert" -> L10n.str(R.string.inbox_kind_agent_error)
+    "blocker_attention" -> L10n.str(R.string.inbox_kind_blocked)
+    "review", "productivity_review" -> L10n.str(R.string.inbox_kind_review)
+    "recovery_action" -> L10n.str(R.string.inbox_kind_recovery)
+    "join_request" -> L10n.str(R.string.inbox_kind_join_request)
     else -> item.sourceKind.replace('_', ' ').replaceFirstChar { it.uppercase() }
 }
 
@@ -359,7 +363,7 @@ private fun InboxAttentionRow(
                 }
                 Spacer(Modifier.height(3.dp))
                 Text(
-                    item.subject.title ?: item.relatedIssue?.title ?: "Untitled",
+                    item.subject.title ?: item.relatedIssue?.title ?: stringResource(R.string.inbox_untitled),
                     style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp, lineHeight = 21.sp, fontWeight = FontWeight.Medium),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -388,25 +392,25 @@ private fun InboxAttentionRow(
             }
         }
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-            DropdownMenuItem(text = { Text("Open") }, onClick = { menu = false; onClick() })
+            DropdownMenuItem(text = { Text(stringResource(R.string.common_open)) }, onClick = { menu = false; onClick() })
             if (item.dismissalKey != null) {
                 DropdownMenuItem(
-                    text = { Text("Snooze 1 hour") },
+                    text = { Text(stringResource(R.string.inbox_snooze_1h)) },
                     leadingIcon = { Icon(Icons.Outlined.Snooze, null) },
-                    onClick = { menu = false; onSnooze(Instant.now().plusSeconds(3600), "for 1 hour") },
+                    onClick = { menu = false; onSnooze(Instant.now().plusSeconds(3600), L10n.str(R.string.inbox_snoozed_1h)) },
                 )
                 DropdownMenuItem(
-                    text = { Text("Snooze until tomorrow") },
+                    text = { Text(stringResource(R.string.inbox_snooze_tomorrow)) },
                     leadingIcon = { Icon(Icons.Outlined.Snooze, null) },
                     onClick = {
                         menu = false
                         val zone = ZoneId.systemDefault()
                         val t = LocalDate.now(zone).plusDays(1).atTime(LocalTime.of(9, 0)).atZone(zone).toInstant()
-                        onSnooze(t, "until tomorrow 9:00")
+                        onSnooze(t, L10n.str(R.string.inbox_snoozed_tomorrow))
                     },
                 )
                 DropdownMenuItem(
-                    text = { Text("Dismiss") },
+                    text = { Text(stringResource(R.string.inbox_dismiss)) },
                     leadingIcon = { Icon(Icons.Outlined.DoneAll, null) },
                     onClick = { menu = false; onDismiss() },
                 )
@@ -471,7 +475,7 @@ private fun InboxUnread(nav: Nav, cid: String) {
         val list = issues.filter { it.isUnreadForMe != false }
         LazyColumn(Modifier.fillMaxSize()) {
             if (list.isEmpty()) {
-                item { EmptyState("You're all caught up.", Icons.Outlined.MarkEmailRead) }
+                item { EmptyState(stringResource(R.string.inbox_unread_empty), Icons.Outlined.MarkEmailRead) }
             } else {
                 item {
                     Row(
@@ -479,7 +483,7 @@ private fun InboxUnread(nav: Nav, cid: String) {
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            "${list.size} unread",
+                            pluralStringResource(R.plurals.inbox_unread_count, list.size, list.size),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.weight(1f),
@@ -493,7 +497,7 @@ private fun InboxUnread(nav: Nav, cid: String) {
                                         list.forEach { runCatching { Repo.markRead(it.id) } }
                                         loader.set(emptyList())
                                         AppState.refreshBadges()
-                                        AppState.toast("Marked ${list.size} as read")
+                                        AppState.toast(L10n.plural(R.plurals.inbox_marked_read, list.size, list.size))
                                     } finally {
                                         marking = false
                                         loader.refresh()
@@ -503,7 +507,7 @@ private fun InboxUnread(nav: Nav, cid: String) {
                         ) {
                             Icon(Icons.Outlined.DoneAll, null, Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text(if (marking) "Marking…" else "Mark all read")
+                            Text(stringResource(if (marking) R.string.inbox_marking else R.string.inbox_mark_all_read))
                         }
                     }
                 }
@@ -533,7 +537,7 @@ private fun InboxMine(nav: Nav, cid: String, snackbar: SnackbarHostState, scope:
             try {
                 Repo.archiveFromInbox(issue.id)
                 AppState.refreshBadges()
-                val res = snackbar.showSnackbar("Archived ${issue.ref}", actionLabel = "Undo", duration = SnackbarDuration.Short)
+                val res = snackbar.showSnackbar(L10n.str(R.string.inbox_archived, issue.ref), actionLabel = L10n.str(R.string.inbox_undo), duration = SnackbarDuration.Short)
                 if (res == SnackbarResult.ActionPerformed) {
                     Repo.unarchiveFromInbox(issue.id)
                     hidden = hidden - issue.id
@@ -550,21 +554,21 @@ private fun InboxMine(nav: Nav, cid: String, snackbar: SnackbarHostState, scope:
         val list = issues.filter { it.id !in hidden }
         LazyColumn(Modifier.fillMaxSize()) {
             if (list.isEmpty()) {
-                item { EmptyState("Tasks you created, commented on or were assigned show up here.", Icons.Outlined.Archive) }
+                item { EmptyState(stringResource(R.string.inbox_mine_empty), Icons.Outlined.Archive) }
             } else {
                 item {
                     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                         Dot(MaterialTheme.colorScheme.tertiary, 7.dp)
                         Spacer(Modifier.width(6.dp))
                         Text(
-                            "${list.count { it.isUnreadForMe == true }} unread · swipe to archive",
+                            list.count { it.isUnreadForMe == true }.let { pluralStringResource(R.plurals.inbox_mine_summary, it, it) },
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
                 items(list, key = { it.id }) { issue ->
-                    InboxSwipeable(enabled = true, icon = Icons.Outlined.Archive, label = "Archive", onSwiped = { archive(issue) }) {
+                    InboxSwipeable(enabled = true, icon = Icons.Outlined.Archive, label = stringResource(R.string.inbox_archive), onSwiped = { archive(issue) }) {
                         Box(Modifier.background(MaterialTheme.colorScheme.background)) {
                             IssueRow(issue, onClick = { nav.issue(issue.identifier ?: issue.id) })
                         }

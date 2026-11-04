@@ -27,6 +27,9 @@ It covers the board operator's daily loop: answer what agents ask, approve or de
 - **Agents, approvals, costs and quotas, projects, goals, routines, activity and search.** Pause, resume or wake agents, reset sessions, read or edit their instruction files, and edit routines and their schedules.
 - **Notifications** for new items that need you, checked in the background about every 15 minutes.
 - A clean, monochrome design in light and dark, set in Inter. Works on Android 8.0 and later.
+- **In English, Português (Brasil) and Español,** with the language picked in Settings or following the phone.
+
+> **Translations welcome.** Adding a language takes one translated file and no code. See [docs/TRANSLATING.md](docs/TRANSLATING.md).
 
 ## Screenshots
 
@@ -157,7 +160,7 @@ echo "sdk.dir=/path/to/android/sdk" > local.properties
 # app/build/outputs/apk/debug/app-debug.apk
 ```
 
-See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the architecture, tests, regenerating screenshots and cutting a release.
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the architecture, tests, regenerating screenshots and cutting a release, and [docs/TRANSLATING.md](docs/TRANSLATING.md) to add or improve a translation.
 
 ## Notes
 

@@ -65,7 +65,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.bu.paperclip.R
+import com.bu.paperclip.util.L10n
 import com.bu.paperclip.ui.components.PropertyChip
 import com.bu.paperclip.data.AppState
 import com.bu.paperclip.data.Issue
@@ -77,7 +80,8 @@ import com.bu.paperclip.ui.components.Avatar
 import com.bu.paperclip.ui.components.PriorityIcon
 import com.bu.paperclip.ui.components.StatusIcon
 import com.bu.paperclip.ui.components.errorMessage
-import com.bu.paperclip.ui.components.statusLabel
+import com.bu.paperclip.ui.components.taskPriorityLabel
+import com.bu.paperclip.ui.components.taskStatusLabel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
@@ -149,7 +153,7 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
                         failed += f.name to errorMessage(t)
                     }
                 }
-                AppState.toast(uploadFailureMessage(created.identifier ?: "task", failed, files.size), sticky = failed.isNotEmpty())
+                AppState.toast(uploadFailureMessage(created.identifier ?: L10n.str(R.string.new_issue_task_fallback), failed, files.size), sticky = failed.isNotEmpty())
                 nav.back()
                 nav.issue(created.identifier ?: created.id)
             } catch (c: CancellationException) {
@@ -166,10 +170,10 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
         topBar = {
             TopAppBar(
                 navigationIcon = { BackIcon { if (!saving) nav.back() } },
-                title = { Text(if (parentId != null) "New sub-task" else "New task") },
+                title = { Text(stringResource(if (parentId != null) R.string.new_issue_title_sub_task else R.string.new_issue_title)) },
                 actions = {
                     if (saving) CircularProgressIndicator(Modifier.padding(end = 16.dp).size(22.dp), strokeWidth = 2.dp)
-                    else TextButton(onClick = { create() }, enabled = title.isNotBlank()) { Text("Create") }
+                    else TextButton(onClick = { create() }, enabled = title.isNotBlank()) { Text(stringResource(R.string.new_issue_create)) }
                 },
             )
         },
@@ -179,21 +183,21 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             parent?.let { p ->
-                Text("Sub-task of ${p.identifier ?: ""} · ${p.title}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.new_issue_sub_task_of, p.identifier ?: "", p.title), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
-                label = { Text("Title") },
+                label = { Text(stringResource(R.string.new_issue_field_title)) },
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 modifier = Modifier.fillMaxWidth().focusRequester(focus),
             )
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                PropertyChip(onClick = { sheet = "status" }, label = { Text(statusLabel(status)) }, leadingIcon = { StatusIcon(status, 14.dp) })
-                PropertyChip(onClick = { sheet = "priority" }, label = { Text(priority.replaceFirstChar { it.uppercase() }) }, leadingIcon = { PriorityIcon(priority, 16.dp) })
+                PropertyChip(onClick = { sheet = "status" }, label = { Text(taskStatusLabel(status)) }, leadingIcon = { StatusIcon(status, 14.dp) })
+                PropertyChip(onClick = { sheet = "priority" }, label = { Text(taskPriorityLabel(priority)) }, leadingIcon = { PriorityIcon(priority, 16.dp) })
                 PropertyChip(
                     onClick = { sheet = "assignee" },
-                    label = { Text(agentId?.let { AppState.agentName(it) } ?: userId?.let { AppState.userName(it) } ?: "Unassigned") },
+                    label = { Text(agentId?.let { AppState.agentName(it) } ?: userId?.let { AppState.userName(it) } ?: stringResource(R.string.common_unassigned)) },
                     leadingIcon = {
                         when {
                             agentId != null -> AgentAvatar(agentId, 18.dp)
@@ -204,14 +208,14 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
                 )
                 PropertyChip(
                     onClick = { sheet = "project" },
-                    label = { Text(AppState.project(project)?.name ?: "No project") },
+                    label = { Text(AppState.project(project)?.name ?: stringResource(R.string.task_no_project)) },
                     leadingIcon = { Icon(Icons.Outlined.FolderOpen, null, Modifier.size(18.dp)) },
                 )
             }
             OutlinedTextField(
                 value = description,
                 onValueChange = { description = it },
-                label = { Text("Description (markdown)") },
+                label = { Text(stringResource(R.string.new_issue_field_description)) },
                 minLines = 8,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 modifier = Modifier.fillMaxWidth().heightIn(min = 200.dp),
@@ -225,13 +229,13 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
             )
             if (saving && files.isNotEmpty() && uploadIndex > 0) {
                 Text(
-                    "Uploading $uploadIndex of ${files.size}…",
+                    stringResource(R.string.new_issue_uploading, uploadIndex, files.size),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             if (status == "in_progress" && agentId == null && userId == null) {
-                Text("In progress tasks need an assignee.", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                Text(stringResource(R.string.new_issue_needs_assignee), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             Spacer(Modifier.height(40.dp))
@@ -298,16 +302,16 @@ private fun NewIssueFiles(
                 }
                 when (state[f.uri]) {
                     NewIssueUpload.Uploading -> CircularProgressIndicator(Modifier.padding(12.dp).size(22.dp), strokeWidth = 2.dp)
-                    NewIssueUpload.Done -> Icon(Icons.Outlined.CheckCircle, "Uploaded", Modifier.padding(12.dp), tint = MaterialTheme.colorScheme.primary)
-                    NewIssueUpload.Failed -> Icon(Icons.Outlined.ErrorOutline, "Upload failed", Modifier.padding(12.dp), tint = MaterialTheme.colorScheme.error)
-                    null -> IconButton(onClick = { onRemove(f) }, enabled = enabled) { Icon(Icons.Default.Close, "Remove ${f.name}") }
+                    NewIssueUpload.Done -> Icon(Icons.Outlined.CheckCircle, stringResource(R.string.new_issue_uploaded), Modifier.padding(12.dp), tint = MaterialTheme.colorScheme.primary)
+                    NewIssueUpload.Failed -> Icon(Icons.Outlined.ErrorOutline, stringResource(R.string.new_issue_upload_failed), Modifier.padding(12.dp), tint = MaterialTheme.colorScheme.error)
+                    null -> IconButton(onClick = { onRemove(f) }, enabled = enabled) { Icon(Icons.Default.Close, stringResource(R.string.new_issue_remove_file, f.name)) }
                 }
             }
         }
         TextButton(onClick = onAdd, enabled = enabled) {
             Icon(Icons.Outlined.AttachFile, null, Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
-            Text("Attach files")
+            Text(stringResource(R.string.new_issue_attach_files))
         }
     }
 }

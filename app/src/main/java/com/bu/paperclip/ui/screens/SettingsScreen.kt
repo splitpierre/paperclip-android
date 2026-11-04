@@ -18,6 +18,7 @@ import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.NotificationsActive
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Surface
 import androidx.compose.ui.draw.clip
@@ -59,9 +60,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.bu.paperclip.BuildConfig
+import com.bu.paperclip.R
 import com.bu.paperclip.data.AppSettings
 import com.bu.paperclip.data.AppState
 import com.bu.paperclip.net.Api
@@ -70,6 +73,8 @@ import com.bu.paperclip.notify.NotifyWorker
 import com.bu.paperclip.ui.Nav
 import com.bu.paperclip.ui.components.Avatar
 import com.bu.paperclip.ui.components.SectionHeader
+import com.bu.paperclip.util.L10n
+import java.util.Locale
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -88,15 +93,15 @@ fun SettingsScreen(nav: Nav, onSignedOut: () -> Unit) {
         scope.launch { AppState.settings.setNotifications(granted); NotifyWorker.schedule(ctx, granted) }
     }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Settings") }, navigationIcon = { BackIcon { nav.back() } }) }) { pad ->
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.settings_title)) }, navigationIcon = { BackIcon { nav.back() } }) }) { pad ->
         Column(Modifier.fillMaxSize().padding(pad).verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
-            SectionHeader("Account")
+            SectionHeader(stringResource(R.string.settings_section_account))
             SettingsGroup {
                 Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Avatar(me?.name ?: me?.email ?: "?", me?.image, 44.dp, isAgent = false)
                     Spacer(Modifier.width(14.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(me?.name ?: "Signed in", style = MaterialTheme.typography.titleMedium)
+                        Text(me?.name ?: stringResource(R.string.settings_signed_in), style = MaterialTheme.typography.titleMedium)
                         Text(me?.email ?: "", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
@@ -104,16 +109,16 @@ fun SettingsScreen(nav: Nav, onSignedOut: () -> Unit) {
                 SettingsRow(
                     Icons.Outlined.Dns,
                     Api.baseUrl.removePrefix("https://").removePrefix("http://"),
-                    if (Api.bearer != null) "Board API key" else "Browser session",
+                    stringResource(if (Api.bearer != null) R.string.settings_auth_api_key else R.string.settings_auth_browser_session),
                 ) {
                     Dot(if (connected) LocalStatusColors.current.green else LocalStatusColors.current.yellow, 8.dp)
                     Spacer(Modifier.width(6.dp))
-                    Text(if (connected) "Live" else if (Api.bearer != null) "Polling" else "Reconnecting", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(if (connected) R.string.settings_connection_live else if (Api.bearer != null) R.string.settings_connection_polling else R.string.settings_connection_reconnecting), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
             if (companies.size > 1) {
-                SectionHeader("Company")
+                SectionHeader(stringResource(R.string.settings_section_company))
                 SettingsGroup {
                     companies.forEachIndexed { i, c ->
                         if (i > 0) SettingsDivider()
@@ -124,13 +129,13 @@ fun SettingsScreen(nav: Nav, onSignedOut: () -> Unit) {
                 }
             }
 
-            SectionHeader("Appearance")
+            SectionHeader(stringResource(R.string.settings_section_appearance))
             SettingsGroup {
                 Row(Modifier.fillMaxWidth().padding(6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     listOf(
-                        Triple("system", "System", Icons.Outlined.PhoneAndroid),
-                        Triple("dark", "Dark", Icons.Outlined.DarkMode),
-                        Triple("light", "Light", Icons.Outlined.LightMode),
+                        Triple("system", stringResource(R.string.settings_theme_system), Icons.Outlined.PhoneAndroid),
+                        Triple("dark", stringResource(R.string.settings_theme_dark), Icons.Outlined.DarkMode),
+                        Triple("light", stringResource(R.string.settings_theme_light), Icons.Outlined.LightMode),
                     ).forEach { (k, label, icon) ->
                         val sel = settings.theme == k
                         Column(
@@ -151,12 +156,31 @@ fun SettingsScreen(nav: Nav, onSignedOut: () -> Unit) {
                 }
             }
 
-            SectionHeader("Notifications")
+            SectionHeader(stringResource(R.string.settings_section_language))
+            SettingsGroup {
+                // Changing it recreates the activity, so reading it once per composition is enough.
+                val current = remember { L10n.appLanguageTag() }
+                val options = remember { listOf("") + L10n.shippedLanguageTags(ctx) }
+                options.forEachIndexed { i, tag ->
+                    if (i > 0) SettingsDivider()
+                    val sel = if (tag.isEmpty()) current.isEmpty() else current.isNotEmpty() && Locale.forLanguageTag(current) == Locale.forLanguageTag(tag)
+                    SettingsRow(
+                        if (tag.isEmpty()) Icons.Outlined.PhoneAndroid else Icons.Outlined.Translate,
+                        if (tag.isEmpty()) stringResource(R.string.settings_language_system) else L10n.nativeName(tag),
+                        null,
+                        onClick = { if (!sel) L10n.setAppLanguage(tag) },
+                    ) {
+                        if (sel) Icon(Icons.Default.Check, stringResource(R.string.settings_selected), tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(20.dp))
+                    }
+                }
+            }
+
+            SectionHeader(stringResource(R.string.settings_section_notifications))
             SettingsGroup {
                 SettingsRow(
                     Icons.Outlined.NotificationsActive,
-                    "Agent requests",
-                    "Checks about every 15 minutes for new questions, confirmations, approvals and failed runs.",
+                    stringResource(R.string.settings_notifications_title),
+                    stringResource(R.string.settings_notifications_summary),
                 ) {
                     Spacer(Modifier.width(8.dp))
                     Switch(
@@ -173,7 +197,7 @@ fun SettingsScreen(nav: Nav, onSignedOut: () -> Unit) {
                     )
                 }
                 SettingsDivider()
-                SettingsRow(Icons.Outlined.Refresh, "Check now", null, onClick = { NotifyWorker.runNow(ctx) })
+                SettingsRow(Icons.Outlined.Refresh, stringResource(R.string.settings_check_now), null, onClick = { NotifyWorker.runNow(ctx) })
             }
 
             Spacer(Modifier.height(20.dp))
@@ -184,14 +208,14 @@ fun SettingsScreen(nav: Nav, onSignedOut: () -> Unit) {
                 ) {
                     Icon(Icons.AutoMirrored.Outlined.Logout, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(22.dp))
                     Spacer(Modifier.width(14.dp))
-                    Text("Sign out", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.settings_sign_out), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.error)
                 }
             }
             Column(Modifier.fillMaxWidth().padding(top = 28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 BrandMark(28.dp)
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    "Paperclip for Android ${BuildConfig.VERSION_NAME}",
+                    stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -202,15 +226,15 @@ fun SettingsScreen(nav: Nav, onSignedOut: () -> Unit) {
     if (confirmSignOut) {
         AlertDialog(
             onDismissRequest = { confirmSignOut = false },
-            title = { Text("Sign out?") },
-            text = { Text("This clears the app's Paperclip and Cloudflare sessions on this phone.") },
+            title = { Text(stringResource(R.string.settings_sign_out_confirm_title)) },
+            text = { Text(stringResource(R.string.settings_sign_out_confirm_body)) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmSignOut = false
                     scope.launch { LiveEvents.stop(); Api.signOut(); AppState.settings.setApiToken(""); Api.configure(Api.baseUrl, null); onSignedOut() }
-                }) { Text("Sign out") }
+                }) { Text(stringResource(R.string.settings_sign_out)) }
             },
-            dismissButton = { TextButton(onClick = { confirmSignOut = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { confirmSignOut = false }) { Text(stringResource(R.string.common_cancel)) } },
         )
     }
 }

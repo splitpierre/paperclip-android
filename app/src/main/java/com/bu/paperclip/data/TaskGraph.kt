@@ -176,7 +176,10 @@ class TaskGraph(issues: Collection<Issue>, val ctx: MatchCtx) {
         return roots.sortedWith(rootOrder).map { build(it, 0) }
     }
 
-    data class Next(val issue: Issue, val reasons: List<String>, val unblocks: Int)
+    /** Why a task is in Next up; [Unblocks] reads its count from [Next.unblocks]. */
+    enum class Reason { Critical, High, Unblocks, Backlog, Unassigned }
+
+    data class Next(val issue: Issue, val reasons: List<Reason>, val unblocks: Int)
 
     /**
      * What to do next in a scope: open (todo/backlog), not held by an open blocker, and with no open
@@ -194,10 +197,11 @@ class TaskGraph(issues: Collection<Issue>, val ctx: MatchCtx) {
             .map { i ->
                 val unblocks = blocking[i.id].orEmpty().size
                 val reasons = buildList {
-                    if (i.priority == "critical" || i.priority == "high") add(i.priority.replaceFirstChar { it.uppercase() })
-                    if (unblocks > 0) add("Unblocks $unblocks")
-                    if (i.status == "backlog") add("Backlog")
-                    if (i.assigneeAgentId == null && i.assigneeUserId == null) add("Unassigned")
+                    if (i.priority == "critical") add(Reason.Critical)
+                    if (i.priority == "high") add(Reason.High)
+                    if (unblocks > 0) add(Reason.Unblocks)
+                    if (i.status == "backlog") add(Reason.Backlog)
+                    if (i.assigneeAgentId == null && i.assigneeUserId == null) add(Reason.Unassigned)
                 }
                 Next(i, reasons, unblocks)
             }

@@ -43,9 +43,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.bu.paperclip.R
 import com.bu.paperclip.data.ActivityEvent
 import com.bu.paperclip.data.AppState
 import com.bu.paperclip.data.Attachment
@@ -82,7 +85,7 @@ private val ISSUE_SYSTEM_DOC_KEYS = setOf("continuation-summary", "pipeline-case
 internal fun IssueDocsTab(issue: Issue, docs: List<IssueDocument>?, nav: Nav) {
     val list = docs ?: issue.documentSummaries?.map { IssueDocument(id = it.id, key = it.key, title = it.title, latestRevisionNumber = it.latestRevisionNumber, updatedAt = it.updatedAt) }
     if (list == null) { IssueTabLoading(); return }
-    if (list.isEmpty()) { EmptyState("No documents on this task", Icons.Outlined.Description); return }
+    if (list.isEmpty()) { EmptyState(stringResource(R.string.issue_tab_docs_empty), Icons.Outlined.Description); return }
     val sorted = list.sortedWith(compareBy<IssueDocument>({ it.key in ISSUE_SYSTEM_DOC_KEYS }, { it.key != "plan" }, { it.key }))
     Column {
         sorted.forEach { d ->
@@ -95,12 +98,12 @@ internal fun IssueDocsTab(issue: Issue, docs: List<IssueDocument>?, nav: Nav) {
                 Column(Modifier.weight(1f)) {
                     Text(d.title?.takeIf { it.isNotBlank() } ?: d.key, style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        listOfNotNull(d.key, d.latestRevisionNumber?.let { "rev $it" }, relativeTime(d.updatedAt).ifEmpty { null }).joinToString(" · "),
+                        listOfNotNull(d.key, d.latestRevisionNumber?.let { stringResource(R.string.document_rev, it) }, relativeTime(d.updatedAt).ifEmpty { null }).joinToString(" · "),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                if (d.key in ISSUE_SYSTEM_DOC_KEYS) Pill("system", LocalStatusColors.current.gray)
+                if (d.key in ISSUE_SYSTEM_DOC_KEYS) Pill(stringResource(R.string.issue_tab_docs_system), LocalStatusColors.current.gray)
             }
             Divider()
         }
@@ -120,10 +123,10 @@ internal fun IssueSubtasksTab(issue: Issue, children: List<Issue>?, nav: Nav) {
     Column {
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             OutlinedButton(onClick = { nav.newIssue(parentId = issue.id, projectId = issue.projectId) }) {
-                Icon(Icons.Outlined.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("New sub-task")
+                Icon(Icons.Outlined.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.issue_new_subtask))
             }
             Spacer(Modifier.weight(1f))
-            Text("Show closed", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.issue_tab_show_closed), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(6.dp))
             androidx.compose.material3.Switch(showClosed, { showClosed = it })
         }
@@ -131,17 +134,17 @@ internal fun IssueSubtasksTab(issue: Issue, children: List<Issue>?, nav: Nav) {
             // Mirror still loading: plain list of direct children.
             when {
                 children == null -> IssueTabLoading()
-                children.isEmpty() -> EmptyState("No sub-tasks")
+                children.isEmpty() -> EmptyState(stringResource(R.string.issue_tab_subtasks_empty))
                 else -> children.forEach { c -> IssueRow(c, onClick = { nav.issue(c.identifier ?: c.id) }, showProject = false); Divider() }
             }
             return@Column
         }
         val rollup = graph.rollup(issue.id)
-        if (rollup.total == 0) { EmptyState("No sub-tasks"); return@Column }
+        if (rollup.total == 0) { EmptyState(stringResource(R.string.issue_tab_subtasks_empty)); return@Column }
         Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
             com.bu.paperclip.ui.components.RollupBar(rollup)
             Text(
-                "${rollup.open} open · ${rollup.inFlight} in flight · ${rollup.blocked} blocked · ${rollup.closed} closed",
+                stringResource(R.string.issue_tab_rollup, rollup.open, rollup.inFlight, rollup.blocked, rollup.closed),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp),
@@ -160,7 +163,7 @@ internal fun IssueSubtasksTab(issue: Issue, children: List<Issue>?, nav: Nav) {
         val forest = graph.forest(filter, issue.id)
         if (forest.isEmpty()) {
             Text(
-                "All ${rollup.total} sub-tasks are closed.",
+                pluralStringResource(R.plurals.issue_tab_subtasks_all_closed, rollup.total, rollup.total),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(16.dp),
             )
@@ -191,18 +194,18 @@ internal fun IssueFilesTab(attachments: List<Attachment>?, workProducts: List<Wo
     val opening by FileOpener.view.collectAsState()
     val openingUrl = (opening as? FileView.Loading)?.url
     Column {
-        SectionHeader("Output")
+        SectionHeader(stringResource(R.string.issue_tab_files_output))
         when {
             workProducts == null -> IssueTabLoading()
-            workProducts.isEmpty() -> Text("Nothing published yet", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            workProducts.isEmpty() -> Text(stringResource(R.string.issue_tab_files_output_empty), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
             else -> Column(Modifier.padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 workProducts.sortedByDescending { it.isPrimary }.forEach { IssueWorkProductCard(it) }
             }
         }
-        SectionHeader("Attachments")
+        SectionHeader(stringResource(R.string.issue_tab_files_attachments))
         when {
             attachments == null -> IssueTabLoading()
-            attachments.isEmpty() -> Text("No attachments", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            attachments.isEmpty() -> Text(stringResource(R.string.issue_tab_files_attachments_empty), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
             else -> {
                 // Some attachments have no content type; the file name decides then.
                 val (images, files) = attachments.partition { ServerFiles.isImage(ServerFiles.mimeType(it.originalFilename, it.contentType)) }
@@ -228,7 +231,7 @@ internal fun IssueFilesTab(attachments: List<Attachment>?, workProducts: List<Wo
                         Icon(Icons.AutoMirrored.Outlined.InsertDriveFile, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(a.originalFilename ?: "file", maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(a.originalFilename ?: stringResource(R.string.issue_tab_files_unnamed), maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text(
                                 listOfNotNull(a.contentType, a.byteSize?.let { issueSize(it) }, relativeTime(a.createdAt)).joinToString(" · "),
                                 style = MaterialTheme.typography.bodySmall,
@@ -247,6 +250,16 @@ private fun Attachment.contentUrl(): String = Api.absolute(contentPath ?: "/api/
 
 /** Downloads with the session (the browser has none) and shows it in the app or hands it to another app. */
 private fun Attachment.open() = FileOpener.open(contentUrl(), originalFilename, contentType)
+
+@Composable
+private fun issueWorkProductType(type: String): String = when (type) {
+    "pull_request" -> stringResource(R.string.issue_tab_wp_pull_request)
+    "branch" -> stringResource(R.string.issue_tab_wp_branch)
+    "commit" -> stringResource(R.string.issue_tab_wp_commit)
+    "preview_url" -> stringResource(R.string.issue_tab_wp_preview_url)
+    "runtime_service" -> stringResource(R.string.issue_tab_wp_runtime_service)
+    else -> type.replace('_', ' ')
+}
 
 @Composable
 private fun IssueWorkProductCard(wp: WorkProduct) {
@@ -268,9 +281,9 @@ private fun IssueWorkProductCard(wp: WorkProduct) {
             Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
-                Text(wp.title ?: wp.url ?: wp.type, style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(wp.title ?: wp.url ?: issueWorkProductType(wp.type), style = MaterialTheme.typography.bodyLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 val sub = buildList {
-                    add(wp.type.replace('_', ' '))
+                    add(issueWorkProductType(wp.type))
                     meta.issueStr("repo")?.let { r -> add(r + (meta.issueInt("number")?.let { n -> " #$n" } ?: "")) }
                     meta.issueStr("headRef")?.let { h -> add(h) }
                     val adds = meta.issueInt("additions"); val dels = meta.issueInt("deletions")
@@ -290,10 +303,10 @@ private fun IssueWorkProductCard(wp: WorkProduct) {
 @Composable
 internal fun IssueActivityTab(events: List<ActivityEvent>?, runs: List<JsonObject>?, nav: Nav) {
     Column {
-        SectionHeader("Runs")
+        SectionHeader(stringResource(R.string.issue_tab_activity_runs))
         when {
             runs == null -> IssueTabLoading()
-            runs.isEmpty() -> Text("No runs yet", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            runs.isEmpty() -> Text(stringResource(R.string.issue_tab_activity_runs_empty), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
             else -> runs.take(30).forEach { r ->
                 val runId = r.issueStr("runId") ?: r.issueStr("id") ?: return@forEach
                 val status = r.issueStr("status") ?: ""
@@ -317,10 +330,10 @@ internal fun IssueActivityTab(events: List<ActivityEvent>?, runs: List<JsonObjec
                 }
             }
         }
-        SectionHeader("Activity")
+        SectionHeader(stringResource(R.string.issue_tab_activity_events))
         when {
             events == null -> IssueTabLoading()
-            events.isEmpty() -> Text("No activity", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
+            events.isEmpty() -> Text(stringResource(R.string.issue_tab_activity_events_empty), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
             else -> events.forEach { e ->
                 Row(
                     Modifier.fillMaxWidth().clickable {

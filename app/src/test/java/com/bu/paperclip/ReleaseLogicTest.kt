@@ -10,11 +10,11 @@ import com.bu.paperclip.ui.screens.decideByDeadline
 import com.bu.paperclip.ui.screens.shelfOf
 import com.bu.paperclip.util.Schedule
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
+import java.util.Locale
 
 class ReleaseLogicTest {
     // ---- markdown tables ----
@@ -63,16 +63,20 @@ class ReleaseLogicTest {
             assertEquals(cron, s.toCron())
         }
         assertEquals(Schedule.Preset.Custom, Schedule.parse("*/15 9-17 * * 1-5").preset)
-        assertEquals("Weekdays at 6:30 PM", Schedule.describe("30 18 * * 1-5"))
-        assertEquals("Every Monday at 8:15 AM", Schedule.describe("15 8 * * 1"))
-        assertEquals("Every day at 12:00 AM", Schedule.describe("0 0 * * *"))
-        assertEquals("Every Sunday at 9:00 AM", Schedule.describe("0 9 * * 7")) // 7 is Sunday too
+        assertEquals(Schedule(Schedule.Preset.Weekdays, 30, 18), Schedule.parse("30 18 * * 1-5"))
+        assertEquals(Schedule(Schedule.Preset.Weekly, 15, 8, weekday = 1), Schedule.parse("15 8 * * 1"))
+        assertEquals(Schedule(Schedule.Preset.Weekly, 0, 9, weekday = 0), Schedule.parse("0 9 * * 7")) // 7 is Sunday too
+        assertEquals("Monday", Schedule.weekdayName(1, Locale.US))
+        assertEquals("Sunday", Schedule.weekdayName(0, Locale.US))
+        assertEquals("6:30 PM", Schedule.clock(18, 30, Locale.US).replace('\u202F', ' '))
+        assertEquals("12:00 AM", Schedule.clock(0, 0, Locale.US).replace('\u202F', ' '))
+        assertEquals("18:30", Schedule.clock(18, 30, Locale.forLanguageTag("pt-BR")))
     }
 
     @Test fun cronValidation() {
-        assertNull(Schedule.validate("*/15 9-17 * * 1-5"))
-        assertEquals("Use exactly 5 fields; this has 4.", Schedule.validate("0 9 * *"))
-        assertNotNull(Schedule.validate("0 nine * * *"))
+        assertNull(Schedule.check("*/15 9-17 * * 1-5"))
+        assertEquals(Schedule.CronError.FieldCount(4), Schedule.check("0 9 * *"))
+        assertEquals(Schedule.CronError.BadField, Schedule.check("0 nine * * *"))
     }
 
     // ---- decisions desk ----

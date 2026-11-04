@@ -36,9 +36,15 @@ android {
     lint {
         // Asset links only matter for passkeys; the server is user-chosen, so none can be declared. Passwords need none.
         disable += "CredManMissingDal"
+        // Untranslated strings fall back to English; TranslationsTest reports them as warnings too.
+        warning += "MissingTranslation"
     }
     testOptions {
         unitTests.isReturnDefaultValues = true
+    }
+    bundle {
+        // The language can be changed in the app, so every language must be in the install.
+        language { enableSplit = false }
     }
     packaging {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -58,6 +64,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-process:2.8.7")
     implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("androidx.work:work-runtime-ktx:2.10.0")
     implementation("androidx.browser:browser:1.8.0")

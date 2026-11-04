@@ -49,11 +49,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bu.paperclip.ui.theme.Mono
+import com.bu.paperclip.R
 import com.bu.paperclip.data.AppState
 import com.bu.paperclip.data.Approval
 import com.bu.paperclip.data.ApprovalComment
@@ -82,6 +84,7 @@ import com.bu.paperclip.ui.components.errorMessage
 import com.bu.paperclip.ui.components.rememberLoader
 import com.bu.paperclip.ui.components.rememberMinuteTick
 import com.bu.paperclip.ui.components.statusLabel
+import com.bu.paperclip.util.L10n
 import com.bu.paperclip.util.absoluteTime
 import com.bu.paperclip.util.relativeTime
 import kotlinx.coroutines.async
@@ -96,10 +99,10 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 
 internal fun approvalTypeLabel(type: String): String = when (type) {
-    "hire_agent" -> "Hire agent"
-    "budget_override_required" -> "Budget override"
-    "request_board_approval" -> "Board approval"
-    "approve_ceo_strategy" -> "Strategy"
+    "hire_agent" -> L10n.str(R.string.approvals_type_hire_agent)
+    "budget_override_required" -> L10n.str(R.string.approvals_type_budget_override)
+    "request_board_approval" -> L10n.str(R.string.approvals_type_board_approval)
+    "approve_ceo_strategy" -> L10n.str(R.string.approvals_type_strategy)
     else -> type.replace('_', ' ').replaceFirstChar { it.uppercase() }
 }
 
@@ -109,14 +112,14 @@ private fun approvalTitle(a: Approval): String {
         val v = (p[k] as? JsonPrimitive)?.contentOrNull
         if (!v.isNullOrBlank()) return v.lineSequence().first().take(140)
     }
-    (p["agent"] as? JsonObject)?.let { o -> (o["name"] as? JsonPrimitive)?.contentOrNull?.let { return "Hire $it" } }
+    (p["agent"] as? JsonObject)?.let { o -> (o["name"] as? JsonPrimitive)?.contentOrNull?.let { return L10n.str(R.string.approvals_hire_name, it) } }
     return approvalTypeLabel(a.type)
 }
 
 private fun approvalRequester(a: Approval): String = when {
     a.requestedByAgentId != null -> AppState.agentName(a.requestedByAgentId)
     a.requestedByUserId != null -> AppState.userName(a.requestedByUserId)
-    else -> "Paperclip"
+    else -> L10n.str(R.string.app_name)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -128,10 +131,10 @@ fun ApprovalsScreen(nav: Nav) {
     val loader = rememberLoader(cid, seg) { Repo.approvals(cid, if (seg == 0) "pending" else null) }
     LiveRefresh(filter = { it.type == "activity.logged" && it.s("entityType") == "approval" }) { loader.refresh() }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Approvals") }, navigationIcon = { BackIcon { nav.back() } }) }) { pad ->
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.approvals_title)) }, navigationIcon = { BackIcon { nav.back() } }) }) { pad ->
         Column(Modifier.fillMaxSize().padding(pad)) {
             SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-                listOf("Pending", "All").forEachIndexed { i, label ->
+                listOf(stringResource(R.string.approvals_pending), stringResource(R.string.common_all)).forEachIndexed { i, label ->
                     SegmentedButton(
                         selected = seg == i,
                         onClick = { seg = i },
@@ -143,7 +146,7 @@ fun ApprovalsScreen(nav: Nav) {
                 val sorted = list.sortedByDescending { it.updatedAt ?: it.createdAt }
                 LazyColumn(Modifier.fillMaxSize()) {
                     if (sorted.isEmpty()) {
-                        item { EmptyState(if (seg == 0) "No approvals waiting on you." else "No approvals yet.", Icons.Outlined.Gavel) }
+                        item { EmptyState(stringResource(if (seg == 0) R.string.approvals_empty_pending else R.string.approvals_empty_all), Icons.Outlined.Gavel) }
                     }
                     items(sorted, key = { it.id }) { a -> ApprovalRow(a) { nav.approval(a.id) } }
                 }
@@ -170,7 +173,7 @@ private fun ApprovalRow(a: Approval, onClick: () -> Unit) {
                 Text(relativeTime(a.createdAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Text(approvalTitle(a), style = MaterialTheme.typography.bodyLarge, maxLines = 2)
-            Text("Requested by ${approvalRequester(a)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.approvals_requested_by, approvalRequester(a)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -198,7 +201,7 @@ fun ApprovalDetailScreen(nav: Nav, id: String) {
     var sending by remember { mutableStateOf(false) }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Approval") }, navigationIcon = { BackIcon { nav.back() } }) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.approvals_detail_title)) }, navigationIcon = { BackIcon { nav.back() } }) },
         bottomBar = {
             val a = loader.value?.approval
             if (a != null && (a.status == "pending" || a.status == "revision_requested")) {
@@ -207,14 +210,14 @@ fun ApprovalDetailScreen(nav: Nav, id: String) {
                         Modifier.fillMaxWidth().navigationBarsPadding().padding(12.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        OutlinedButton(onClick = { pendingAction = "request-revision"; note = "" }, enabled = !busy, modifier = Modifier.weight(1f)) { Text("Revise") }
+                        OutlinedButton(onClick = { pendingAction = "request-revision"; note = "" }, enabled = !busy, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.approvals_revise)) }
                         OutlinedButton(
                             onClick = { pendingAction = "reject"; note = "" },
                             enabled = !busy,
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                        ) { Text("Reject") }
-                        Button(onClick = { pendingAction = "approve"; note = "" }, enabled = !busy, modifier = Modifier.weight(1f)) { Text("Approve") }
+                        ) { Text(stringResource(R.string.approvals_reject)) }
+                        Button(onClick = { pendingAction = "approve"; note = "" }, enabled = !busy, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.approvals_approve)) }
                     }
                 }
             }
@@ -250,7 +253,7 @@ fun ApprovalDetailScreen(nav: Nav, id: String) {
                         item {
                             Card(Modifier.padding(horizontal = 16.dp)) {
                                 Column {
-                                    Text("Decision", style = MaterialTheme.typography.labelLarge)
+                                    Text(stringResource(R.string.approvals_decision), style = MaterialTheme.typography.labelLarge)
                                     if (a.decidedAt != null) Text(absoluteTime(a.decidedAt), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     if (!a.decisionNote.isNullOrBlank()) { Spacer(Modifier.height(6.dp)); Markdown(a.decisionNote) }
                                 }
@@ -259,18 +262,18 @@ fun ApprovalDetailScreen(nav: Nav, id: String) {
                     }
                     val payload = a.payload
                     if (payload != null && payload.isNotEmpty()) {
-                        item { SectionHeader("Details") }
+                        item { SectionHeader(stringResource(R.string.approvals_details)) }
                         item { Card(Modifier.padding(horizontal = 16.dp), padding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)) { Column { ApprovalPayload(payload) } } }
                     }
                     if (b.issues.isNotEmpty()) {
-                        item { SectionHeader("Linked tasks") }
+                        item { SectionHeader(stringResource(R.string.approvals_linked_tasks)) }
                         items(b.issues, key = { "i-" + it.id }) { issue -> IssueRow(issue, onClick = { nav.issue(issue.identifier ?: issue.id) }) }
                     }
-                    item { SectionHeader("Comments") }
+                    item { SectionHeader(stringResource(R.string.approvals_comments)) }
                     if (b.comments.isEmpty()) {
                         item {
                             Text(
-                                "No comments yet.",
+                                stringResource(R.string.approvals_no_comments),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.padding(horizontal = 16.dp),
@@ -288,7 +291,7 @@ fun ApprovalDetailScreen(nav: Nav, id: String) {
                     TextField(
                         value = draft,
                         onValueChange = { draft = it },
-                        placeholder = { Text("Add a comment…") },
+                        placeholder = { Text(stringResource(R.string.approvals_add_comment)) },
                         modifier = Modifier.weight(1f).heightIn(min = 48.dp),
                         maxLines = 5,
                         shape = RoundedCornerShape(24.dp),
@@ -323,7 +326,7 @@ fun ApprovalDetailScreen(nav: Nav, id: String) {
                         },
                     ) {
                         Icon(
-                            Icons.AutoMirrored.Filled.Send, "Send",
+                            Icons.AutoMirrored.Filled.Send, stringResource(R.string.common_send),
                             tint = if (canSend) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(20.dp),
                         )
@@ -334,11 +337,13 @@ fun ApprovalDetailScreen(nav: Nav, id: String) {
     }
 
     pendingAction?.let { action ->
-        val title = when (action) {
-            "approve" -> "Approve?"
-            "reject" -> "Reject?"
-            else -> "Request revision?"
-        }
+        val title = stringResource(
+            when (action) {
+                "approve" -> R.string.approvals_confirm_approve
+                "reject" -> R.string.approvals_confirm_reject
+                else -> R.string.approvals_confirm_revision
+            },
+        )
         AlertDialog(
             onDismissRequest = { if (!busy) pendingAction = null },
             title = { Text(title) },
@@ -346,7 +351,7 @@ fun ApprovalDetailScreen(nav: Nav, id: String) {
                 OutlinedTextField(
                     value = note,
                     onValueChange = { note = it },
-                    label = { Text(if (action == "request-revision") "What should change?" else "Note (optional)") },
+                    label = { Text(stringResource(if (action == "request-revision") R.string.approvals_what_should_change else R.string.approvals_note_optional)) },
                     minLines = 3,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -362,11 +367,13 @@ fun ApprovalDetailScreen(nav: Nav, id: String) {
                                 loader.value?.let { cur -> loader.set(cur.copy(approval = updated)) }
                                 AppState.refreshBadges()
                                 AppState.toast(
-                                    when (action) {
-                                        "approve" -> "Approved"
-                                        "reject" -> "Rejected"
-                                        else -> "Revision requested"
-                                    },
+                                    L10n.str(
+                                        when (action) {
+                                            "approve" -> R.string.approvals_approved
+                                            "reject" -> R.string.approvals_rejected
+                                            else -> R.string.approvals_revision_requested
+                                        },
+                                    ),
                                 )
                                 pendingAction = null
                             } catch (t: Throwable) {
@@ -378,15 +385,17 @@ fun ApprovalDetailScreen(nav: Nav, id: String) {
                     },
                 ) {
                     Text(
-                        when (action) {
-                            "approve" -> "Approve"
-                            "reject" -> "Reject"
-                            else -> "Request revision"
-                        },
+                        stringResource(
+                            when (action) {
+                                "approve" -> R.string.approvals_approve
+                                "reject" -> R.string.approvals_reject
+                                else -> R.string.approvals_request_revision
+                            },
+                        ),
                     )
                 }
             },
-            dismissButton = { TextButton(enabled = !busy, onClick = { pendingAction = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(enabled = !busy, onClick = { pendingAction = null }) { Text(stringResource(R.string.common_cancel)) } },
         )
     }
 }
