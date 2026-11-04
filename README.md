@@ -142,10 +142,10 @@ The server must accept the hostname you connect with. If you get a hostname erro
 The [demo server](tools/demo-server) is a single Python file with no dependencies. It serves a made-up company with agents, a task tree, pending requests and live runs:
 
 ```bash
-python3 tools/demo-server/demo_server.py --host 0.0.0.0 --port 3100
+python3 tools/demo-server/demo_server.py --host 0.0.0.0 --port 3199
 ```
 
-Point the app at `http://<your computer's IP>:3100` and sign in with any email and password. On an emulator, run `adb reverse tcp:3100 tcp:3100` and use `http://localhost:3100`.
+Point the app at `http://<your computer's IP>:3199` and sign in with any email and password. On an emulator, run `adb reverse tcp:3199 tcp:3199` and use `http://localhost:3199`.
 
 ## Building
 
