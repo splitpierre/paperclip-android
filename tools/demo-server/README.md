@@ -14,7 +14,7 @@ It serves **Lumen Labs**, a made-up company building a calendar app called Orbit
 - live run transcripts in Claude and Codex formats
 - costs, provider quotas, projects, goals, routines and an activity feed
 
-Point the app at `http://<host>:3100` and sign in with any email and password. On an emulator, run `adb reverse tcp:3100 tcp:3100` and use `http://localhost:3100`.
+Point the app at `http://<host>:3100` and sign in with any email and password (signing out really signs you out until you sign in again). On an emulator, run `adb reverse tcp:3100 tcp:3100` and use `http://localhost:3100`.
 
 Writes are accepted and kept in memory: answering a request, moving a task or adding a comment changes what you see until the server restarts. Timestamps are relative to when the server started.
 

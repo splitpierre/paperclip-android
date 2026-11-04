@@ -235,7 +235,7 @@ Open **Settings** from Home or More:
 - **Company**: switch between companies if you have more than one.
 - **Appearance**: follow the system, or always use dark or light.
 - **Notifications**: **Agent requests** checks about every 15 minutes for new questions, confirmations, approvals and failed runs, and posts a notification for each. Tapping one opens the item. **Check now** runs the check immediately.
-- **Sign out** clears the app's Paperclip and sign-in proxy sessions.
+- **Sign out** clears the app's Paperclip and sign-in proxy sessions. The email you signed in with stays pre-filled on the sign-in screen. Passwords are never stored by the app: it offers to save them in your phone's password manager (Google Password Manager or similar), and "Use a saved sign-in" fills them back in.
 
 ## Live updates
 
