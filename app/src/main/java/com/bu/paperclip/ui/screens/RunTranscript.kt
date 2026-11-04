@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bu.paperclip.ui.theme.Mono
 import com.bu.paperclip.data.TEntry
+import com.bu.paperclip.data.TextSanitizer
 import com.bu.paperclip.data.TranscriptBuilder
 import com.bu.paperclip.net.AppJson
 import com.bu.paperclip.ui.components.Markdown
@@ -82,14 +83,14 @@ class RunTranscriptState(adapterType: String?) {
             val o = runCatching { AppJson.parseToJsonElement(l) }.getOrNull() as? JsonObject ?: continue
             val seq = (o["seq"] as? JsonPrimitive)?.longOrNull
             if (seq != null && !rawSeqs.add(seq)) continue
-            raw.add(RunRawLine((o["stream"] as? JsonPrimitive)?.contentOrNull ?: "stdout", (o["chunk"] as? JsonPrimitive)?.contentOrNull ?: ""))
+            raw.add(RunRawLine((o["stream"] as? JsonPrimitive)?.contentOrNull ?: "stdout", TextSanitizer.sanitize((o["chunk"] as? JsonPrimitive)?.contentOrNull ?: "")))
         }
         dirty = true
     }
 
     fun feedLive(ts: String?, stream: String, chunk: String, seq: Long?) {
         builder.feedRecord(ts, stream, chunk, seq)
-        if (seq == null || rawSeqs.add(seq)) raw.add(RunRawLine(stream, chunk))
+        if (seq == null || rawSeqs.add(seq)) raw.add(RunRawLine(stream, TextSanitizer.sanitize(chunk)))
         dirty = true
     }
 }
