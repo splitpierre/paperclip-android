@@ -22,9 +22,12 @@ object AppState {
     /** Items on the Decisions desk that are new today or due now (the web sidebar's Decisions count). */
     val decisionsBadge = MutableStateFlow(0)
 
-    private val _snack = MutableStateFlow<String?>(null)
-    val snack: StateFlow<String?> = _snack
-    fun toast(msg: String) { _snack.value = msg }
+    /** A snackbar message; [sticky] ones stay until dismissed, for things the user must not miss. */
+    data class Snack(val message: String, val sticky: Boolean = false)
+
+    private val _snack = MutableStateFlow<Snack?>(null)
+    val snack: StateFlow<Snack?> = _snack
+    fun toast(msg: String, sticky: Boolean = false) { _snack.value = Snack(msg, sticky) }
     fun clearToast() { _snack.value = null }
 
     val cid: String get() = company.value?.id ?: ""

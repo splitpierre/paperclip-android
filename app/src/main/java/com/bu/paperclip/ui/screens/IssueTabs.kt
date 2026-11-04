@@ -248,12 +248,6 @@ private fun Attachment.contentUrl(): String = Api.absolute(contentPath ?: "/api/
 /** Downloads with the session (the browser has none) and shows it in the app or hands it to another app. */
 private fun Attachment.open() = FileOpener.open(contentUrl(), originalFilename, contentType)
 
-private fun issueSize(b: Long): String = when {
-    b < 1024 -> "$b B"
-    b < 1024 * 1024 -> "${b / 1024} KB"
-    else -> String.format("%.1f MB", b / 1048576.0)
-}
-
 @Composable
 private fun IssueWorkProductCard(wp: WorkProduct) {
     val ctx = LocalContext.current

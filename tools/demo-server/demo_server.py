@@ -13,6 +13,8 @@ Paperclip URL to proxy them; otherwise agents show initials.
 """
 import argparse
 import base64
+import email.parser
+import email.policy
 import hashlib
 import json
 import re
@@ -473,6 +475,8 @@ def pdf(lines):
 # server, so a link that leaks to the external browser fails there just as it does in production.
 FILES = {}
 ATTACHMENTS = {}
+# Paperclip's default PAPERCLIP_ATTACHMENT_MAX_BYTES; --max-attachment-bytes lowers it to try failed uploads.
+MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
 
 
 def attach(n, name, ctype, data, mins_ago, kind="attachments"):
@@ -747,6 +751,9 @@ class Handler(BaseHTTPRequestHandler):
         m = re.fullmatch(r"/api/(attachments|assets)/([^/]+)/content", path)
         if m and method == "GET":
             return self.file(m.group(1), m.group(2), q.get("download") in ("1", "true"))
+        m = re.fullmatch(r"/api/companies/[^/]+/issues/([^/]+)/attachments", path)
+        if m and method == "POST":
+            return self.upload(m.group(1))
         body = self.body() if method in ("POST", "PATCH", "PUT") else {}
         try:
             res = self.api(method, path[4:], q, body)
@@ -1035,6 +1042,41 @@ class Handler(BaseHTTPRequestHandler):
         return "demo_session=demo" in (self.headers.get("Cookie") or "") or (self.headers.get("Authorization") or "").startswith("Bearer ")
 
     # -- files
+    def upload(self, key):
+        """POST /api/companies/:cid/issues/:id/attachments: multipart, one file in the `file` field."""
+        if not self.signed_in():
+            return self.send_json({"error": "Unauthorized"}, 401)
+        i = ISSUES.get(key) or next((x for x in ISSUES.values() if x["identifier"] == key), None)
+        if i is None:
+            return self.send_json({"error": "Issue not found"}, 404)
+        n = int(self.headers.get("Content-Length") or 0)
+        raw = self.rfile.read(n) if n else b""
+        ctype = self.headers.get("Content-Type", "")
+        if not ctype.startswith("multipart/form-data"):
+            return self.send_json({"error": "Missing file field 'file'"}, 400)
+        msg = email.parser.BytesParser(policy=email.policy.HTTP).parsebytes(b"Content-Type: " + ctype.encode() + b"\r\n\r\n" + raw)
+        part = next((p for p in msg.iter_parts() if p.get_param("name", header="content-disposition") == "file"), None)
+        if part is None:
+            return self.send_json({"error": "Missing file field 'file'"}, 400)
+        data = part.get_payload(decode=True) or b""
+        if len(data) > MAX_ATTACHMENT_BYTES:
+            limit = MAX_ATTACHMENT_BYTES
+            size = "%d MB" % (limit // 1048576) if limit >= 1048576 else "%d KB" % (limit // 1024) if limit >= 1024 else "%d bytes" % limit
+            return self.send_json({"error": "Attachment is larger than the %s limit" % size}, 422)
+        if not data:
+            return self.send_json({"error": "Attachment is empty"}, 422)
+        name = part.get_filename() or "file"
+        fid = str(uuid.uuid4())
+        path = "/api/attachments/%s/content" % fid
+        FILES[("attachments", fid)] = (name, part.get_content_type(), data)
+        att = {
+            "id": fid, "issueId": i["id"], "originalFilename": name, "contentType": part.get_content_type(), "byteSize": len(data),
+            "contentPath": path, "openPath": path, "downloadPath": path + "?download=1",
+            "createdAt": ago(), "createdByUserId": ME,
+        }
+        ATTACHMENTS.setdefault(i["id"], []).append(att)
+        return self.send_json(att, 201)
+
     def file(self, kind, fid, download):
         if not self.signed_in():
             return self.send_json({"error": "Unauthorized"}, 401)
@@ -1099,11 +1141,14 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
+    global MAX_ATTACHMENT_BYTES
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=3100)
     ap.add_argument("--avatars-from", help="Paperclip base URL to proxy agent avatars from, e.g. http://127.0.0.1:3100")
+    ap.add_argument("--max-attachment-bytes", type=int, default=MAX_ATTACHMENT_BYTES, help="Reject larger uploads with a 422, like Paperclip")
     a = ap.parse_args()
+    MAX_ATTACHMENT_BYTES = a.max_attachment_bytes
     Handler.avatars_from = a.avatars_from
     srv = ThreadingHTTPServer((a.host, a.port), Handler)
     print(f"Demo Paperclip on http://{a.host}:{a.port} ({len(ISSUES)} tasks, {len(AGENTS)} agents)")

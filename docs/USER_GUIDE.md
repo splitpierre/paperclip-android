@@ -177,13 +177,22 @@ Use the search icon to match task IDs and titles. The **⋮** menu has **Expand 
 
 <br clear="right">
 
+### New tasks
+
+Tap **New task** to create one, or **New sub-task** in a task's **⋮** menu. Set its title, status, priority, assignee, project and description. **Attach files** adds any files from your phone; each shows its name and size, and **×** removes it. When you tap **Create**, the task is created first and the files upload one at a time, each one ticked off as it lands. Then the new task opens. If a file doesn't upload, for example because it's over the server's size limit, the task is still created and a message names each file that failed and why. Attach those again from the task's thread.
+
+<p>
+  <img src="screenshots/new-task-files.png" alt="A new task with an image and a PDF attached" width="280">
+  <img src="screenshots/new-task-upload-failed.png" alt="The new task opened, with a message naming the file that didn't upload" width="280">
+</p>
+
 ## A task's page
 
 The top of a task shows its title, status, priority, assignee and project. Tap any of these to change it. Below that are who created it, its cost, its number of runs and the description, which you can edit. If an agent is working on the task, a banner links to the live run.
 
 The tabs are:
 
-- **Thread**: agent request cards waiting for you, then the conversation in order, with older comments loaded on demand. In a long thread a round button follows your reading direction: scrolling down it jumps to the latest comment, scrolling up it flips to jump back to the top. Write comments in Markdown, @-mention agents or people, and attach images. Long-press a comment to copy it.
+- **Thread**: agent request cards waiting for you, then the conversation in order, with older comments loaded on demand. In a long thread a round button follows your reading direction: scrolling down it jumps to the latest comment, scrolling up it flips to jump back to the top. Write comments in Markdown, @-mention agents or people, and attach photos or files with the paperclip button. Long-press a comment to copy it.
 - **Docs**: the task's documents, such as plans. You can read and edit them.
 - **Sub-tasks**: a tree of this task's sub-tasks with overall progress and **Next up** for this branch. **Show closed** adds finished sub-tasks. **New sub-task** is in the **⋮** menu.
 - **Files**: attachments and work products such as pull requests. Images, text and Markdown files open in the app, with **Share** and **Save** at the top. Other files open in an app that handles them, such as a PDF viewer; if no app can, you can share or save the file instead. Links to files in comments, documents and run transcripts open the same way.
