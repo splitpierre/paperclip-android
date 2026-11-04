@@ -3,10 +3,10 @@
 A fake Paperclip server with a made-up company, for screenshots and trying the app without a real
 instance. Standard library only.
 
-    python3 tools/demo-server/demo_server.py --port 3100
+    python3 tools/demo-server/demo_server.py --port 3199
 
-Then point the app at http://<host>:3100 (on an emulator: `adb reverse tcp:3100 tcp:3100` and use
-http://localhost:3100). Any email and password signs in. Writes are accepted and kept in memory.
+Then point the app at http://<host>:3199 (on an emulator: `adb reverse tcp:3199 tcp:3199` and use
+http://localhost:3199). Any email and password signs in. Writes are accepted and kept in memory.
 
 Agent avatars are Paperclip's own artwork, so they aren't bundled. Pass --avatars-from with a real
 Paperclip URL to proxy them; otherwise agents show initials.
@@ -285,7 +285,7 @@ def codex_log(steps, done=True):
             if s[2] is not None:
                 rec({"type": "item.completed", "item": {"id": f"i{k}", "type": "command_execution", "command": s[1], "aggregated_output": s[2], "exit_code": 0, "status": "completed"}})
     if done:
-        rec({"type": "turn.completed", "usage": {"input_tokens": 40211, "cached_input_tokens": 310022, "output_tokens": 6011}})
+        rec({"type": "turn.completed", "usage": {"input_tokens": 40211, "cached_input_tokens": 319922, "output_tokens": 6011}})
     return "\n".join(lines) + "\n"
 
 
@@ -1144,8 +1144,8 @@ def main():
     global MAX_ATTACHMENT_BYTES
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--host", default="127.0.0.1")
-    ap.add_argument("--port", type=int, default=3100)
-    ap.add_argument("--avatars-from", help="Paperclip base URL to proxy agent avatars from, e.g. http://127.0.0.1:3100")
+    ap.add_argument("--port", type=int, default=3199)
+    ap.add_argument("--avatars-from", help="Paperclip base URL to proxy agent avatars from, e.g. https://paperclip.example.com")
     ap.add_argument("--max-attachment-bytes", type=int, default=MAX_ATTACHMENT_BYTES, help="Reject larger uploads with a 422, like Paperclip")
     a = ap.parse_args()
     MAX_ATTACHMENT_BYTES = a.max_attachment_bytes

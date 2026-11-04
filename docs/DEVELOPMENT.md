@@ -107,14 +107,14 @@ The APK is written to `app/build/outputs/apk/debug/app-debug.apk`. Install it wi
 [`tools/demo-server`](../tools/demo-server) serves a made-up company with no setup:
 
 ```bash
-python3 tools/demo-server/demo_server.py --port 3100
-adb reverse tcp:3100 tcp:3100
+python3 tools/demo-server/demo_server.py --port 3199
+adb reverse tcp:3199 tcp:3199
 ```
 
 Debug builds accept a `setupUrl` intent extra (and an optional `setupKey` board key), so you can skip the setup screen:
 
 ```bash
-adb shell am start -n com.bu.paperclip/.MainActivity --es setupUrl http://localhost:3100
+adb shell am start -n com.bu.paperclip/.MainActivity --es setupUrl http://localhost:3199
 ```
 
 Add `--es setupLanguage pt-BR` (or `es`, `en`, `system`) to switch the app language at the same time, for example when taking screenshots of a translation.
