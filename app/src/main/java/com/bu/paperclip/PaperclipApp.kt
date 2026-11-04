@@ -7,12 +7,14 @@ import com.bu.paperclip.data.AppState
 import com.bu.paperclip.data.SettingsStore
 import com.bu.paperclip.net.Api
 import com.bu.paperclip.notify.NotifyWorker
+import com.bu.paperclip.ui.components.FileOpener
 import kotlinx.coroutines.launch
 
 class PaperclipApp : Application(), ImageLoaderFactory {
     override fun onCreate() {
         super.onCreate()
         AppState.settings = SettingsStore(this)
+        FileOpener.init(this)
         NotifyWorker.ensureChannel(this)
         AppState.scope.launch {
             val s = AppState.settings.current()
