@@ -90,12 +90,15 @@ class TranscriptBuilder(private val adapterType: String?) {
     private fun add(raw: TEntry) {
         val e = clean(raw)
         val last = entries.lastOrNull()
-        if (e is TEntry.Assistant && last is TEntry.Assistant && last.thinking == e.thinking && pendingDelta) {
-            entries[entries.size - 1] = last.copy(text = TextSanitizer.cap(last.text + e.text))
+        // Merge only while the block stays under the cap; otherwise start a new entry so later lines are never dropped.
+        if (e is TEntry.Assistant && last is TEntry.Assistant && last.thinking == e.thinking && pendingDelta &&
+            last.text.length + e.text.length <= TextSanitizer.MAX_BLOCK_CHARS) {
+            entries[entries.size - 1] = last.copy(text = last.text + e.text)
             return
         }
-        if (e is TEntry.Line && last is TEntry.Line && last.stream == e.stream && e.stream == "stdout") {
-            entries[entries.size - 1] = last.copy(text = TextSanitizer.cap(last.text + "\n" + e.text))
+        if (e is TEntry.Line && last is TEntry.Line && last.stream == e.stream && e.stream == "stdout" &&
+            last.text.length + 1 + e.text.length <= TextSanitizer.MAX_BLOCK_CHARS) {
+            entries[entries.size - 1] = last.copy(text = last.text + "\n" + e.text)
             return
         }
         entries.add(e)
@@ -229,8 +232,10 @@ class TranscriptBuilder(private val adapterType: String?) {
                 val ch = j.s("channel").ifEmpty { j.s("stream") }
                 val thinking = ch == "thought" || ch == "thinking"
                 val last = entries.lastOrNull()
-                if (pendingDelta && last is TEntry.Assistant && last.thinking == thinking) {
-                    entries[entries.size - 1] = last.copy(text = TextSanitizer.cap(TextSanitizer.sanitize(text).let { last.text + it }))
+                val clean = TextSanitizer.sanitize(text)
+                if (pendingDelta && last is TEntry.Assistant && last.thinking == thinking &&
+                    last.text.length + clean.length <= TextSanitizer.MAX_BLOCK_CHARS) {
+                    entries[entries.size - 1] = last.copy(text = last.text + clean)
                 } else {
                     pendingDelta = false
                     entries.add(clean(TEntry.Assistant(ts, text, thinking)))

@@ -60,4 +60,16 @@ class TextSanitizerTest {
         assertFalse(l.text.length > 100)
         assertTrue(l.text.startsWith("[image image/jpeg"))
     }
+
+    @Test fun longStdoutKeepsTheLastLines() {
+        val b = TranscriptBuilder(null)
+        val sb = StringBuilder()
+        for (i in 0 until 1_500) sb.append("line $i ").append("x".repeat(20)).append('\n')
+        sb.append("FINAL ERROR LINE\n")
+        assertTrue(sb.length > 30_000)
+        b.feedRecord(null, "stdout", sb.toString(), 1)
+        assertTrue(b.entries.size > 1)
+        assertTrue(b.entries.all { (it as com.bu.paperclip.data.TEntry.Line).text.length <= TextSanitizer.MAX_BLOCK_CHARS })
+        assertTrue((b.entries.last() as com.bu.paperclip.data.TEntry.Line).text.endsWith("FINAL ERROR LINE"))
+    }
 }
