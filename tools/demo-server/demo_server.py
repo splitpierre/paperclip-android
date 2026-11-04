@@ -23,6 +23,7 @@ import time
 import urllib.parse
 import urllib.request
 import uuid
+import zlib
 from datetime import datetime, timedelta, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -438,6 +439,68 @@ WORK_PRODUCTS[BY_NUM[148]["id"]] = [{
     "summary": "+612 −48 across 14 files", "createdAt": ago(minutes=25),
 }]
 
+# ---------------------------------------------------------------- files
+
+def png(w, h, top, bottom):
+    """A vertical gradient PNG, so image previews have something to show."""
+    rows = b"".join(b"\x00" + bytes(round(t + (b - t) * y / (h - 1)) for t, b in zip(top, bottom)) * w for y in range(h))
+    def chunk(kind, data):
+        return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data))
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(rows)) + chunk(b"IEND", b"")
+
+
+def pdf(lines):
+    """A one-page PDF with a few lines of text."""
+    text = "BT /F1 18 Tf 72 720 Td 26 TL " + " ".join("(%s) '" % l.replace("(", "[").replace(")", "]") for l in lines) + " ET"
+    objs = [
+        "<< /Type /Catalog /Pages 2 0 R >>",
+        "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>",
+        "<< /Length %d >>\nstream\n%s\nendstream" % (len(text), text),
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    ]
+    out, offsets = "%PDF-1.4\n", []
+    for n, o in enumerate(objs, 1):
+        offsets.append(len(out))
+        out += "%d 0 obj\n%s\nendobj\n" % (n, o)
+    xref = len(out)
+    out += "xref\n0 %d\n0000000000 65535 f \n" % (len(objs) + 1) + "".join("%010d 00000 n \n" % o for o in offsets)
+    out += "trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n" % (len(objs) + 1, xref)
+    return out.encode()
+
+
+# Attachments and assets. Their /content routes need the session cookie (or a board key), like a real
+# server, so a link that leaks to the external browser fails there just as it does in production.
+FILES = {}
+ATTACHMENTS = {}
+
+
+def attach(n, name, ctype, data, mins_ago, kind="attachments"):
+    fid = uid(kind + "/" + name)
+    FILES[(kind, fid)] = (name, ctype, data)
+    path = "/api/%s/%s/content" % (kind, fid)
+    if kind == "attachments":
+        ATTACHMENTS.setdefault(BY_NUM[n]["id"], []).append({
+            "id": fid, "issueId": BY_NUM[n]["id"], "originalFilename": name, "contentType": ctype, "byteSize": len(data),
+            "contentPath": path, "openPath": path, "downloadPath": path + "?download=1",
+            "createdAt": ago(minutes=mins_ago), "createdByAgentId": A["kai"],
+        })
+    return path
+
+
+SHOT = attach(148, "checkout-success.png", "image/png", png(360, 640, (79, 70, 229), (16, 185, 129)), 24)
+SPEC = attach(148, "webhook-retries.pdf", "application/pdf", pdf(["Orbit billing: webhook retries", "", "Stripe retries invoice.paid after a timeout.", "Store the event id and skip ones already seen."]), 24)
+NOTES = attach(148, "release-notes.md", "text/markdown", b"# Billing 1.0\n\n- Stripe Checkout for the Team plan\n- `invoice.paid` and `customer.subscription.updated` webhooks\n- Signature checks on every webhook\n\n## Not yet\n\n| Item | When |\n|---|---|\n| Annual plans | 1.1 |\n| Coupons | 1.2 |\n", 23)
+LOG = attach(148, "stripe-listen.txt", "text/plain", b"> Ready! You are using Stripe API Version [2024-06-20].\n2025-01-12 10:41:02  --> invoice.paid [evt_1Q9]\n2025-01-12 10:41:02  <-- [200] POST http://localhost:3000/billing/webhook\n", 23)
+SNAPSHOT = attach(148, "fixtures.orbitpkg", None, b"ORBITPKG\x00\x01" + bytes(range(256)) * 4, 22)
+MOCKUP = attach(148, "plan-picker.png", None, png(360, 240, (250, 204, 21), (239, 68, 68)), 22)
+DIAGRAM = attach(148, "webhook-flow.png", "image/png", png(480, 270, (14, 165, 233), (30, 41, 59)), 22, kind="assets")
+
+comment(148, "kai", "Fixes are in. Files for the re-review:\n\n"
+        "- [Screenshot of the success page](%s)\n- [Retry analysis (PDF)](%s)\n- [Release notes](%s)\n- [stripe listen log](%s)\n"
+        "- [Test fixtures](%s) (no content type)\n- [Plan picker mockup](%s) (no content type)\n\n"
+        "How the webhook flow works now:\n\n![Webhook flow](%s)" % (SHOT, SPEC, NOTES, LOG, SNAPSHOT, MOCKUP, DIAGRAM), 21)
+
 # ---------------------------------------------------------------- feeds
 
 ACTIVITY = []
@@ -631,11 +694,16 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         pass
 
+    cookie = None
+
     def send_json(self, obj, code=200):
         body = jdump(obj)
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
+        if self.cookie:
+            self.send_header("Set-Cookie", self.cookie)
+            self.cookie = None
         self.end_headers()
         self.wfile.write(body)
 
@@ -672,6 +740,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.avatar(path + ("?" + u.query if u.query else ""))
         if not path.startswith("/api/"):
             return self.send_json({"error": "not found"}, 404)
+        m = re.fullmatch(r"/api/(attachments|assets)/([^/]+)/content", path)
+        if m and method == "GET":
+            return self.file(m.group(1), m.group(2), q.get("download") in ("1", "true"))
         body = self.body() if method in ("POST", "PATCH", "PUT") else {}
         try:
             res = self.api(method, path[4:], q, body)
@@ -687,8 +758,9 @@ class Handler(BaseHTTPRequestHandler):
         if p == "/health":
             return {"status": "ok"}
         if p == "/auth/get-session":
-            return {"session": {"id": "demo", "userId": ME}, "user": USER}
+            return {"session": {"id": "demo", "userId": ME}, "user": USER} if self.signed_in() else None
         if p == "/auth/sign-in/email":
+            self.cookie = "demo_session=demo; Path=/; HttpOnly; SameSite=Lax"
             return {"user": USER, "token": "demo"}
         if p == "/auth/sign-out":
             return {"success": True}
@@ -933,7 +1005,7 @@ class Handler(BaseHTTPRequestHandler):
         if r == "work-products":
             return WORK_PRODUCTS.get(iid, [])
         if r == "attachments":
-            return []
+            return ATTACHMENTS.get(iid, [])
         if r == "activity":
             return [e for e in ACTIVITY if e["entityId"] == iid]
         if r == "runs":
@@ -949,6 +1021,24 @@ class Handler(BaseHTTPRequestHandler):
                 i["isUnreadForMe"] = m == "DELETE"
             return {"ok": True}
         raise KeyError(r)
+
+    def signed_in(self):
+        return "demo_session=" in (self.headers.get("Cookie") or "") or (self.headers.get("Authorization") or "").startswith("Bearer ")
+
+    # -- files
+    def file(self, kind, fid, download):
+        if not self.signed_in():
+            return self.send_json({"error": "Unauthorized"}, 401)
+        if (kind, fid) not in FILES:
+            return self.send_json({"error": "File not found"}, 404)
+        name, ctype, data = FILES[(kind, fid)]
+        self.send_response(200)
+        self.send_header("Content-Type", ctype or "application/octet-stream")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Content-Disposition", '%s; filename="%s"' % ("attachment" if download else "inline", name))
+        self.send_header("Cache-Control", "private, max-age=60")
+        self.end_headers()
+        self.wfile.write(data)
 
     # -- avatars
     def avatar(self, path):
