@@ -1,5 +1,7 @@
 package com.bu.paperclip.ui.components
 
+import com.bu.paperclip.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
@@ -74,7 +76,7 @@ fun ScrollJumpButton(
     val target = rememberJumpTarget(state)
     val canMove = if (target == JumpTarget.Bottom) state.canScrollForward else state.canScrollBackward
     val rotation by animateFloatAsState(if (target == JumpTarget.Top) 180f else 0f, label = "jump-rotation")
-    val description = if (target == JumpTarget.Top) "Jump to top" else "Jump to latest"
+    val description = stringResource(if (target == JumpTarget.Top) R.string.component_jump_top else R.string.component_jump_latest)
     val click = {
         onJump(target)
         scope.launch { state.jumpTo(target) }

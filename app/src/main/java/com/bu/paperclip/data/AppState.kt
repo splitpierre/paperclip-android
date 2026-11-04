@@ -1,5 +1,7 @@
 package com.bu.paperclip.data
 
+import com.bu.paperclip.util.L10n
+import com.bu.paperclip.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -22,20 +24,23 @@ object AppState {
     /** Items on the Decisions desk that are new today or due now (the web sidebar's Decisions count). */
     val decisionsBadge = MutableStateFlow(0)
 
-    private val _snack = MutableStateFlow<String?>(null)
-    val snack: StateFlow<String?> = _snack
-    fun toast(msg: String) { _snack.value = msg }
+    /** A snackbar message; [sticky] ones stay until dismissed, for things the user must not miss. */
+    data class Snack(val message: String, val sticky: Boolean = false)
+
+    private val _snack = MutableStateFlow<Snack?>(null)
+    val snack: StateFlow<Snack?> = _snack
+    fun toast(msg: String, sticky: Boolean = false) { _snack.value = Snack(msg, sticky) }
     fun clearToast() { _snack.value = null }
 
     val cid: String get() = company.value?.id ?: ""
 
     fun agent(id: String?): Agent? = id?.let { i -> agents.value.firstOrNull { it.id == i } }
-    fun agentName(id: String?): String = agent(id)?.name ?: "Agent"
+    fun agentName(id: String?): String = agent(id)?.name ?: L10n.str(R.string.common_agent)
     fun userName(id: String?): String {
-        if (id == null) return "Someone"
-        if (id == me.value?.id) return "You"
+        if (id == null) return L10n.str(R.string.common_someone)
+        if (id == me.value?.id) return L10n.str(R.string.common_you)
         val u = users.value[id]
-        return u?.name?.takeIf { it.isNotBlank() } ?: u?.email ?: "User"
+        return u?.name?.takeIf { it.isNotBlank() } ?: u?.email ?: L10n.str(R.string.common_user)
     }
     fun project(id: String?): Project? = id?.let { i -> projects.value.firstOrNull { it.id == i } }
 

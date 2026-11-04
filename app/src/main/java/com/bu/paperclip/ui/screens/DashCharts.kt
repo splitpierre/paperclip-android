@@ -1,5 +1,8 @@
 package com.bu.paperclip.ui.screens
 
+import com.bu.paperclip.util.L10n
+import com.bu.paperclip.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -50,13 +53,13 @@ fun DashRunActivityChart(days: List<RunActivityDay>, modifier: Modifier = Modifi
         val sel = data.getOrNull(selected)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                if (sel != null) dashDayLabel(sel.date, long = true) else "No runs yet",
+                if (sel != null) dashDayLabel(sel.date, long = true) else stringResource(R.string.dashboard_chart_empty),
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.weight(1f),
             )
             if (sel != null) {
                 Text(
-                    "${sel.succeeded} ok · ${sel.failed} failed · ${sel.other + sel.recovered} other",
+                    stringResource(R.string.dashboard_chart_day_counts, sel.succeeded, sel.failed, sel.other + sel.recovered),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -111,9 +114,9 @@ fun DashRunActivityChart(days: List<RunActivityDay>, modifier: Modifier = Modifi
         }
         Spacer(Modifier.height(8.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            DashLegend(okColor, "Succeeded")
-            DashLegend(failColor, "Failed")
-            DashLegend(otherColor, "Other")
+            DashLegend(okColor, stringResource(R.string.dashboard_legend_succeeded))
+            DashLegend(failColor, stringResource(R.string.dashboard_legend_failed))
+            DashLegend(otherColor, stringResource(R.string.dashboard_legend_other))
         }
     }
 }
@@ -146,12 +149,11 @@ private fun DrawScope.dashBarSegment(color: Color, x: Float, top: Float, w: Floa
     drawPath(path, color)
 }
 
-private val dashMonths = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
-
 internal fun dashDayLabel(date: String, long: Boolean = false): String {
     val parts = date.take(10).split("-")
     if (parts.size != 3) return date
-    val day = parts[2].trimStart('0')
-    val month = parts[1].toIntOrNull()?.let { dashMonths.getOrNull(it - 1) } ?: ""
-    return if (long) "$day $month" else day
+    if (!long) return parts[2].trimStart('0')
+    val d = runCatching { java.time.LocalDate.parse(date.take(10)) }.getOrNull() ?: return date
+    val loc = L10n.locale()
+    return java.time.format.DateTimeFormatter.ofPattern(android.text.format.DateFormat.getBestDateTimePattern(loc, "dMMM"), loc).format(d)
 }

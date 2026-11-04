@@ -1,5 +1,9 @@
 package com.bu.paperclip.ui.screens
 
+import com.bu.paperclip.util.L10n
+import com.bu.paperclip.R
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -85,12 +89,12 @@ fun ProjectsScreen(nav: Nav) {
     val loader = rememberLoader(cid) { Repo.projects(cid).also { AppState.projects.value = it } }
     LiveRefresh(filter = { it.type == "activity.logged" && it.s("entityType") == "project" }) { loader.refresh() }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Projects") }, navigationIcon = { BackIcon { nav.back() } }) }) { pad ->
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.projects_title)) }, navigationIcon = { BackIcon { nav.back() } }) }) { pad ->
         LoadContent(loader, Modifier.padding(pad)) { list ->
             val visible = list.filter { it.archivedAt == null }
                 .sortedWith(compareBy<Project> { adminProjectStatusRank(it.status) }.thenByDescending { it.updatedAt })
             LazyColumn(Modifier.fillMaxSize()) {
-                if (visible.isEmpty()) item { EmptyState("No projects yet.", Icons.Outlined.FolderOpen) }
+                if (visible.isEmpty()) item { EmptyState(stringResource(R.string.projects_empty), Icons.Outlined.FolderOpen) }
                 items(visible, key = { it.id }) { p -> ProjectRow(p) { nav.project(p.id) } }
             }
         }
@@ -116,9 +120,9 @@ private fun ProjectRow(p: Project, onClick: () -> Unit) {
         Column(Modifier.weight(1f)) {
             Text(p.name, style = MaterialTheme.typography.bodyLarge)
             val sub = listOfNotNull(
-                p.taskCount?.let { "$it tasks" },
-                p.targetDate?.take(10)?.let { "target $it" },
-                AppState.agent(p.leadAgentId)?.name?.let { "lead $it" },
+                p.taskCount?.let { pluralStringResource(R.plurals.projects_tasks, it, it) },
+                p.targetDate?.take(10)?.let { stringResource(R.string.projects_target_short, it) },
+                AppState.agent(p.leadAgentId)?.name?.let { stringResource(R.string.projects_lead_short, it) },
             ).joinToString(" · ")
             if (sub.isNotEmpty()) Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -149,7 +153,7 @@ fun ProjectDetailScreen(nav: Nav, id: String) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(loader.value?.project?.name ?: "Project", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                title = { Text(loader.value?.project?.name ?: stringResource(R.string.projects_project), maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 navigationIcon = { BackIcon { nav.back() } },
             )
         },
@@ -158,7 +162,7 @@ fun ProjectDetailScreen(nav: Nav, id: String) {
                 ExtendedFloatingActionButton(
                     onClick = { nav.newIssue(projectId = p.id) },
                     icon = { Icon(Icons.Default.Add, null) },
-                    text = { Text("New task") },
+                    text = { Text(stringResource(R.string.projects_new_task)) },
                 )
             }
         },
@@ -180,12 +184,12 @@ fun ProjectDetailScreen(nav: Nav, id: String) {
                             Row(Modifier.clickable { nav.agent(lead.id) }, verticalAlignment = Alignment.CenterVertically) {
                                 AgentAvatar(lead.id, 24.dp)
                                 Spacer(Modifier.width(8.dp))
-                                Text("Lead: ${lead.name}", style = MaterialTheme.typography.bodyMedium)
+                                Text(stringResource(R.string.projects_lead, lead.name), style = MaterialTheme.typography.bodyMedium)
                             }
                         }
                         if (p.targetDate != null) {
                             Spacer(Modifier.height(6.dp))
-                            Text("Target ${p.targetDate.take(10)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.projects_target, p.targetDate.take(10)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         if (!p.description.isNullOrBlank()) {
                             Spacer(Modifier.height(10.dp))
@@ -193,7 +197,7 @@ fun ProjectDetailScreen(nav: Nav, id: String) {
                                 val long = p.description.length > 400
                                 Markdown(if (long && !expanded) p.description.take(400) + "…" else p.description)
                                 if (long) {
-                                    TextButton(onClick = { expanded = !expanded }) { Text(if (expanded) "Show less" else "Show more") }
+                                    TextButton(onClick = { expanded = !expanded }) { Text(stringResource(if (expanded) R.string.common_show_less else R.string.common_show_more)) }
                                 }
                             }
                         }
@@ -201,12 +205,12 @@ fun ProjectDetailScreen(nav: Nav, id: String) {
                 }
                 item {
                     SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
-                        listOf("Active", "All").forEachIndexed { i, label ->
-                            SegmentedButton(selected = seg == i, onClick = { seg = i }, shape = SegmentedButtonDefaults.itemShape(i, 2)) { Text(label) }
+                        listOf(R.string.projects_seg_active, R.string.common_all).forEachIndexed { i, label ->
+                            SegmentedButton(selected = seg == i, onClick = { seg = i }, shape = SegmentedButtonDefaults.itemShape(i, 2)) { Text(stringResource(label)) }
                         }
                     }
                 }
-                if (b.issues.isEmpty()) item { EmptyState(if (seg == 0) "No active tasks in this project." else "No tasks in this project yet.") }
+                if (b.issues.isEmpty()) item { EmptyState(stringResource(if (seg == 0) R.string.projects_no_active_tasks else R.string.projects_no_tasks)) }
                 items(b.issues, key = { it.id }) { issue -> IssueRow(issue, onClick = { nav.issue(issue.identifier ?: issue.id) }, showProject = false) }
                 item { Spacer(Modifier.height(88.dp)) }
             }
@@ -226,16 +230,24 @@ fun GoalsScreen(nav: Nav) {
     val loader = rememberLoader(cid) { Repo.goals(cid) }
     LiveRefresh(filter = { it.type == "activity.logged" && it.s("entityType") == "goal" }) { loader.refresh() }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Goals") }, navigationIcon = { BackIcon { nav.back() } }) }) { pad ->
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.projects_goals_title)) }, navigationIcon = { BackIcon { nav.back() } }) }) { pad ->
         LoadContent(loader, Modifier.padding(pad)) { goals ->
             val grouped = goals.groupBy { it.level }
             val order = goalLevels + grouped.keys.filter { it !in goalLevels }
             LazyColumn(Modifier.fillMaxSize()) {
-                if (goals.isEmpty()) item { EmptyState("No goals yet.", Icons.Outlined.Flag) }
+                if (goals.isEmpty()) item { EmptyState(stringResource(R.string.projects_goals_empty), Icons.Outlined.Flag) }
                 order.forEach { level ->
                     val list = grouped[level].orEmpty()
                     if (list.isNotEmpty()) {
-                        item(key = "h-$level") { SectionHeader("${level.replaceFirstChar { it.uppercase() }} goals") }
+                        item(key = "h-$level") { SectionHeader(
+                                when (level) {
+                                    "company" -> stringResource(R.string.projects_goals_company)
+                                    "team" -> stringResource(R.string.projects_goals_team)
+                                    "agent" -> stringResource(R.string.projects_goals_agent)
+                                    "task" -> stringResource(R.string.projects_goals_task)
+                                    else -> stringResource(R.string.projects_goals_level, level.replaceFirstChar { it.uppercase() })
+                                },
+                            ) }
                         items(list.sortedBy { adminGoalRank(it.status) }, key = { it.id }) { g -> GoalRow(nav, g) }
                     }
                 }
@@ -298,12 +310,12 @@ fun RoutinesScreen(nav: Nav) {
     var confirmRun by remember { mutableStateOf<Routine?>(null) }
     LiveRefresh(filter = { it.type == "activity.logged" && (it.s("entityType")?.startsWith("routine") == true) }) { loader.refresh() }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Routines") }, navigationIcon = { BackIcon { nav.back() } }) }) { pad ->
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.projects_routines_title)) }, navigationIcon = { BackIcon { nav.back() } }) }) { pad ->
         LoadContent(loader, Modifier.padding(pad)) { routines ->
             val list = routines.filter { it.status != "archived" }
                 .sortedWith(compareBy<Routine> { if (it.status == "active") 0 else 1 }.thenBy { it.title.lowercase() })
             LazyColumn(Modifier.fillMaxSize()) {
-                if (list.isEmpty()) item { EmptyState("No routines yet.", Icons.Outlined.Repeat) }
+                if (list.isEmpty()) item { EmptyState(stringResource(R.string.projects_routines_empty), Icons.Outlined.Repeat) }
                 items(list, key = { it.id }) { r ->
                     RoutineRow(
                         nav = nav,
@@ -318,7 +330,7 @@ fun RoutinesScreen(nav: Nav) {
                                 } finally {
                                     loader.refresh()
                                 }
-                            }, if (next == "paused") "Paused ${r.title}" else "Resumed ${r.title}")
+                            }, L10n.str(if (next == "paused") R.string.projects_routine_paused else R.string.projects_routine_resumed, r.title))
                         },
                     )
                 }
@@ -329,15 +341,15 @@ fun RoutinesScreen(nav: Nav) {
     confirmRun?.let { r ->
         AlertDialog(
             onDismissRequest = { confirmRun = null },
-            title = { Text("Run now?") },
-            text = { Text("Start \"${r.title}\" now${AppState.agent(r.assigneeAgentId)?.let { " — it will be assigned to ${it.name}" } ?: ""}.") },
+            title = { Text(stringResource(R.string.routine_run_title)) },
+            text = { Text(AppState.agent(r.assigneeAgentId)?.let { stringResource(R.string.routine_run_body_assigned, r.title, it.name) } ?: stringResource(R.string.routine_run_body, r.title)) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmRun = null
-                    act({ Repo.runRoutine(r.id); loader.refresh() }, "Started ${r.title}")
-                }) { Text("Run") }
+                    act({ Repo.runRoutine(r.id); loader.refresh() }, L10n.str(R.string.routine_started, r.title))
+                }) { Text(stringResource(R.string.routine_run)) }
             },
-            dismissButton = { TextButton(onClick = { confirmRun = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { confirmRun = null }) { Text(stringResource(R.string.common_cancel)) } },
         )
     }
 }
@@ -363,26 +375,26 @@ private fun RoutineRow(nav: Nav, r: Routine, onRun: () -> Unit, onToggle: () -> 
             Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.Schedule, null, Modifier.padding(end = 6.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(
-                    buildString {
-                        append(t.label ?: t.cronExpression ?: "Schedule")
-                        if (t.label != null && t.cronExpression != null) append(" (${t.cronExpression})")
-                        if (!t.enabled) append(" · disabled")
-                        else if (t.nextRunAt != null) append(" · next ${relativeTime(t.nextRunAt)}")
-                    },
+                    listOfNotNull(
+                        if (t.label != null && t.cronExpression != null) stringResource(R.string.projects_schedule_with_cron, t.label, t.cronExpression)
+                        else t.label ?: t.cronExpression ?: stringResource(R.string.projects_schedule),
+                        if (!t.enabled) stringResource(R.string.projects_schedule_disabled)
+                        else t.nextRunAt?.let { stringResource(R.string.routine_trigger_next, relativeTime(it)) },
+                    ).joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
-        val other = r.triggers.orEmpty().filter { it.kind != "schedule" }.map { it.kind }.distinct()
+        val other = r.triggers.orEmpty().filter { it.kind != "schedule" }.map { it.kind }.distinct().map(::routineKindLabel)
         if (other.isNotEmpty()) {
-            Text("Also triggered by ${other.joinToString(", ")}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp))
+            Text(stringResource(R.string.projects_also_triggered_by, other.joinToString(", ")), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 2.dp))
         }
         val last = r.lastRun
         if (last?.createdAt != null || r.lastTriggeredAt != null) {
             Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "Last run ${relativeTime(last?.createdAt ?: r.lastTriggeredAt)}",
+                    stringResource(R.string.projects_last_run, relativeTime(last?.createdAt ?: r.lastTriggeredAt)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -396,12 +408,12 @@ private fun RoutineRow(nav: Nav, r: Routine, onRun: () -> Unit, onToggle: () -> 
             FilledTonalButton(onClick = onRun) {
                 Icon(Icons.Outlined.PlayArrow, null)
                 Spacer(Modifier.width(4.dp))
-                Text("Run now")
+                Text(stringResource(R.string.routine_run_now))
             }
             OutlinedButton(onClick = onToggle) {
                 Icon(if (r.status == "active") Icons.Outlined.Pause else Icons.Outlined.PlayArrow, null)
                 Spacer(Modifier.width(4.dp))
-                Text(if (r.status == "active") "Pause" else "Resume")
+                Text(stringResource(if (r.status == "active") R.string.agent_pause else R.string.agent_resume))
             }
         }
     }

@@ -1,5 +1,9 @@
 package com.bu.paperclip.ui.screens
 
+import com.bu.paperclip.util.L10n
+import com.bu.paperclip.R
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -57,7 +61,24 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 
-private val costPeriods = listOf("This month", "Last 7 days", "Last 30 days", "All time")
+private val costPeriods = listOf(R.string.costs_period_month, R.string.costs_period_7d, R.string.costs_period_30d, R.string.costs_period_all)
+
+private fun costsBillingLabel(type: String): String = when (type) {
+    "metered_api" -> L10n.str(R.string.costs_billing_metered_api)
+    "subscription_included" -> L10n.str(R.string.costs_billing_subscription_included)
+    "subscription_overage" -> L10n.str(R.string.costs_billing_subscription_overage)
+    "credits" -> L10n.str(R.string.costs_billing_credits)
+    "fixed" -> L10n.str(R.string.costs_billing_fixed)
+    "unknown" -> L10n.str(R.string.costs_billing_unknown)
+    else -> type.replace('_', ' ')
+}
+
+private fun costsScopeLabel(type: String): String = when (type) {
+    "agent" -> L10n.str(R.string.costs_scope_agent)
+    "project" -> L10n.str(R.string.costs_scope_project)
+    "company" -> L10n.str(R.string.costs_scope_company)
+    else -> type
+}
 
 private fun costFrom(period: Int): String? = when (period) {
     0 -> LocalDate.now(ZoneOffset.UTC).withDayOfMonth(1).atStartOfDay(ZoneOffset.UTC).toInstant().toString()
@@ -93,14 +114,14 @@ fun CostsScreen(nav: Nav) {
     }
     LiveRefresh(debounceMs = 3000, filter = { it.type == "activity.logged" && it.s("entityType") == "cost_event" }) { loader.refresh() }
 
-    Scaffold(topBar = { TopAppBar(title = { Text("Costs") }, navigationIcon = { BackIcon { nav.back() } }) }) { pad ->
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.costs_title)) }, navigationIcon = { BackIcon { nav.back() } }) }) { pad ->
         Column(Modifier.fillMaxSize().padding(pad)) {
             Row(
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 costPeriods.forEachIndexed { i, label ->
-                    AppFilterChip(selected = period == i, onClick = { period = i }, label = { Text(label) })
+                    AppFilterChip(selected = period == i, onClick = { period = i }, label = { Text(stringResource(label)) })
                 }
             }
             LoadContent(loader) { b -> CostsContent(nav, b, period) }
@@ -114,20 +135,20 @@ private fun CostsContent(nav: Nav, b: CostBundle, period: Int) {
         item {
             Card(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                 Column {
-                    Text(costPeriods[period], style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(costPeriods[period]), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(4.dp))
                     Text(formatCents(b.summary.spendCents), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
                     if (b.summary.budgetCents > 0) {
                         val frac = b.summary.spendCents.toFloat() / b.summary.budgetCents
-                        AdminUsageBar(frac, "Monthly budget ${formatCents(b.summary.budgetCents)}", "${b.summary.utilizationPercent.toInt()}%")
+                        AdminUsageBar(frac, stringResource(R.string.costs_monthly_budget, formatCents(b.summary.budgetCents)), stringResource(R.string.costs_percent, b.summary.utilizationPercent.toInt()))
                     } else {
-                        Text("No company budget set", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.costs_no_company_budget), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     val apiRuns = b.byAgent.sumOf { it.apiRunCount }
                     val subRuns = b.byAgent.sumOf { it.subscriptionRunCount }
                     if (apiRuns + subRuns > 0) {
                         Text(
-                            "$apiRuns metered runs · $subRuns subscription runs",
+                            "${pluralStringResource(R.plurals.costs_metered_runs, apiRuns, apiRuns)} · ${pluralStringResource(R.plurals.costs_subscription_runs, subRuns, subRuns)}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -139,9 +160,9 @@ private fun CostsContent(nav: Nav, b: CostBundle, period: Int) {
         val quota = b.quota
         if (quota != null && quota.results.isNotEmpty()) {
             item {
-                SectionHeader("Provider quotas") {
+                SectionHeader(stringResource(R.string.costs_provider_quotas)) {
                     if (quota.asOf != null) {
-                        Text("as of ${relativeTime(quota.asOf)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 8.dp))
+                        Text(stringResource(R.string.costs_as_of, relativeTime(quota.asOf)), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(end = 8.dp))
                     }
                 }
             }
@@ -150,49 +171,49 @@ private fun CostsContent(nav: Nav, b: CostBundle, period: Int) {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(com.bu.paperclip.util.providerLabel(p.provider), style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                            if (!p.ok) Pill("unavailable", adminStatusColor("failed"))
+                            if (!p.ok) Pill(stringResource(R.string.costs_unavailable), adminStatusColor("failed"))
                         }
                         if (!p.ok && !p.error.isNullOrBlank()) {
                             Text(p.error, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis)
                         }
                         p.windows.forEach { w ->
                             val used = w.usedPercent
-                            val trailing = buildString {
-                                append(used?.let { "${it.toInt()}%" } ?: (w.valueLabel ?: "—"))
-                                if (w.resetsAt != null) append(" · resets ${relativeTime(w.resetsAt)}")
-                            }
+                            val usedLabel = used?.let { stringResource(R.string.costs_percent, it.toInt()) } ?: (w.valueLabel ?: "—")
+                            val trailing = if (w.resetsAt != null) "$usedLabel · ${stringResource(R.string.costs_resets, relativeTime(w.resetsAt))}" else usedLabel
                             AdminUsageBar(((used ?: 0.0) / 100.0).toFloat(), w.label, trailing)
                             if (!w.detail.isNullOrBlank()) {
                                 Text(w.detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                         if (p.windows.isEmpty() && p.ok) {
-                            Text("No usage windows reported", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.costs_no_usage_windows), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
             }
         }
 
-        item { SectionHeader("By agent") }
+        item { SectionHeader(stringResource(R.string.costs_by_agent)) }
         val agents = b.byAgent.sortedByDescending { it.costCents }
         if (agents.isEmpty()) {
-            item { EmptyState("No agent spend in this period.") }
+            item { EmptyState(stringResource(R.string.costs_no_agent_spend)) }
         }
         items(agents, key = { "a-" + it.agentId }) { a -> CostAgentRow(a) { if (a.agentId.isNotEmpty()) nav.agent(a.agentId) } }
 
         val providers = b.byProvider.sortedByDescending { it.costCents }
         if (providers.isNotEmpty()) {
-            item { SectionHeader("By provider & model") }
+            item { SectionHeader(stringResource(R.string.costs_by_provider)) }
             items(providers.size) { i ->
                 val p = providers[i]
                 AdminListRow(
                     title = listOfNotNull(p.provider.ifEmpty { null }?.let { com.bu.paperclip.util.providerLabel(it) }, p.model).joinToString(" · "),
-                    subtitle = buildString {
-                        append("${adminCompact(p.inputTokens)} in · ${adminCompact(p.outputTokens)} out")
+                    subtitle = run {
                         val runs = p.apiRunCount + p.subscriptionRunCount
-                        if (runs > 0) append(" · $runs runs")
-                        p.billingType?.let { append(" · ${it.replace('_', ' ')}") }
+                        listOfNotNull(
+                            stringResource(R.string.costs_tokens_in_out, adminCompact(p.inputTokens), adminCompact(p.outputTokens)),
+                            if (runs > 0) pluralStringResource(R.plurals.costs_runs, runs, runs) else null,
+                            p.billingType?.let(::costsBillingLabel),
+                        ).joinToString(" · ")
                     },
                     trailing = { Text(formatCents(p.costCents), style = MaterialTheme.typography.titleSmall) },
                 )
@@ -201,18 +222,18 @@ private fun CostsContent(nav: Nav, b: CostBundle, period: Int) {
 
         val budgets = b.budgets
         if (budgets != null) {
-            item { SectionHeader("Budgets") }
+            item { SectionHeader(stringResource(R.string.costs_budgets)) }
             item {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    CostStat("Incidents", budgets.activeIncidents.size.toString(), Modifier.weight(1f))
-                    CostStat("Paused agents", budgets.pausedAgentCount.toString(), Modifier.weight(1f))
-                    CostStat("Paused projects", budgets.pausedProjectCount.toString(), Modifier.weight(1f))
+                    CostStat(stringResource(R.string.costs_incidents), budgets.activeIncidents.size.toString(), Modifier.weight(1f))
+                    CostStat(stringResource(R.string.costs_paused_agents), budgets.pausedAgentCount.toString(), Modifier.weight(1f))
+                    CostStat(stringResource(R.string.costs_paused_projects), budgets.pausedProjectCount.toString(), Modifier.weight(1f))
                 }
             }
             if (budgets.policies.isEmpty()) {
                 item {
                     Text(
-                        "No budget policies configured.",
+                        stringResource(R.string.costs_no_policies),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(16.dp),
@@ -231,7 +252,7 @@ private fun CostsContent(nav: Nav, b: CostBundle, period: Int) {
                     val frac = if (p.amount > 0) p.observedAmount.toFloat() / p.amount else 0f
                     AdminUsageBar(
                         frac,
-                        "$name (${p.scopeType}${p.windowKind?.let { if (it == "lifetime") ", lifetime" else "" } ?: ""})",
+                        stringResource(if (p.windowKind == "lifetime") R.string.costs_policy_lifetime else R.string.costs_policy, name, costsScopeLabel(p.scopeType)),
                         "${formatCents(p.observedAmount)} / ${formatCents(p.amount)}",
                     )
                     if (p.status != null && p.status != "ok") Pill(statusLabel(p.status), adminStatusColor(p.status))
@@ -263,17 +284,19 @@ private fun CostAgentRow(a: CostByAgent, onClick: () -> Unit) {
         Column(Modifier.weight(1f)) {
             Text(a.agentName ?: AppState.agentName(a.agentId), style = MaterialTheme.typography.titleSmall)
             Text(
-                buildString {
-                    append("${adminCompact(a.inputTokens)} in · ${adminCompact(a.outputTokens)} out")
-                    if (a.cachedInputTokens > 0) append(" · ${adminCompact(a.cachedInputTokens)} cached")
-                },
+                listOfNotNull(
+                    stringResource(R.string.costs_tokens_in_out, adminCompact(a.inputTokens), adminCompact(a.outputTokens)),
+                    if (a.cachedInputTokens > 0) stringResource(R.string.run_tokens_cached, adminCompact(a.cachedInputTokens)) else null,
+                ).joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             val runs = a.apiRunCount + a.subscriptionRunCount
             if (runs > 0) {
                 Text(
-                    "$runs runs" + if (a.subscriptionRunCount > 0) " (${a.subscriptionRunCount} subscription)" else "",
+                    pluralStringResource(R.plurals.costs_runs, runs, runs).let {
+                        if (a.subscriptionRunCount > 0) stringResource(R.string.costs_runs_with_subscription, it, a.subscriptionRunCount) else it
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

@@ -1,6 +1,9 @@
+@file:UseSerializers(LenientLongSerializer::class, LenientIntSerializer::class)
+
 package com.bu.paperclip.data
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject

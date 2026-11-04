@@ -1,5 +1,8 @@
 package com.bu.paperclip.ui.screens
 
+import com.bu.paperclip.util.L10n
+import com.bu.paperclip.R
+import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -37,16 +40,30 @@ internal fun adminStatusColor(status: String?): Color {
 internal fun adminParseColor(hex: String?, fallback: Color): Color =
     runCatching { Color(android.graphics.Color.parseColor(hex)) }.getOrDefault(fallback)
 
-internal fun adminCompact(n: Long): String = when {
-    n >= 1_000_000_000 -> String.format("%.1fB", n / 1e9)
-    n >= 1_000_000 -> String.format("%.1fM", n / 1e6)
-    n >= 10_000 -> String.format("%.0fk", n / 1e3)
-    n >= 1_000 -> String.format("%.1fk", n / 1e3)
-    else -> n.toString()
-}
+internal fun adminCompact(n: Long): String = com.bu.paperclip.util.formatCompact(n)
 
-internal fun adminHumanize(key: String): String =
-    key.replace(Regex("([a-z0-9])([A-Z])"), "$1 $2").replace('_', ' ').replaceFirstChar { it.uppercase() }
+/** Label for a server key (approval payload fields); known keys are translated, others humanized. */
+internal fun adminHumanize(key: String): String = adminKeyLabelRes(key)?.let { L10n.str(it) }
+    ?: key.replace(Regex("([a-z0-9])([A-Z])"), "$1 $2").replace('_', ' ').replaceFirstChar { it.uppercase() }
+
+@StringRes
+private fun adminKeyLabelRes(key: String): Int? = when (key) {
+    "name" -> R.string.admin_key_name
+    "title" -> R.string.admin_key_title
+    "role" -> R.string.admin_key_role
+    "reason" -> R.string.admin_key_reason
+    "description" -> R.string.admin_key_description
+    "summary" -> R.string.admin_key_summary
+    "capabilities" -> R.string.admin_key_capabilities
+    "adapterType" -> R.string.admin_key_adapter_type
+    "adapterConfig" -> R.string.admin_key_adapter_config
+    "model" -> R.string.admin_key_model
+    "reportsTo" -> R.string.admin_key_reports_to
+    "budgetMonthlyCents" -> R.string.admin_key_budget_monthly_cents
+    "agentId" -> R.string.admin_key_agent_id
+    "requestedByAgentId" -> R.string.admin_key_requested_by_agent_id
+    else -> null
+}
 
 /** A labelled progress bar; [fraction] is clamped to 0..1, colour shifts as usage rises. */
 @Composable

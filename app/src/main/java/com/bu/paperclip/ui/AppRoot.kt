@@ -1,5 +1,7 @@
 package com.bu.paperclip.ui
 
+import com.bu.paperclip.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -21,6 +23,7 @@ import androidx.compose.material.icons.outlined.Inbox
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.SmartToy
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -50,6 +53,8 @@ import com.bu.paperclip.net.AuthState
 import com.bu.paperclip.net.LiveEvents
 import com.bu.paperclip.ui.components.AppBottomBar
 import com.bu.paperclip.ui.components.BarItem
+import com.bu.paperclip.ui.components.FileOpener
+import com.bu.paperclip.ui.components.FileOpenerHost
 import com.bu.paperclip.ui.components.Links
 import com.bu.paperclip.ui.components.errorMessage
 import com.bu.paperclip.ui.screens.*
@@ -100,13 +105,13 @@ fun AppRoot(pendingLink: String?, onLinkConsumed: () -> Unit) {
         Phase.Setup -> SetupScreen(Api.baseUrl, Api.bearer ?: "") { url, token ->
             scope.launch { AppState.settings.setBaseUrl(url); AppState.settings.setApiToken(token); bootKey++ }
         }
-        Phase.Login -> if (Api.bearer != null) SplashScreen("The API key was rejected.", onRetry = { phase = Phase.Setup }) else SignInScreen(
+        Phase.Login -> if (Api.bearer != null) SplashScreen(stringResource(R.string.app_api_key_rejected), onRetry = { phase = Phase.Setup }) else SignInScreen(
             baseUrl = Api.baseUrl,
             onSignedIn = { bootKey++ },
             onChangeServer = { phase = Phase.Setup },
         )
         is Phase.Failed -> SplashScreen(p.message, onRetry = { bootKey++ }, onSignIn = { phase = Phase.Login })
-        Phase.NoCompany -> SplashScreen("Your account has no Paperclip company yet.", onRetry = { bootKey++ })
+        Phase.NoCompany -> SplashScreen(stringResource(R.string.app_no_company), onRetry = { bootKey++ })
         Phase.Ready -> MainShell(pendingLink, onLinkConsumed, onSignedOut = { phase = Phase.Login })
     }
 }
@@ -125,11 +130,16 @@ private fun MainShell(pendingLink: String?, onLinkConsumed: () -> Unit, onSigned
     val snack by AppState.snack.collectAsState()
 
     LaunchedEffect(snack) {
-        snack?.let { snackHost.showSnackbar(it); AppState.clearToast() }
+        snack?.let {
+            if (it.sticky) snackHost.showSnackbar(it.message, withDismissAction = true, duration = SnackbarDuration.Indefinite)
+            else snackHost.showSnackbar(it.message)
+            AppState.clearToast()
+        }
     }
 
     DisposableEffect(nav) {
-        Links.handler = { nav.handleLink(it) }
+        // Server files first: they need the session, so they must never reach the external browser.
+        Links.handler = { FileOpener.handle(it) || nav.handleLink(it) }
         onDispose { Links.handler = { false } }
     }
 
@@ -182,7 +192,7 @@ private fun MainShell(pendingLink: String?, onLinkConsumed: () -> Unit, onSigned
                             Routes.MORE -> badges.inbox + badges.approvals
                             else -> 0
                         }
-                        BarItem(t.route, t.label, t.icon, t.selectedIcon, badge)
+                        BarItem(t.route, stringResource(t.label), t.icon, t.selectedIcon, badge)
                     },
                     selected = route,
                     onSelect = { nav.tab(it) },
@@ -248,5 +258,6 @@ private fun MainShell(pendingLink: String?, onLinkConsumed: () -> Unit, onSigned
             composable(Routes.SETTINGS) { SettingsScreen(nav, onSignedOut) }
         }
     }
+    FileOpenerHost()
     }
 }
