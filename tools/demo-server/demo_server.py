@@ -687,6 +687,10 @@ def jdump(o):
     return json.dumps(o).encode()
 
 
+# Sign-in state, so the app can be taken through sign-out and sign-in again. Any credentials are accepted.
+SESSION = {"signed_out": False}
+
+
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     avatars_from = None
@@ -758,11 +762,16 @@ class Handler(BaseHTTPRequestHandler):
         if p == "/health":
             return {"status": "ok"}
         if p == "/auth/get-session":
-            return {"session": {"id": "demo", "userId": ME}, "user": USER} if self.signed_in() else None
+            if SESSION["signed_out"] or not self.signed_in():
+                return None
+            return {"session": {"id": "demo", "userId": ME}, "user": USER}
         if p == "/auth/sign-in/email":
+            SESSION["signed_out"] = False
             self.cookie = "demo_session=demo; Path=/; HttpOnly; SameSite=Lax"
             return {"user": USER, "token": "demo"}
         if p == "/auth/sign-out":
+            SESSION["signed_out"] = True
+            self.cookie = "demo_session=; Path=/; Max-Age=0"
             return {"success": True}
         if p == "/companies":
             return [COMPANY]
@@ -1023,7 +1032,7 @@ class Handler(BaseHTTPRequestHandler):
         raise KeyError(r)
 
     def signed_in(self):
-        return "demo_session=" in (self.headers.get("Cookie") or "") or (self.headers.get("Authorization") or "").startswith("Bearer ")
+        return "demo_session=demo" in (self.headers.get("Cookie") or "") or (self.headers.get("Authorization") or "").startswith("Bearer ")
 
     # -- files
     def file(self, kind, fid, download):

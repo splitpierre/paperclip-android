@@ -15,7 +15,7 @@ It serves **Lumen Labs**, a made-up company building a calendar app called Orbit
 - costs, provider quotas, projects, goals, routines and an activity feed
 - files on LUM-148 (an image, a PDF, Markdown, plain text, an unknown type and an image with no content type) and a comment that links to each one
 
-Point the app at `http://<host>:3100` and sign in with any email and password. Sign-in sets a session cookie; file downloads and the session check need it (or a board key), as on a real server, so a file link that leaks to the external browser fails there the same way. On an emulator, run `adb reverse tcp:3100 tcp:3100` and use `http://localhost:3100`.
+Point the app at `http://<host>:3100` and sign in with any email and password (signing out really signs you out until you sign in again). Sign-in sets a session cookie; file downloads and the session check need it (or a board key), as on a real server, so a file link that leaks to the external browser fails there the same way. On an emulator, run `adb reverse tcp:3100 tcp:3100` and use `http://localhost:3100`.
 
 Writes are accepted and kept in memory: answering a request, moving a task or adding a comment changes what you see until the server restarts. Timestamps are relative to when the server started.
 

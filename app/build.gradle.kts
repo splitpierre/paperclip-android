@@ -33,6 +33,10 @@ android {
         compose = true
         buildConfig = true
     }
+    lint {
+        // Asset links only matter for passkeys; the server is user-chosen, so none can be declared. Passwords need none.
+        disable += "CredManMissingDal"
+    }
     testOptions {
         unitTests.isReturnDefaultValues = true
     }
@@ -42,7 +46,7 @@ android {
 }
 
 dependencies {
-    val composeBom = platform("androidx.compose:compose-bom:2024.12.01")
+    val composeBom = platform("androidx.compose:compose-bom:2025.04.01")
     implementation(composeBom)
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -57,6 +61,8 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.1.1")
     implementation("androidx.work:work-runtime-ktx:2.10.0")
     implementation("androidx.browser:browser:1.8.0")
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")

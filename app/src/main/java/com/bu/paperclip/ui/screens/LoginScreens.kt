@@ -10,6 +10,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.autofill.ContentType
+import androidx.compose.ui.platform.LocalContext
+import com.bu.paperclip.data.AppState
+import com.bu.paperclip.util.SavedLogin
+import com.bu.paperclip.util.SavedLoginResult
 import com.bu.paperclip.ui.AppTabs
 import com.bu.paperclip.ui.LocalNav
 import com.bu.paperclip.ui.Routes
@@ -137,6 +144,7 @@ private fun AuthField(
     supporting: String? = null,
     secret: Boolean = false,
     onGo: (() -> Unit)? = null,
+    contentType: ContentType? = null,
 ) {
     var reveal by remember { mutableStateOf(false) }
     OutlinedTextField(
@@ -159,7 +167,7 @@ private fun AuthField(
             unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
             focusedLeadingIconColor = MaterialTheme.colorScheme.onSurface,
         ),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().then(if (contentType != null) Modifier.semantics { this.contentType = contentType } else Modifier),
     )
 }
 
@@ -380,6 +388,7 @@ fun SignInScreen(baseUrl: String, onSignedIn: () -> Unit, onChangeServer: () -> 
     var gate by remember { mutableStateOf<Gate>(Gate.Checking) }
     var gateBrowser by remember { mutableStateOf(false) }
     var webFallback by remember { mutableStateOf(false) }
+    val context = LocalContext.current
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
@@ -410,20 +419,46 @@ fun SignInScreen(baseUrl: String, onSignedIn: () -> Unit, onChangeServer: () -> 
         return
     }
 
-    val submit = {
-        if (!busy && email.isNotBlank() && password.isNotEmpty()) {
-            busy = true
-            scope.launch {
-                try {
-                    Api.signIn(email, password)
-                    if (Api.checkSession()) onSignedIn() else error = "Signed in, but the session wasn't accepted."
-                } catch (t: Throwable) {
-                    error = com.bu.paperclip.ui.components.errorMessage(t)
-                } finally { busy = false }
+    // Pre-fill the last email; the password comes from the system password manager only.
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        val last = AppState.settings.current().lastEmail
+        if (email.isEmpty()) email = last
+    }
+
+    fun signInWith(mail: String, pass: String, alreadySaved: Boolean) {
+        if (busy) return
+        busy = true
+        scope.launch {
+            try {
+                Api.signIn(mail, pass)
+                if (Api.checkSession()) {
+                    AppState.settings.setLastEmail(mail.trim())
+                    if (!alreadySaved) SavedLogin.offerToSave(context, mail.trim(), pass)
+                    onSignedIn()
+                } else error = "Signed in, but the session wasn't accepted."
+            } catch (t: Throwable) {
+                error = com.bu.paperclip.ui.components.errorMessage(t)
+            } finally { busy = false }
+        }
+    }
+
+    fun pickSaved() {
+        scope.launch {
+            when (val r = SavedLogin.pick(context)) {
+                is SavedLoginResult.Found -> { email = r.email; password = r.password; error = null; signInWith(r.email, r.password, alreadySaved = true) }
+                else -> {}
             }
         }
     }
 
+    // Offer saved logins once when the form first appears; dismissing the sheet just leaves the form.
+    androidx.compose.runtime.LaunchedEffect(gate) {
+        if (gate == Gate.Open && password.isEmpty()) pickSaved()
+    }
+
+    val submit = {
+        if (!busy && email.isNotBlank() && password.isNotEmpty()) signInWith(email, password, alreadySaved = false)
+    }
     AuthLayout("Sign in", host) {
         when (val g = gate) {
             Gate.Checking -> Box(Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
@@ -443,6 +478,7 @@ fun SignInScreen(baseUrl: String, onSignedIn: () -> Unit, onChangeServer: () -> 
                 AuthField(
                     email, { email = it; error = null }, "Email", Icons.Outlined.Mail,
                     KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+                    contentType = ContentType.EmailAddress + ContentType.Username,
                 )
                 Spacer(Modifier.height(12.dp))
                 AuthField(
@@ -450,6 +486,7 @@ fun SignInScreen(baseUrl: String, onSignedIn: () -> Unit, onChangeServer: () -> 
                     KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Go),
                     secret = true,
                     onGo = submit,
+                    contentType = ContentType.Password,
                 )
                 error?.let { Spacer(Modifier.height(12.dp)); Notice(it, error = true) }
                 Spacer(Modifier.height(20.dp))
@@ -457,6 +494,7 @@ fun SignInScreen(baseUrl: String, onSignedIn: () -> Unit, onChangeServer: () -> 
             }
         }
         Spacer(Modifier.height(8.dp))
+        if (gate == Gate.Open) AuthLink("Use a saved sign-in") { pickSaved() }
         AuthLink("Sign in with the web page instead") { webFallback = true }
         AuthLink("Change server", onChangeServer)
     }
