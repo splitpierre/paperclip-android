@@ -30,6 +30,15 @@ private fun pretty(e: JsonElement?): String = when (e) {
 }
 private val prettyJson = kotlinx.serialization.json.Json { prettyPrint = true }
 
+/** Placeholder for an Anthropic-style image block, without ever touching the payload as a string. */
+private fun imageBlockText(b: JsonObject?): String? {
+    if (b == null || b.s("type") != "image") return null
+    val src = b["source"].o()
+    val data = (src?.get("data") as? JsonPrimitive)?.contentOrNull ?: ""
+    val mime = src?.s("media_type")?.ifEmpty { null } ?: b.s("mimeType").ifEmpty { "image" }
+    return TextSanitizer.imagePlaceholder(mime, data.length)
+}
+
 /** Incrementally turns run log records (NDJSON {ts,stream,chunk,seq}) into transcript entries. */
 class TranscriptBuilder(private val adapterType: String?) {
     val entries = ArrayList<TEntry>()
@@ -69,14 +78,24 @@ class TranscriptBuilder(private val adapterType: String?) {
         }
     }
 
-    private fun add(e: TEntry) {
+    private fun clean(e: TEntry): TEntry = when (e) {
+        is TEntry.Assistant -> e.copy(text = TextSanitizer.sanitize(e.text))
+        is TEntry.User -> e.copy(text = TextSanitizer.sanitize(e.text))
+        is TEntry.Line -> e.copy(text = TextSanitizer.sanitize(e.text))
+        is TEntry.Result -> e.copy(text = TextSanitizer.sanitize(e.text), errors = e.errors.map { TextSanitizer.sanitize(it) })
+        // ToolCall is sanitized where it is built: toolIndex relies on the instance identity.
+        else -> e
+    }
+
+    private fun add(raw: TEntry) {
+        val e = clean(raw)
         val last = entries.lastOrNull()
         if (e is TEntry.Assistant && last is TEntry.Assistant && last.thinking == e.thinking && pendingDelta) {
-            entries[entries.size - 1] = last.copy(text = last.text + e.text)
+            entries[entries.size - 1] = last.copy(text = TextSanitizer.cap(last.text + e.text))
             return
         }
         if (e is TEntry.Line && last is TEntry.Line && last.stream == e.stream && e.stream == "stdout") {
-            entries[entries.size - 1] = last.copy(text = last.text + "\n" + e.text)
+            entries[entries.size - 1] = last.copy(text = TextSanitizer.cap(last.text + "\n" + e.text))
             return
         }
         entries.add(e)
@@ -87,7 +106,7 @@ class TranscriptBuilder(private val adapterType: String?) {
     private fun toolCall(ts: String?, name: String, id: String?, input: JsonElement?) {
         val existing = id?.let { toolIndex[it] }
         if (existing != null) return
-        val tc = TEntry.ToolCall(ts, name, id, pretty(input))
+        val tc = TEntry.ToolCall(ts, name, id, TextSanitizer.sanitize(pretty(input)))
         if (id != null) toolIndex[id] = tc
         pendingDelta = false
         add(tc)
@@ -97,11 +116,11 @@ class TranscriptBuilder(private val adapterType: String?) {
         val tc = id?.let { toolIndex[it] }
         if (tc != null) {
             val idx = entries.indexOfFirst { it === tc }
-            val updated = tc.copy(result = content, isError = isError, done = true)
+            val updated = tc.copy(result = TextSanitizer.sanitize(content), isError = isError, done = true)
             if (idx >= 0) entries[idx] = updated
             toolIndex[id] = updated
         } else {
-            add(TEntry.ToolCall(ts, name ?: "tool", id, "", content, isError, true))
+            add(TEntry.ToolCall(ts, name ?: "tool", id, "", TextSanitizer.sanitize(content), isError, true))
         }
         pendingDelta = false
     }
@@ -143,7 +162,7 @@ class TranscriptBuilder(private val adapterType: String?) {
                             val c = bo["content"]
                             val text = when (c) {
                                 is JsonPrimitive -> c.contentOrNull ?: ""
-                                is JsonArray -> c.mapNotNull { p -> p.o()?.s("text")?.takeIf { it.isNotEmpty() } }.joinToString("\n")
+                                is JsonArray -> c.mapNotNull { p -> imageBlockText(p.o()) ?: p.o()?.s("text")?.takeIf { it.isNotEmpty() } }.joinToString("\n")
                                 else -> ""
                             }
                             toolResult(ts, bo.s("tool_use_id").ifEmpty { null }, null, text, (bo["is_error"] as? JsonPrimitive)?.contentOrNull == "true")
@@ -211,10 +230,10 @@ class TranscriptBuilder(private val adapterType: String?) {
                 val thinking = ch == "thought" || ch == "thinking"
                 val last = entries.lastOrNull()
                 if (pendingDelta && last is TEntry.Assistant && last.thinking == thinking) {
-                    entries[entries.size - 1] = last.copy(text = last.text + text)
+                    entries[entries.size - 1] = last.copy(text = TextSanitizer.cap(TextSanitizer.sanitize(text).let { last.text + it }))
                 } else {
                     pendingDelta = false
-                    entries.add(TEntry.Assistant(ts, text, thinking))
+                    entries.add(clean(TEntry.Assistant(ts, text, thinking)))
                 }
                 pendingDelta = true
             }
