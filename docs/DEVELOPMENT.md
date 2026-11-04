@@ -117,6 +117,8 @@ Debug builds accept a `setupUrl` intent extra (and an optional `setupKey` board 
 adb shell am start -n com.bu.paperclip/.MainActivity --es setupUrl http://localhost:3100
 ```
 
+Add `--es setupLanguage pt-BR` (or `es`, `en`, `system`) to switch the app language at the same time, for example when taking screenshots of a translation.
+
 The demo server accepts any sign-in and keeps writes in memory until it restarts. It includes an open agent decision (with a comparison table), a review comment with a wide table on LUM-148, and editable routines, so Decisions, tables and the routine editor can all be tried. It also accepts the live WebSocket, so the connection dot goes green, but it never pushes events.
 
 ## Regenerating the screenshots

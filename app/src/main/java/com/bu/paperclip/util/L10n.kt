@@ -1,5 +1,6 @@
 package com.bu.paperclip.util
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
@@ -20,6 +21,7 @@ import java.util.Locale
  * process; below that AppCompat only overrides activities, so [res] wraps the application context in the app locale.
  * Composables should use `stringResource` instead.
  */
+@SuppressLint("StaticFieldLeak") // Holds only the application context.
 object L10n {
     private lateinit var app: Context
     @Volatile private var cached: Pair<String, Resources>? = null

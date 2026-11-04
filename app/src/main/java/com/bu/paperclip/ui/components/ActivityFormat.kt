@@ -19,7 +19,11 @@ fun activityActor(e: ActivityEvent): String = when (e.actorType) {
 
 /** Human-readable one-liner for an activity event, e.g. "Ada commented on PAP-12". */
 fun activitySentence(e: ActivityEvent): String {
-    val who = activityActor(e)
+    val me = AppState.me.value
+    val self = e.actorType == "user" && e.actorId != null && e.actorId == me?.id
+    // Languages whose verbs change for "you" leave activity_actor_you empty, so sentences use your name.
+    val who = if (self) L10n.str(R.string.activity_actor_you).ifEmpty { me?.name?.takeIf { it.isNotBlank() } ?: me?.email ?: activityActor(e) }
+    else activityActor(e)
     val target = e.d("identifier") ?: e.d("issueIdentifier") ?: e.d("title") ?: e.d("name") ?: e.entityType ?: ""
     // Sentences take the actor, then the target; a missing target leaves a trailing space we trim.
     fun s(@StringRes id: Int, vararg extra: Any) = L10n.str(id, who, target, *extra).trim()

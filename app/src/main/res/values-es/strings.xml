@@ -1,0 +1,1131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Spanish translation. See docs/TRANSLATING.md. -->
+<resources>
+
+    <!-- Relative and short times: "5m ago", "in 2h", "now". -->
+    <string name="time_now">ahora</string>
+    <string name="time_ago">hace %1$s</string>
+    <string name="time_in">en %1$s</string>
+    <string name="time_short_minutes">%1$d min</string>
+    <string name="time_short_hours">%1$d h</string>
+    <string name="time_short_days">%1$d d</string>
+    <string name="time_short_months">%1$d mes.</string>
+    <string name="time_short_years">%1$d a</string>
+    <string name="duration_seconds">%1$d s</string>
+    <string name="duration_minutes_seconds">%1$d min %2$d s</string>
+    <string name="duration_hours_minutes">%1$d h %2$d min</string>
+
+    <!-- Compact numbers and sizes; the argument is already formatted, e.g. "1.2". -->
+    <string name="number_thousands">%1$s mil</string>
+    <string name="number_millions">%1$s M</string>
+    <string name="number_billions">%1$s mil M</string>
+    <string name="size_bytes">%1$d B</string>
+    <string name="size_kb">%1$s KB</string>
+    <string name="size_mb">%1$s MB</string>
+
+    <!-- Common actions and words shared by every screen. -->
+    <string name="common_cancel">Cancelar</string>
+    <string name="common_save">Guardar</string>
+    <string name="common_delete">Eliminar</string>
+    <string name="common_try_again">Reintentar</string>
+    <string name="common_close">Cerrar</string>
+    <string name="common_done">Listo</string>
+    <string name="common_edit">Editar</string>
+    <string name="common_send">Enviar</string>
+    <string name="common_discard">Descartar</string>
+    <string name="common_keep_editing">Seguir editando</string>
+    <string name="common_back">Atrás</string>
+    <string name="common_more">Más</string>
+    <string name="common_search">Buscar</string>
+    <string name="common_clear">Borrar</string>
+    <string name="common_copied">Copiado</string>
+    <string name="common_open">Abrir</string>
+    <string name="common_share">Compartir</string>
+    <string name="common_loading">Cargando…</string>
+    <string name="common_none">Ninguno</string>
+    <string name="common_unassigned">Sin asignar</string>
+    <string name="common_you">Tú</string>
+    <string name="common_someone">Alguien</string>
+    <string name="common_agent">Agente</string>
+    <string name="common_user">Usuario</string>
+    <string name="common_show_more">Ver más</string>
+    <string name="common_show_less">Ver menos</string>
+    <string name="common_refresh">Actualizar</string>
+    <string name="common_remove">Quitar</string>
+    <string name="common_add">Añadir</string>
+    <string name="common_reset">Restablecer</string>
+    <string name="common_all">Todo</string>
+    <string name="common_today">Hoy</string>
+
+    <!-- Bottom bar tabs -->
+    <string name="tab_home">Inicio</string>
+    <string name="tab_decisions">Decisiones</string>
+    <string name="tab_tasks">Tareas</string>
+    <string name="tab_agents">Agentes</string>
+    <string name="tab_more">Más</string>
+
+    <!-- App start-up -->
+    <string name="app_api_key_rejected">Se rechazó la clave de API.</string>
+    <string name="app_no_company">Tu cuenta aún no tiene ninguna empresa en Paperclip.</string>
+
+    <!-- Setup, sign-in and splash screens -->
+    <string name="login_unofficial_client">Cliente no oficial de Paperclip</string>
+    <string name="login_hide_secret">Ocultar</string>
+    <string name="login_show_secret">Mostrar</string>
+    <string name="login_reload">Recargar</string>
+    <string name="login_server">Servidor</string>
+    <string name="login_connecting">Conectando…</string>
+    <string name="login_sign_in_again">Volver a iniciar sesión</string>
+    <string name="login_back_to_tab">Volver a %1$s</string>
+    <string name="setup_title">Conectar con Paperclip</string>
+    <string name="setup_subtitle">Ingresa la dirección con la que abres Paperclip en el navegador. Después iniciarás sesión.</string>
+    <string name="setup_server_url">URL del servidor</string>
+    <string name="setup_api_key">Clave de API del board (opcional)</string>
+    <string name="setup_api_key_hint">Omite el inicio de sesión. Sin sesión, las actualizaciones en vivo pasan a sondeo periódico.</string>
+    <string name="setup_continue">Continuar</string>
+    <string name="setup_use_api_key">Usar una clave de API</string>
+    <string name="sign_in_title">Iniciar sesión</string>
+    <string name="sign_in_session_rejected">Se inició sesión, pero la sesión no fue aceptada.</string>
+    <string name="sign_in_gate_notice">Este servidor está protegido por %1$s. Inicia sesión ahí primero; la app conserva esa sesión para todo lo demás.</string>
+    <string name="sign_in_continue_to">Continuar a %1$s</string>
+    <string name="sign_in_email">Correo electrónico</string>
+    <string name="sign_in_password">Contraseña</string>
+    <string name="sign_in_use_saved">Usar un inicio de sesión guardado</string>
+    <string name="sign_in_web_instead">Iniciar sesión con la página web</string>
+    <string name="sign_in_change_server">Cambiar de servidor</string>
+
+    <!-- More screen -->
+    <string name="more_title">Más</string>
+    <string name="more_company">Empresa</string>
+    <string name="more_budget">%1$s de %2$s este mes</string>
+    <string name="more_signed_in_as">Sesión iniciada como %1$s</string>
+    <string name="more_section_work">Trabajo</string>
+    <string name="more_inbox">Bandeja de entrada</string>
+    <string name="more_approvals">Aprobaciones</string>
+    <string name="more_projects">Proyectos</string>
+    <string name="more_goals">Objetivos</string>
+    <string name="more_routines">Rutinas</string>
+    <string name="more_section_insight">Análisis</string>
+    <string name="more_costs">Costos y cuotas</string>
+    <string name="more_activity">Actividad</string>
+    <string name="more_section_app">App</string>
+    <string name="more_settings">Ajustes</string>
+    <string name="more_open_web_ui">Abrir la interfaz web</string>
+
+    <!-- Shared components -->
+    <string name="component_error_title">Algo salió mal</string>
+    <string name="component_live">en vivo</string>
+    <string name="component_using_tool">Usando %1$s</string>
+    <string name="component_jump_top">Ir al inicio</string>
+    <string name="component_jump_latest">Ir a lo más reciente</string>
+
+    <!-- Status labels for server status values (tasks, runs, agents, approvals, projects, goals, routines, budgets) -->
+    <string name="status_backlog">Backlog</string>
+    <string name="status_todo">Por hacer</string>
+    <string name="status_in_progress">En curso</string>
+    <string name="status_in_review">En revisión</string>
+    <string name="status_blocked">Bloqueada</string>
+    <string name="status_done">Hecha</string>
+    <string name="status_cancelled">Cancelada</string>
+    <string name="status_pending_approval">Pendiente de aprobación</string>
+    <string name="status_scheduled_retry">Reintento programado</string>
+    <string name="status_timed_out">Tiempo agotado</string>
+    <string name="status_revision_requested">Revisión solicitada</string>
+    <string name="status_running">En ejecución</string>
+    <string name="status_queued">En cola</string>
+    <string name="status_succeeded">Exitosa</string>
+    <string name="status_failed">Fallida</string>
+    <string name="status_interrupted">Interrumpida</string>
+    <string name="status_active">Activo</string>
+    <string name="status_idle">En espera</string>
+    <string name="status_paused">En pausa</string>
+    <string name="status_error">Error</string>
+    <string name="status_terminated">Terminado</string>
+    <string name="status_pending">Pendiente</string>
+    <string name="status_approved">Aprobada</string>
+    <string name="status_rejected">Rechazada</string>
+    <string name="status_planned">Planificado</string>
+    <string name="status_completed">Completado</string>
+    <string name="status_achieved">Logrado</string>
+    <string name="status_archived">Archivado</string>
+    <string name="status_ok">OK</string>
+    <string name="status_warning">Advertencia</string>
+    <string name="status_hard_stop">Tope alcanzado</string>
+    <string name="status_skipped">Omitida</string>
+    <string name="status_issue_created">Tarea creada</string>
+    <string name="status_received">Recibida</string>
+    <string name="status_coalesced">Fusionada</string>
+
+    <!-- Errors shown to the user -->
+    <string name="error_sign_in_required">Debes iniciar sesión</string>
+    <string name="error_request_failed">Falló la solicitud</string>
+    <string name="error_request_failed_code">Falló la solicitud (%1$d)</string>
+    <string name="error_cant_reach_server">No se puede conectar con el servidor: %1$s</string>
+    <string name="error_network">Error de red</string>
+    <string name="error_no_server">No hay ningún servidor configurado</string>
+    <string name="error_access_session_expired">La sesión de Cloudflare Access caducó</string>
+    <string name="error_redirected_to_sign_in">Redirigido al inicio de sesión</string>
+    <string name="error_got_web_page">Se recibió una página web en lugar de datos — vuelve a iniciar sesión</string>
+    <!-- Stands in for the proxy host in sign_in_gate_notice / sign_in_continue_to when it is unknown. -->
+    <string name="error_gate_sign_in_page">una página de inicio de sesión</string>
+
+    <!-- File viewer -->
+    <string name="file_no_access">No tienes acceso a este archivo. Vuelve a iniciar sesión.</string>
+    <string name="file_not_found">Este archivo ya no existe.</string>
+    <string name="file_download_failed_http">No se pudo descargar el archivo (HTTP %1$d).</string>
+    <string name="file_download_failed">No se pudo descargar el archivo: %1$s</string>
+    <string name="file_network_error">error de red</string>
+    <string name="file_open_failed">No se pudo abrir el archivo: %1$s</string>
+    <string name="file_no_share_app">Ninguna app puede compartir este archivo</string>
+    <string name="file_saved">Se guardó %1$s</string>
+    <string name="file_save_failed">No se pudo guardar %1$s</string>
+    <string name="file_opening">Abriendo %1$s…</string>
+    <string name="file_opening_unnamed">Abriendo archivo…</string>
+    <string name="file_cant_open">No se puede abrir %1$s</string>
+    <string name="file_no_app">Ninguna app de este dispositivo abre archivos %1$s. Puedes compartirlo con otra app o guardarlo en tus archivos.</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_section_account">Cuenta</string>
+    <string name="settings_signed_in">Sesión iniciada</string>
+    <string name="settings_auth_api_key">Clave de API del board</string>
+    <string name="settings_auth_browser_session">Sesión del navegador</string>
+    <string name="settings_connection_live">En vivo</string>
+    <string name="settings_connection_polling">Sondeo</string>
+    <string name="settings_connection_reconnecting">Reconectando</string>
+    <string name="settings_section_company">Empresa</string>
+    <string name="settings_section_appearance">Apariencia</string>
+    <string name="settings_theme_system">Sistema</string>
+    <string name="settings_theme_dark">Oscuro</string>
+    <string name="settings_theme_light">Claro</string>
+    <string name="settings_section_language">Idioma</string>
+    <string name="settings_language_system">Predeterminado del sistema</string>
+    <string name="settings_selected">Seleccionado</string>
+    <string name="settings_section_notifications">Notificaciones</string>
+    <string name="settings_notifications_title">Solicitudes de agentes</string>
+    <string name="settings_notifications_summary">Busca cada 15 minutos, aproximadamente, nuevas preguntas, confirmaciones, aprobaciones y ejecuciones fallidas.</string>
+    <string name="settings_check_now">Comprobar ahora</string>
+    <string name="settings_sign_out">Cerrar sesión</string>
+    <string name="settings_sign_out_confirm_title">¿Cerrar sesión?</string>
+    <string name="settings_sign_out_confirm_body">Se borrarán las sesiones de Paperclip y Cloudflare de la app en este teléfono.</string>
+    <string name="settings_version">Paperclip para Android %1$s</string>
+
+    <!-- Task views (TaskViews.kt): status / priority labels, tree rows, Next up card -->
+    <string name="task_priority_critical">Crítica</string>
+    <string name="task_priority_high">Alta</string>
+    <string name="task_priority_medium">Media</string>
+    <string name="task_priority_low">Baja</string>
+    <string name="task_field_status">Estado</string>
+    <string name="task_field_priority">Prioridad</string>
+    <string name="task_field_assignee">Responsable</string>
+    <string name="task_field_project">Proyecto</string>
+    <string name="task_no_project">Sin proyecto</string>
+    <string name="task_project_fallback">Proyecto</string>
+    <string name="task_assignee_me">Yo</string>
+    <plurals name="task_rollup_live">
+        <item quantity="one">%1$d en vivo</item>
+        <item quantity="many">%1$d en vivo</item>
+        <item quantity="other">%1$d en vivo</item>
+    </plurals>
+    <plurals name="task_rollup_blocked">
+        <item quantity="one">%1$d bloqueada</item>
+        <item quantity="many">%1$d bloqueadas</item>
+        <item quantity="other">%1$d bloqueadas</item>
+    </plurals>
+    <string name="task_collapse">Contraer</string>
+    <string name="task_expand">Expandir</string>
+    <string name="task_pill_next">siguiente</string>
+    <string name="task_pill_live">en vivo</string>
+    <string name="task_waiting_on_blocker">Esperando a una tarea bloqueante</string>
+    <string name="task_next_up">Siguiente</string>
+    <string name="task_next_up_empty">Nada listo: todas las tareas abiertas están bloqueadas, en curso o esperando subtareas.</string>
+    <string name="task_next_unblocks">Desbloquea %1$d</string>
+    <string name="task_in_flight">En curso</string>
+    <plurals name="task_more_count">
+        <item quantity="one">+%1$d más</item>
+        <item quantity="many">+%1$d más</item>
+        <item quantity="other">+%1$d más</item>
+    </plurals>
+
+    <!-- Tasks screen (IssuesScreen.kt) -->
+    <string name="issues_title">Tareas</string>
+    <string name="issues_view_list">Lista</string>
+    <string name="issues_view_tree">Árbol</string>
+    <string name="issues_view_board">Tablero</string>
+    <string name="issues_subtitle">%1$s · %2$d de %3$d</string>
+    <string name="issues_filters">Filtros</string>
+    <string name="issues_expand_all">Expandir todo</string>
+    <string name="issues_collapse_all">Contraer todo</string>
+    <string name="issues_reset_filters">Restablecer filtros</string>
+    <string name="issues_reload_all">Recargar todas las tareas</string>
+    <string name="issues_search_placeholder">Filtrar por título o identificador</string>
+    <string name="issues_new_task">Nueva tarea</string>
+    <string name="issues_preset_active">Activas</string>
+    <string name="issues_preset_mine">Mías</string>
+    <string name="issues_preset_live">En vivo</string>
+    <plurals name="issues_labels_count">
+        <item quantity="one">%1$d etiqueta</item>
+        <item quantity="many">%1$d etiquetas</item>
+        <item quantity="other">%1$d etiquetas</item>
+    </plurals>
+    <string name="issues_no_routine_runs">Sin ejecuciones de rutinas</string>
+    <string name="issues_top_level">Nivel superior</string>
+    <string name="issues_empty_filtered">Ninguna tarea coincide con estos filtros</string>
+    <string name="issues_empty_subtasks_filtered">Ninguna subtarea coincide con estos filtros</string>
+    <string name="issues_next_up_in">Siguiente en %1$s</string>
+    <string name="issues_long_press_hint">Mantén presionada una tarea para editarla rápido o enfocar su subárbol.</string>
+    <string name="issues_all_tasks">Todas las tareas</string>
+    <string name="issues_board_chip">%1$s %2$d</string>
+    <string name="issues_board_empty">No hay nada aquí</string>
+    <string name="issues_board_capped">Mostrando las 40 más recientes</string>
+    <string name="issues_blocked_by">Bloqueada por %1$s</string>
+    <string name="issues_a_task">una tarea</string>
+    <string name="issues_move_to">Mover a</string>
+    <string name="issues_focus_tree">Enfocar árbol</string>
+    <string name="issues_open_task">Abrir tarea</string>
+    <string name="issues_section_labels">Etiquetas</string>
+    <string name="issues_section_show">Mostrar</string>
+    <string name="issues_section_sort">Ordenar</string>
+    <string name="issues_section_group_by">Agrupar lista por</string>
+    <string name="issues_live_now">En vivo ahora</string>
+    <string name="issues_live_now_desc">Solo tareas con una ejecución de agente en curso</string>
+    <string name="issues_blocked">Bloqueadas</string>
+    <string name="issues_blocked_desc">Estado bloqueado o a la espera de una tarea bloqueante abierta</string>
+    <string name="issues_hide_routine">Ocultar ejecuciones de rutinas</string>
+    <string name="issues_hide_routine_desc">Tareas creadas por rutinas programadas</string>
+    <string name="issues_sort_updated">Actividad reciente</string>
+    <string name="issues_sort_priority">Prioridad</string>
+    <string name="issues_sort_created">Más recientes</string>
+    <string name="issues_sort_number">Número</string>
+    <string name="issues_group_parent">Tarea principal</string>
+
+    <!-- New task (NewIssueScreen.kt) -->
+    <string name="new_issue_title">Nueva tarea</string>
+    <string name="new_issue_title_sub_task">Nueva subtarea</string>
+    <string name="new_issue_create">Crear</string>
+    <string name="new_issue_sub_task_of">Subtarea de %1$s · %2$s</string>
+    <string name="new_issue_field_title">Título</string>
+    <string name="new_issue_field_description">Descripción (Markdown)</string>
+    <string name="new_issue_uploading">Subiendo %1$d de %2$d…</string>
+    <string name="new_issue_needs_assignee">Las tareas en curso necesitan un responsable.</string>
+    <string name="new_issue_task_fallback">tarea</string>
+    <string name="new_issue_uploaded">Subido</string>
+    <string name="new_issue_upload_failed">Error al subir</string>
+    <string name="new_issue_remove_file">Quitar %1$s</string>
+    <string name="new_issue_attach_files">Adjuntar archivos</string>
+
+    <!-- File uploads (IssueUploads.kt) -->
+    <string name="upload_cant_read">No se puede leer %1$s</string>
+    <string name="upload_created">Se creó %1$s</string>
+    <string name="upload_one_failed">Se creó %1$s, pero no se subió %2$s: %3$s</string>
+    <plurals name="upload_some_failed">
+        <item quantity="one">Se creó %1$s, pero no se subió %2$d de %3$d archivo: %4$s</item>
+        <item quantity="many">Se creó %1$s, pero no se subieron %2$d de %3$d archivos: %4$s</item>
+        <item quantity="other">Se creó %1$s, pero no se subieron %2$d de %3$d archivos: %4$s</item>
+    </plurals>
+
+    <!-- Pickers (IssueSheets.kt) -->
+    <string name="issue_sheet_filter_agents">Filtrar agentes</string>
+
+    <!-- Task detail (IssueDetailScreen) -->
+    <string name="issue_title_fallback">Tarea</string>
+    <string name="issue_status_agent_working">%1$s · agente trabajando</string>
+    <string name="issue_menu_copy_link">Copiar enlace</string>
+    <string name="issue_link_copied">Enlace copiado</string>
+    <string name="issue_menu_open_browser">Abrir en el navegador</string>
+    <string name="issue_menu_mark_unread">Marcar como no leída</string>
+    <string name="issue_marked_unread">Marcada como no leída</string>
+    <string name="issue_new_subtask">Nueva subtarea</string>
+    <string name="issue_stopping_run">Deteniendo la ejecución</string>
+    <string name="issue_edit_title">Título</string>
+    <string name="issue_edit_description">Descripción</string>
+    <string name="issue_parent_fallback">Tarea principal</string>
+    <string name="issue_no_project">Sin proyecto</string>
+    <string name="issue_blocked_by">Bloqueada por</string>
+    <string name="issue_created_by">Creada por %1$s</string>
+    <plurals name="issue_cost_runs">
+        <item quantity="one">%1$s · %2$d ejecución</item>
+        <item quantity="many">%1$s · %2$d ejecuciones</item>
+        <item quantity="other">%1$s · %2$d ejecuciones</item>
+    </plurals>
+    <string name="issue_add_description">Añadir descripción</string>
+    <string name="issue_live_using_tool">Usando %1$s</string>
+    <string name="issue_live_watch">Ver</string>
+    <string name="issue_live_stop">Detener</string>
+
+    <!-- Task detail tabs (IssueDetailScreen, IssueTabs) -->
+    <string name="issue_tab_thread">Conversación</string>
+    <string name="issue_tab_docs">Docs</string>
+    <string name="issue_tab_subtasks">Subtareas</string>
+    <string name="issue_tab_files">Archivos</string>
+    <string name="issue_tab_activity">Actividad</string>
+    <!-- Tab label with the number of pending requests, e.g. "Thread (2)". -->
+    <string name="issue_tab_with_pending">%1$s (%2$d)</string>
+    <!-- Tab label with an item count, e.g. "Docs 3". -->
+    <string name="issue_tab_with_count">%1$s %2$d</string>
+    <string name="issue_tab_docs_empty">Esta tarea no tiene documentos</string>
+    <string name="issue_tab_docs_system">sistema</string>
+    <string name="issue_tab_show_closed">Mostrar cerradas</string>
+    <string name="issue_tab_subtasks_empty">Sin subtareas</string>
+    <string name="issue_tab_rollup">%1$d abiertas · %2$d en curso · %3$d bloqueadas · %4$d cerradas</string>
+    <plurals name="issue_tab_subtasks_all_closed">
+        <item quantity="one">%1$d subtarea está cerrada.</item>
+        <item quantity="many">Las %1$d subtareas están cerradas.</item>
+        <item quantity="other">Las %1$d subtareas están cerradas.</item>
+    </plurals>
+    <string name="issue_tab_files_output">Resultados</string>
+    <string name="issue_tab_files_output_empty">Aún no se ha publicado nada</string>
+    <string name="issue_tab_files_attachments">Adjuntos</string>
+    <string name="issue_tab_files_attachments_empty">Sin adjuntos</string>
+    <string name="issue_tab_files_unnamed">archivo</string>
+    <string name="issue_tab_wp_pull_request">pull request</string>
+    <string name="issue_tab_wp_branch">rama</string>
+    <string name="issue_tab_wp_commit">commit</string>
+    <string name="issue_tab_wp_preview_url">URL de vista previa</string>
+    <string name="issue_tab_wp_runtime_service">servicio en ejecución</string>
+    <string name="issue_tab_activity_runs">Ejecuciones</string>
+    <string name="issue_tab_activity_runs_empty">Aún no hay ejecuciones</string>
+    <string name="issue_tab_activity_events">Actividad</string>
+    <string name="issue_tab_activity_events_empty">Sin actividad</string>
+
+    <!-- Task thread and composer (IssueThread) -->
+    <string name="issue_thread_empty">Aún no hay comentarios. Escríbele algo al responsable abajo.</string>
+    <string name="issue_thread_deleted_comment">%1$s eliminó un comentario · %2$s</string>
+    <string name="issue_thread_sending">Enviando…</string>
+    <string name="issue_thread_copy_text">Copiar texto</string>
+    <string name="issue_thread_upload_failed">Error al subir: %1$s</string>
+    <string name="issue_thread_not_sent">No enviado: %1$s</string>
+    <string name="issue_thread_will_interrupt">Interrumpirá al agente en ejecución</string>
+    <string name="issue_thread_interrupt">Interrumpir al agente en ejecución</string>
+    <string name="issue_thread_mention_agent">Mencionar agente</string>
+    <string name="issue_thread_attach">Adjuntar</string>
+    <string name="issue_thread_attach_photo">Foto</string>
+    <string name="issue_thread_attach_file">Archivo</string>
+    <string name="issue_thread_placeholder">Escribe un comentario…</string>
+    <string name="issue_thread_mention_title">Mencionar a un agente</string>
+    <string name="issue_thread_filter_agents">Filtrar</string>
+    <string name="issue_thread_load_older">Cargar comentarios anteriores</string>
+
+    <!-- Documents (DocumentScreen; also used by the Docs tab) -->
+    <string name="document_rev">rev. %1$d</string>
+    <string name="document_saved_revision">Revisión %1$d guardada</string>
+    <string name="document_saved">Revisión guardada</string>
+    <string name="document_conflict">Alguien cambió este documento mientras tanto. Se recargó la última versión; tu edición sigue en el editor.</string>
+    <string name="document_title_label">Título</string>
+    <string name="document_empty">Este documento está vacío.</string>
+    <string name="document_discard_title">¿Descartar los cambios?</string>
+
+    <!-- Agent requests in the thread (IssueInteractions) -->
+    <string name="interaction_kind_questions">Preguntas</string>
+    <string name="interaction_kind_confirmation">Confirmación</string>
+    <string name="interaction_kind_checkbox">Elegir opciones</string>
+    <string name="interaction_kind_suggest_tasks">Tareas sugeridas</string>
+    <string name="interaction_kind_verdicts">Elementos a revisar</string>
+    <string name="interaction_kind_connection">Solicitud de conexión</string>
+    <string name="interaction_waiting_for_you">Esperando tu respuesta</string>
+    <string name="interaction_status_accepted">aceptada</string>
+    <string name="interaction_status_answered">respondida</string>
+    <string name="interaction_status_rejected">rechazada</string>
+    <string name="interaction_status_cancelled">cancelada</string>
+    <string name="interaction_status_skipped">omitida</string>
+    <string name="interaction_status_expired">caducada</string>
+    <string name="interaction_status_failed">fallida</string>
+    <string name="interaction_skip">Omitir</string>
+    <string name="interaction_cancel_request">Cancelar solicitud</string>
+    <string name="interaction_from">De %1$s</string>
+    <string name="interaction_unsupported">La app todavía no admite este tipo de solicitud; ábrela en la interfaz web.</string>
+    <string name="interaction_resolved_by">por %1$s</string>
+    <string name="interaction_quoted">“%1$s”</string>
+    <string name="interaction_approve">Aprobar</string>
+    <string name="interaction_request_changes">Pedir cambios</string>
+    <string name="interaction_reason">Motivo</string>
+    <string name="interaction_reason_required">%1$s (obligatorio)</string>
+    <string name="interaction_reason_optional">%1$s (opcional)</string>
+    <string name="interaction_show_details">Ver detalles</string>
+    <string name="interaction_hide_details">Ocultar detalles</string>
+    <string name="interaction_show_preview">Ver vista previa</string>
+    <string name="interaction_hide_preview">Ocultar vista previa</string>
+    <string name="interaction_no_answer">Sin respuesta</string>
+    <string name="interaction_recommended">Recomendada</string>
+    <string name="interaction_other">Otra…</string>
+    <string name="interaction_your_answer">Tu respuesta</string>
+    <string name="interaction_type_answer">Escribe tu respuesta</string>
+    <string name="interaction_submit_answers">Enviar respuestas</string>
+    <string name="interaction_tool_fallback">Herramienta</string>
+    <string name="interaction_risk_read">lectura</string>
+    <string name="interaction_risk_write">escritura</string>
+    <string name="interaction_risk_destructive">destructiva</string>
+    <!-- %1$s secret name, %2$s agent name, %3$s config path. -->
+    <string name="interaction_bind_secret">Vincular el secreto “%1$s” a %2$s en %3$s</string>
+    <string name="interaction_secret_agent_fallback">agente</string>
+    <string name="interaction_open_document">Abrir el documento %1$s</string>
+    <!-- %1$s button label, %2$d document revision. -->
+    <string name="interaction_open_revision">%1$s (rev. %2$d)</string>
+    <string name="interaction_tool_result">Herramienta: %1$s</string>
+    <string name="interaction_tool_result_summary">Herramienta: %1$s — %2$s</string>
+    <string name="interaction_authorize_in_web">Esta autorización debe completarse en la interfaz web.</string>
+    <string name="interaction_allow_once">Permitir una vez</string>
+    <string name="interaction_approve_bind">Aprobar y vincular</string>
+    <string name="interaction_always_allow">Permitir siempre</string>
+    <string name="interaction_select_all">Seleccionar todo</string>
+    <plurals name="interaction_selected_count">
+        <item quantity="one">%1$d seleccionada</item>
+        <item quantity="many">%1$d seleccionadas</item>
+        <item quantity="other">%1$d seleccionadas</item>
+    </plurals>
+    <string name="interaction_selected_min">mín. %1$d</string>
+    <string name="interaction_selected_max">máx. %1$d</string>
+    <plurals name="interaction_created_tasks">
+        <item quantity="one">Se creó %1$d tarea</item>
+        <item quantity="many">Se crearon %1$d tareas</item>
+        <item quantity="other">Se crearon %1$d tareas</item>
+    </plurals>
+    <string name="interaction_tap_description">Toca para leer la descripción</string>
+    <plurals name="interaction_create_tasks">
+        <item quantity="one">Crear %1$d tarea</item>
+        <item quantity="many">Crear %1$d tareas</item>
+        <item quantity="other">Crear %1$d tareas</item>
+    </plurals>
+    <string name="interaction_verdict_approve">Aprobar</string>
+    <string name="interaction_verdict_reject">Rechazar</string>
+    <string name="interaction_submit_count">Enviar %1$d/%2$d</string>
+    <string name="interaction_approve_all">Aprobar todo</string>
+    <!-- %1$s agent name, %2$s service name. -->
+    <string name="interaction_connect_request">%1$s quiere conectar %2$s.</string>
+    <string name="interaction_connect_agent_fallback">Un agente</string>
+    <string name="interaction_connect_service_fallback">un servicio</string>
+    <string name="interaction_connect_web_only">Para conectar se necesita el inicio de sesión de la interfaz web. Abre ahí la tarea para terminar, o rechaza aquí.</string>
+    <string name="interaction_open_web_ui">Abrir la interfaz web</string>
+    <string name="interaction_decline">Rechazar</string>
+    <!-- %1$s agent name, %2$s request kind in lower case, e.g. "questions". -->
+    <string name="interaction_pinned">%1$s pidió %2$s — fijado arriba</string>
+
+    <!-- Decisions -->
+    <string name="decisions_title">Decisiones</string>
+    <string name="decisions_shelf_decide_now">Decidir ahora</string>
+    <string name="decisions_shelf_new_today">Nuevas hoy</string>
+    <string name="decisions_shelf_earlier">Anteriores</string>
+    <string name="decisions_due_today">Para hoy</string>
+    <string name="decisions_due_this_week">Para esta semana</string>
+    <string name="decisions_due_date">Para el %1$s</string>
+    <string name="decisions_decide_today">Decidir hoy</string>
+    <string name="decisions_decide_this_week">Decidir esta semana</string>
+    <string name="decisions_decide_whenever">Decidir cuando quieras</string>
+    <string name="decisions_decide_date">Decidir el %1$s</string>
+    <string name="decisions_cleared">Plazo eliminado</string>
+    <string name="decisions_back_on_desk">De vuelta en tu mesa</string>
+    <string name="decisions_filter_all">Todas %1$d</string>
+    <string name="decisions_filter_kind">%1$s %2$d</string>
+    <string name="decisions_empty">Estás al día.\nAhora no hay nada que debas decidir.</string>
+    <string name="decisions_section_snoozed">Pospuestas</string>
+    <string name="decisions_section_dismissed">Descartadas</string>
+    <string name="decisions_section_aging">Estancadas · sin actividad 30+ días</string>
+    <string name="decisions_restore">Restaurar</string>
+    <string name="decisions_snoozed_until">hasta %1$s</string>
+    <string name="decisions_history_decided">Decididas</string>
+    <string name="decisions_history_expired">Caducadas</string>
+    <string name="decisions_history_empty_decided">No hay decisiones tomadas.</string>
+    <string name="decisions_history_empty_expired">No hay decisiones caducadas.</string>
+    <string name="decisions_inbox_link">Las tareas no leídas y asignadas están en la bandeja de entrada</string>
+    <string name="decisions_kind_requests">Solicitudes</string>
+    <string name="decisions_kind_approvals">Aprobaciones</string>
+    <string name="decisions_kind_decisions">Decisiones</string>
+    <string name="decisions_kind_failed_runs">Ejecuciones fallidas</string>
+    <string name="decisions_kind_join_requests">Solicitudes de acceso</string>
+    <string name="decisions_kind_blocked">Bloqueadas</string>
+    <string name="decisions_kind_agent_errors">Errores de agentes</string>
+    <string name="decisions_kind_budget">Presupuesto</string>
+    <string name="decisions_collapse">Contraer</string>
+    <string name="decisions_expand">Expandir</string>
+    <string name="decisions_expires">caduca %1$s</string>
+    <string name="decisions_decided_option">Decidido: %1$s</string>
+    <string name="decisions_decision_dismissed">Decisión descartada</string>
+    <string name="decisions_no_longer_open">Esta decisión ya no está abierta.</string>
+    <string name="decisions_request_changes">Pedir cambios</string>
+    <string name="decisions_join_approved">Solicitud de acceso aprobada</string>
+    <string name="decisions_join_rejected">Solicitud de acceso rechazada</string>
+    <string name="decisions_confirm">Confirmar</string>
+    <string name="decisions_decline">Rechazar</string>
+    <string name="decisions_open_details">Ver detalles</string>
+    <string name="decisions_snooze_4h">Posponer 4 horas</string>
+    <string name="decisions_snoozed_4h">Pospuesta 4 horas</string>
+    <string name="decisions_snooze_next_week">Posponer hasta la próxima semana</string>
+    <string name="decisions_snoozed_next_week">Pospuesta hasta el próximo lunes</string>
+    <string name="decisions_when_to_decide">Cuándo decidir…</string>
+    <string name="decisions_this_week">Esta semana</string>
+    <string name="decisions_whenever">Cuando quieras</string>
+    <string name="decisions_target_changed">Una tarea afectada cambió desde que se propuso. Puede que algunas opciones estén bloqueadas.</string>
+    <string name="decisions_option_blocked">Bloqueada · el destino cambió</string>
+    <string name="decisions_dismiss_no_effects">Descartar — sin efectos</string>
+    <plurals name="decisions_cancel_tree_body">
+        <item quantity="one">Se cancelará %1$s y sus subtareas (%2$d tarea). Escribe %1$s para confirmar.</item>
+        <item quantity="many">Se cancelarán %1$s y sus subtareas (%2$d tareas). Escribe %1$s para confirmar.</item>
+        <item quantity="other">Se cancelarán %1$s y sus subtareas (%2$d tareas). Escribe %1$s para confirmar.</item>
+    </plurals>
+    <string name="decisions_cancel_tasks">Cancelar tareas</string>
+    <string name="decisions_keep">Conservar</string>
+    <string name="decisions_outcome_dismissed">Descartada</string>
+    <string name="decisions_outcome_expired_task_removed">Caducada · tarea eliminada</string>
+    <string name="decisions_outcome_expired_task_finished">Caducada · tarea terminada</string>
+    <string name="decisions_outcome_expired">Caducada</string>
+    <string name="decisions_outcome_failed">Fallida</string>
+    <string name="decisions_outcome_partly_applied">Aplicada en parte</string>
+    <string name="decisions_outcome_chose">Elegido: %1$s</string>
+    <string name="decisions_outcome_decided">Decidida</string>
+
+    <!-- Inbox -->
+    <string name="inbox_title">Bandeja de entrada</string>
+    <string name="inbox_tab_needs_me">Para mí</string>
+    <string name="inbox_tab_unread">No leídas</string>
+    <string name="inbox_tab_mine">Mías</string>
+    <string name="inbox_undo">Deshacer</string>
+    <string name="inbox_dismiss">Descartar</string>
+    <string name="inbox_dismissed">Descartado</string>
+    <string name="inbox_needs_me_empty">Ahora no hay nada pendiente para ti.\nAquí aparecen las preguntas de los agentes, las aprobaciones y los fallos.</string>
+    <string name="inbox_load_more">Cargar más</string>
+    <string name="inbox_untitled">Sin título</string>
+    <string name="inbox_snooze_1h">Posponer 1 hora</string>
+    <string name="inbox_snoozed_1h">Pospuesto 1 hora</string>
+    <string name="inbox_snooze_tomorrow">Posponer hasta mañana</string>
+    <string name="inbox_snoozed_tomorrow">Pospuesto hasta mañana a las 9:00</string>
+    <string name="inbox_kind_question">Pregunta</string>
+    <string name="inbox_kind_plan_approval">Aprobación de plan</string>
+    <string name="inbox_kind_suggested_tasks">Tareas sugeridas</string>
+    <string name="inbox_kind_choose_options">Elegir opciones</string>
+    <string name="inbox_kind_review_items">Elementos a revisar</string>
+    <string name="inbox_kind_confirmation">Confirmación</string>
+    <string name="inbox_kind_approval">Aprobación</string>
+    <string name="inbox_kind_decision">Decisión</string>
+    <string name="inbox_kind_failed_run">Ejecución fallida</string>
+    <string name="inbox_kind_budget">Presupuesto</string>
+    <string name="inbox_kind_agent_error">Error de agente</string>
+    <string name="inbox_kind_blocked">Bloqueada</string>
+    <string name="inbox_kind_review">Revisión</string>
+    <string name="inbox_kind_recovery">Recuperación</string>
+    <string name="inbox_kind_join_request">Solicitud de acceso</string>
+    <string name="inbox_unread_empty">Estás al día.</string>
+    <plurals name="inbox_unread_count">
+        <item quantity="one">%1$d no leída</item>
+        <item quantity="many">%1$d no leídas</item>
+        <item quantity="other">%1$d no leídas</item>
+    </plurals>
+    <plurals name="inbox_marked_read">
+        <item quantity="one">%1$d marcada como leída</item>
+        <item quantity="many">%1$d marcadas como leídas</item>
+        <item quantity="other">%1$d marcadas como leídas</item>
+    </plurals>
+    <string name="inbox_marking">Marcando…</string>
+    <string name="inbox_mark_all_read">Marcar todo como leído</string>
+    <string name="inbox_archived">%1$s archivada</string>
+    <string name="inbox_archive">Archivar</string>
+    <string name="inbox_mine_empty">Aquí aparecen las tareas que creaste, comentaste o que te asignaron.</string>
+    <plurals name="inbox_mine_summary">
+        <item quantity="one">%1$d no leída · desliza para archivar</item>
+        <item quantity="many">%1$d no leídas · desliza para archivar</item>
+        <item quantity="other">%1$d no leídas · desliza para archivar</item>
+    </plurals>
+
+    <!-- Approvals -->
+    <string name="approvals_title">Aprobaciones</string>
+    <string name="approvals_detail_title">Aprobación</string>
+    <string name="approvals_type_hire_agent">Contratar agente</string>
+    <string name="approvals_type_budget_override">Excepción de presupuesto</string>
+    <string name="approvals_type_board_approval">Aprobación del board</string>
+    <string name="approvals_type_strategy">Estrategia</string>
+    <string name="approvals_hire_name">Contratar a %1$s</string>
+    <string name="approvals_pending">Pendientes</string>
+    <string name="approvals_empty_pending">No hay aprobaciones esperándote.</string>
+    <string name="approvals_empty_all">Aún no hay aprobaciones.</string>
+    <string name="approvals_requested_by">Solicitada por %1$s</string>
+    <string name="approvals_revise">Revisar</string>
+    <string name="approvals_reject">Rechazar</string>
+    <string name="approvals_approve">Aprobar</string>
+    <string name="approvals_request_revision">Pedir revisión</string>
+    <string name="approvals_decision">Decisión</string>
+    <string name="approvals_details">Detalles</string>
+    <string name="approvals_linked_tasks">Tareas vinculadas</string>
+    <string name="approvals_comments">Comentarios</string>
+    <string name="approvals_no_comments">Aún no hay comentarios.</string>
+    <string name="approvals_add_comment">Añade un comentario…</string>
+    <string name="approvals_confirm_approve">¿Aprobar?</string>
+    <string name="approvals_confirm_reject">¿Rechazar?</string>
+    <string name="approvals_confirm_revision">¿Pedir revisión?</string>
+    <string name="approvals_what_should_change">¿Qué debería cambiar?</string>
+    <string name="approvals_note_optional">Nota (opcional)</string>
+    <string name="approvals_approved">Aprobada</string>
+    <string name="approvals_rejected">Rechazada</string>
+    <string name="approvals_revision_requested">Revisión solicitada</string>
+
+    <!-- Notifications (NotifyWorker) -->
+    <string name="notify_channel_name">Solicitudes de agentes</string>
+    <string name="notify_input_needed">Un agente necesita tu respuesta</string>
+    <string name="notify_input_needed_by">%1$s necesita tu respuesta</string>
+    <string name="notify_approval_requested">Aprobación solicitada</string>
+    <string name="notify_run_failed">Ejecución fallida</string>
+    <string name="notify_budget_alert">Alerta de presupuesto</string>
+    <string name="notify_agent_error">Error de agente</string>
+    <string name="notify_decision_needed">Se necesita una decisión</string>
+    <string name="notify_needs_attention">Requiere atención</string>
+    <plurals name="notify_many_title">
+        <item quantity="one">%1$d elemento requiere atención</item>
+        <item quantity="many">%1$d elementos requieren atención</item>
+        <item quantity="other">%1$d elementos requieren atención</item>
+    </plurals>
+    <string name="notify_many_body">Abre Decisiones para revisarlos</string>
+    <string name="notify_auth_title">La sesión de Paperclip caducó</string>
+    <string name="notify_auth_body">Abre la app y vuelve a iniciar sesión para seguir recibiendo notificaciones.</string>
+
+    <!-- Routine schedules (util/Schedule) -->
+    <string name="schedule_preset_hourly">Cada hora</string>
+    <string name="schedule_preset_daily">Cada día</string>
+    <string name="schedule_preset_weekdays">Días laborables</string>
+    <string name="schedule_preset_weekly">Semanal</string>
+    <string name="schedule_preset_monthly">Mensual</string>
+    <string name="schedule_preset_custom">Personalizado (cron)</string>
+    <string name="schedule_every_hour">Cada hora</string>
+    <string name="schedule_every_hour_at">Cada hora a los :%1$02d</string>
+    <string name="schedule_daily_at">Cada día a las %1$s</string>
+    <string name="schedule_weekdays_at">Días laborables a las %1$s</string>
+    <string name="schedule_weekly_at">Cada %1$s a las %2$s</string>
+    <string name="schedule_monthly_at">Cada mes el día %1$d a las %2$s</string>
+    <string name="schedule_every_minute">Cada minuto</string>
+    <string name="schedule_cron">Cron: %1$s</string>
+    <string name="schedule_error_empty">Ingresa una expresión cron de 5 campos.</string>
+    <string name="schedule_error_field_count">Usa exactamente 5 campos; esta tiene %1$d.</string>
+    <string name="schedule_error_bad_field">Los campos de cron deben usar números, rangos, listas, comodines o pasos válidos.</string>
+
+    <!-- Agents list -->
+    <string name="agents_title">Agentes</string>
+    <string name="agents_org_view">Organigrama</string>
+    <string name="agents_filter_running">En ejecución</string>
+    <string name="agents_filter_active">Activos</string>
+    <string name="agents_filter_paused">En pausa</string>
+    <string name="agents_filter_error">Con error</string>
+    <!-- Filter chip with a count, e.g. "Running 3". -->
+    <string name="agents_filter_count">%1$s %2$d</string>
+    <string name="agents_empty">Aún no hay agentes</string>
+    <string name="agents_empty_running">No hay agentes en ejecución</string>
+    <string name="agents_empty_active">No hay agentes activos</string>
+    <string name="agents_empty_paused">No hay agentes en pausa</string>
+    <string name="agents_empty_error">No hay agentes con errores</string>
+    <string name="agents_resumed">%1$s reanudado</string>
+    <string name="agents_paused">%1$s en pausa</string>
+    <string name="agents_using_tool">Usando %1$s</string>
+    <string name="agents_paused_reason">En pausa: %1$s</string>
+    <string name="agents_resume_cd">Reanudar %1$s</string>
+    <string name="agents_pause_cd">Pausar %1$s</string>
+    <string name="agent_adapter_process">Proceso</string>
+
+    <!-- Agent detail -->
+    <string name="agent_tab_overview">Resumen</string>
+    <string name="agent_tab_runs">Ejecuciones</string>
+    <string name="agent_tab_tasks">Tareas</string>
+    <string name="agent_tab_instructions">Instrucciones</string>
+    <string name="agent_run_now">Ejecutar ahora</string>
+    <string name="agent_resume">Reanudar</string>
+    <string name="agent_pause">Pausar</string>
+    <string name="agent_clear_error">Borrar error</string>
+    <string name="agent_error_cleared">Error borrado</string>
+    <string name="agent_reset_session">Restablecer sesión</string>
+    <string name="agent_runs_loading">Cargando ejecuciones…</string>
+    <string name="agent_runs_empty">Aún no hay ejecuciones</string>
+    <string name="agent_load_more">Cargar más</string>
+    <string name="agent_tasks_loading">Cargando tareas…</string>
+    <string name="agent_tasks_empty">No tiene tareas abiertas asignadas</string>
+    <string name="agent_instructions_bundle">Paquete de instrucciones</string>
+    <string name="agent_instructions_bundle_body">Ve o edita AGENTS.md y los demás archivos de instrucciones con los que trabaja este agente.</string>
+    <string name="agent_open_instructions">Abrir instrucciones</string>
+    <string name="agent_reset_title">¿Restablecer la sesión?</string>
+    <string name="agent_reset_body">%1$s empezará su próxima ejecución con una sesión nueva y sin memoria de la conversación actual.</string>
+    <string name="agent_reset_the_agent">El agente</string>
+    <string name="agent_session_reset">Sesión restablecida</string>
+    <string name="agent_error_note">Error: %1$s</string>
+    <string name="agent_paused_note">En pausa</string>
+    <string name="agent_paused_note_reason">En pausa (%1$s)</string>
+    <string name="agent_running_now">En ejecución ahora</string>
+    <string name="agent_this_month">Este mes</string>
+    <string name="agent_budget_of">de %1$s</string>
+    <string name="agent_no_budget">sin presupuesto mensual</string>
+    <string name="agent_runtime">Entorno de ejecución</string>
+    <string name="agent_session">Sesión</string>
+    <string name="agent_session_none">ninguna</string>
+    <string name="agent_last_run">Última ejecución</string>
+    <string name="agent_tokens_in">Tokens de entrada</string>
+    <string name="agent_cached_in">Entrada en caché</string>
+    <string name="agent_tokens_out">Tokens de salida</string>
+    <string name="agent_total_cost">Costo total</string>
+    <string name="agent_last_error">Último error</string>
+    <string name="agent_team">Equipo</string>
+    <string name="agent_reports_to">Reporta a</string>
+    <string name="agent_no_reporting_lines">Sin líneas de reporte</string>
+    <string name="agent_direct_report">Subordinado directo</string>
+    <string name="agent_details">Detalles</string>
+    <string name="agent_role">Rol</string>
+    <string name="agent_adapter">Adaptador</string>
+    <string name="agent_model">Modelo</string>
+    <string name="agent_model_default">predeterminado</string>
+    <string name="agent_last_heartbeat">Último heartbeat</string>
+    <string name="agent_never">nunca</string>
+    <string name="agent_created">Creado</string>
+    <string name="agent_working_dir">Directorio de trabajo</string>
+
+    <!-- Agent instructions -->
+    <string name="instructions_title">Instrucciones</string>
+    <string name="instructions_empty">Este agente no tiene archivos de instrucciones</string>
+    <!-- Badge on the agent's entry instructions file. -->
+    <string name="instructions_entry">principal</string>
+    <string name="instructions_read_only">solo lectura</string>
+    <string name="instructions_sync_note">Si estas instrucciones las genera un script de sincronización u otra herramienta, su próxima ejecución sobrescribirá lo que edites aquí.</string>
+    <string name="instructions_saved">Se guardó %1$s</string>
+    <string name="instructions_saving">Guardando…</string>
+    <string name="instructions_discard_title">¿Descartar los cambios?</string>
+    <string name="instructions_discard_body">No se guardaron tus cambios en %1$s.</string>
+
+    <!-- Run -->
+    <string name="run_title">Ejecución</string>
+    <!-- Run id, e.g. "Run 1a2b3c4d". -->
+    <string name="run_subtitle">Ejecución %1$s</string>
+    <string name="run_stop">Detener</string>
+    <string name="run_jump_top">Ir al inicio</string>
+    <string name="run_jump_latest">Ir a lo más reciente</string>
+    <string name="run_jump_end">Ir al final</string>
+    <string name="run_retry_requested">Reintento solicitado</string>
+    <string name="run_view_transcript">Transcripción</string>
+    <string name="run_view_raw">Log sin procesar</string>
+    <string name="run_view_events">Eventos</string>
+    <string name="run_streaming">en directo</string>
+    <string name="run_polling">sondeo</string>
+    <string name="run_showing_last_kb">Mostrando los últimos %1$d KB de la salida</string>
+    <string name="run_load_full_log">Cargar el log completo</string>
+    <string name="run_waiting_output">Esperando salida…</string>
+    <string name="run_no_output">No se registró ninguna salida en esta ejecución</string>
+    <string name="run_no_raw_output">Sin salida sin procesar</string>
+    <string name="run_no_events">No hay eventos registrados</string>
+    <string name="run_stop_title">¿Detener esta ejecución?</string>
+    <string name="run_stop_body">Se interrumpirá a %1$s. El trabajo ya confirmado se conserva; el turno actual se pierde.</string>
+    <string name="run_stopped">Ejecución detenida</string>
+    <string name="run_queued">En cola…</string>
+    <string name="run_working">Trabajando…</string>
+    <string name="run_started">iniciada %1$s</string>
+    <string name="run_task">Tarea</string>
+    <!-- Error code and message, e.g. "timeout: Process exceeded 30m". -->
+    <string name="run_error_with_code">%1$s: %2$s</string>
+    <string name="run_retry">Reintentar ejecución</string>
+    <string name="run_finished">Finalizada: %1$s</string>
+    <!-- What started a run (server invocationSource). -->
+    <string name="run_source_timer">temporizador</string>
+    <string name="run_source_assignment">asignación</string>
+    <string name="run_source_on_demand">a demanda</string>
+    <string name="run_source_automation">automatización</string>
+
+    <!-- Run transcript -->
+    <string name="run_session_started">Sesión iniciada · %1$s</string>
+    <string name="run_thinking">Pensando</string>
+    <string name="run_prompt">Prompt</string>
+    <string name="run_collapse">Contraer</string>
+    <string name="run_show_all">Ver todo</string>
+    <string name="run_tool_failed">Falló</string>
+    <string name="run_tool_input">Entrada</string>
+    <string name="run_tool_error">Error</string>
+    <string name="run_tool_result">Resultado</string>
+    <string name="run_tool_empty">(vacío)</string>
+    <string name="run_tool_running">Ejecutando…</string>
+    <!-- Expands a long tool output; the number is thousands of characters. -->
+    <string name="run_show_all_chars">Ver los %1$d mil caracteres</string>
+    <string name="run_turn_failed">Turno fallido</string>
+    <string name="run_turn_complete">Turno completado</string>
+    <string name="run_tokens_in">%1$s entrada</string>
+    <string name="run_tokens_cached">%1$s en caché</string>
+    <string name="run_tokens_out">%1$s salida</string>
+
+    <!-- Costs -->
+    <string name="costs_title">Costos</string>
+    <string name="costs_period_month">Este mes</string>
+    <string name="costs_period_7d">Últimos 7 días</string>
+    <string name="costs_period_30d">Últimos 30 días</string>
+    <string name="costs_period_all">Todo el tiempo</string>
+    <string name="costs_monthly_budget">Presupuesto mensual %1$s</string>
+    <string name="costs_percent">%1$d %%</string>
+    <string name="costs_no_company_budget">La empresa no tiene presupuesto definido</string>
+    <plurals name="costs_metered_runs">
+        <item quantity="one">%1$d ejecución medida</item>
+        <item quantity="many">%1$d ejecuciones medidas</item>
+        <item quantity="other">%1$d ejecuciones medidas</item>
+    </plurals>
+    <plurals name="costs_subscription_runs">
+        <item quantity="one">%1$d ejecución con suscripción</item>
+        <item quantity="many">%1$d ejecuciones con suscripción</item>
+        <item quantity="other">%1$d ejecuciones con suscripción</item>
+    </plurals>
+    <plurals name="costs_runs">
+        <item quantity="one">%1$d ejecución</item>
+        <item quantity="many">%1$d ejecuciones</item>
+        <item quantity="other">%1$d ejecuciones</item>
+    </plurals>
+    <!-- Run count followed by how many were on a subscription, e.g. "12 runs (3 subscription)". -->
+    <string name="costs_runs_with_subscription">%1$s (%2$d con suscripción)</string>
+    <string name="costs_provider_quotas">Cuotas de proveedores</string>
+    <string name="costs_as_of">actualizado %1$s</string>
+    <string name="costs_unavailable">no disponible</string>
+    <string name="costs_resets">se reinicia %1$s</string>
+    <string name="costs_no_usage_windows">No se informaron ventanas de uso</string>
+    <string name="costs_by_agent">Por agente</string>
+    <string name="costs_no_agent_spend">Ningún agente tuvo gastos en este periodo.</string>
+    <string name="costs_by_provider">Por proveedor y modelo</string>
+    <string name="costs_tokens_in_out">%1$s entrada · %2$s salida</string>
+    <string name="costs_budgets">Presupuestos</string>
+    <string name="costs_incidents">Incidentes</string>
+    <string name="costs_paused_agents">Agentes en pausa</string>
+    <string name="costs_paused_projects">Proyectos en pausa</string>
+    <string name="costs_no_policies">No hay políticas de presupuesto configuradas.</string>
+    <!-- Budget policy: scope name and scope kind, e.g. "Ada (agent)". -->
+    <string name="costs_policy">%1$s (%2$s)</string>
+    <string name="costs_policy_lifetime">%1$s (%2$s, total)</string>
+    <string name="costs_scope_agent">agente</string>
+    <string name="costs_scope_project">proyecto</string>
+    <string name="costs_scope_company">empresa</string>
+    <!-- How a model's usage is billed (server billingType). -->
+    <string name="costs_billing_metered_api">API medida</string>
+    <string name="costs_billing_subscription_included">incluido en la suscripción</string>
+    <string name="costs_billing_subscription_overage">excedente de suscripción</string>
+    <string name="costs_billing_credits">créditos</string>
+    <string name="costs_billing_fixed">fijo</string>
+    <string name="costs_billing_unknown">desconocido</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_settings">Ajustes</string>
+    <plurals name="dashboard_resumed_agents">
+        <item quantity="one">Se reanudó %1$d agente</item>
+        <item quantity="many">Se reanudaron %1$d agentes</item>
+        <item quantity="other">Se reanudaron %1$d agentes</item>
+    </plurals>
+    <plurals name="dashboard_agents_paused">
+        <item quantity="one">%1$d agente está en pausa</item>
+        <item quantity="many">%1$d agentes están en pausa</item>
+        <item quantity="other">%1$d agentes están en pausa</item>
+    </plurals>
+    <string name="dashboard_resume_all">Reanudar todos</string>
+    <string name="dashboard_live_now">En vivo ahora</string>
+    <string name="dashboard_no_live_runs">No hay ejecuciones ahora</string>
+    <string name="dashboard_run_activity">Actividad de ejecuciones · 14 días</string>
+    <string name="dashboard_recent_activity">Actividad reciente</string>
+    <string name="dashboard_see_all">Ver todo</string>
+    <string name="dashboard_no_activity">Todavía no ha pasado nada</string>
+    <plurals name="dashboard_agents_running">
+        <item quantity="one">%1$d en ejecución</item>
+        <item quantity="many">%1$d en ejecución</item>
+        <item quantity="other">%1$d en ejecución</item>
+    </plurals>
+    <string name="dashboard_none_running">ninguno en ejecución</string>
+    <string name="dashboard_agents_error">%1$d con error</string>
+    <string name="dashboard_in_progress">En curso</string>
+    <plurals name="dashboard_tasks_blocked">
+        <item quantity="one">%1$d bloqueada</item>
+        <item quantity="many">%1$d bloqueadas</item>
+        <item quantity="other">%1$d bloqueadas</item>
+    </plurals>
+    <plurals name="dashboard_tasks_open">
+        <item quantity="one">%1$d abierta</item>
+        <item quantity="many">%1$d abiertas</item>
+        <item quantity="other">%1$d abiertas</item>
+    </plurals>
+    <string name="dashboard_month_spend">Gasto del mes</string>
+    <string name="dashboard_no_budget">sin presupuesto definido</string>
+    <string name="dashboard_approvals">Aprobaciones</string>
+    <plurals name="dashboard_budget_incidents">
+        <item quantity="one">%1$d incidente de presupuesto</item>
+        <item quantity="many">%1$d incidentes de presupuesto</item>
+        <item quantity="other">%1$d incidentes de presupuesto</item>
+    </plurals>
+    <string name="dashboard_waiting_on_you">esperándote</string>
+    <string name="dashboard_chart_empty">Aún no hay ejecuciones</string>
+    <!-- Selected chart day: succeeded, failed and other run counts. -->
+    <string name="dashboard_chart_day_counts">%1$d OK · %2$d fallidas · %3$d otras</string>
+    <string name="dashboard_legend_succeeded">Exitosas</string>
+    <string name="dashboard_legend_failed">Fallidas</string>
+    <string name="dashboard_legend_other">Otras</string>
+
+    <!-- Admin common: approval payload field names -->
+    <string name="admin_key_name">Nombre</string>
+    <string name="admin_key_title">Título</string>
+    <string name="admin_key_role">Rol</string>
+    <string name="admin_key_reason">Motivo</string>
+    <string name="admin_key_description">Descripción</string>
+    <string name="admin_key_summary">Resumen</string>
+    <string name="admin_key_capabilities">Capacidades</string>
+    <string name="admin_key_adapter_type">Tipo de adaptador</string>
+    <string name="admin_key_adapter_config">Configuración del adaptador</string>
+    <string name="admin_key_model">Modelo</string>
+    <string name="admin_key_reports_to">Reporta a</string>
+    <string name="admin_key_budget_monthly_cents">Presupuesto mensual (centavos)</string>
+    <string name="admin_key_agent_id">ID del agente</string>
+    <string name="admin_key_requested_by_agent_id">ID del agente solicitante</string>
+
+    <!-- Routine editor -->
+    <string name="routine_concurrency_coalesce">Fusionar con la ejecución abierta</string>
+    <string name="routine_concurrency_coalesce_help">Si todavía hay una ejecución abierta, el nuevo disparador se suma a ella.</string>
+    <string name="routine_concurrency_skip">Omitir mientras haya una abierta</string>
+    <string name="routine_concurrency_skip_help">Ignora los disparadores hasta que termine la ejecución abierta.</string>
+    <string name="routine_concurrency_always">Iniciar siempre una ejecución nueva</string>
+    <string name="routine_concurrency_always_help">Cada disparador crea su propia tarea.</string>
+    <string name="routine_catch_up_skip">Omitir ejecuciones perdidas</string>
+    <string name="routine_catch_up_skip_help">Las programaciones perdidas mientras estaba en pausa o sin conexión se descartan.</string>
+    <string name="routine_catch_up_cap">Recuperar, con un límite</string>
+    <string name="routine_catch_up_cap_help">Las programaciones perdidas se ejecutan cuando es posible, hasta un límite.</string>
+    <string name="routine_saved">Rutina guardada</string>
+    <string name="routine_needs_agent_toast">Define un agente predeterminado (y guarda) antes de activar la automatización.</string>
+    <string name="routine_automation_paused">Automatización en pausa</string>
+    <string name="routine_automation_enabled">Automatización activada</string>
+    <string name="routine_schedule_removed">Programación eliminada</string>
+    <string name="routine_undo">Deshacer</string>
+    <string name="routine_title">Rutina</string>
+    <!-- Title while the routine has unsaved edits. -->
+    <string name="routine_title_editing">Editar rutina •</string>
+    <string name="routine_run_now">Ejecutar ahora</string>
+    <string name="routine_automation">Automatización</string>
+    <string name="routine_archived">Archivada</string>
+    <string name="routine_draft">Borrador</string>
+    <string name="routine_needs_agent">Necesita un agente predeterminado para que las programaciones se ejecuten. Aún puede ejecutarse manualmente.</string>
+    <string name="routine_active_help">Las programaciones y los disparadores inician ejecuciones.</string>
+    <string name="routine_paused_help">Los disparadores se ignoran hasta que la reanudes.</string>
+    <string name="routine_managed_by_plugin">Administrada por un plugin; sus valores predeterminados pueden sobrescribir tus cambios.</string>
+    <string name="routine_overview">Resumen</string>
+    <string name="routine_field_title">Título</string>
+    <string name="routine_title_required">El título es obligatorio</string>
+    <string name="routine_no_default_agent">Sin agente predeterminado</string>
+    <string name="routine_no_project">Sin proyecto</string>
+    <string name="routine_instructions">Instrucciones</string>
+    <string name="routine_preview">Vista previa</string>
+    <string name="routine_no_instructions">Aún no hay instrucciones.</string>
+    <string name="routine_instructions_placeholder">Añade instrucciones… (Markdown, {{variables}})</string>
+    <plurals name="routine_variables">
+        <item quantity="one">%1$d variable de {{placeholders}}; edita su tipo y valor predeterminado en la interfaz web.</item>
+        <item quantity="many">%1$d variables de {{placeholders}}; edita sus tipos y valores predeterminados en la interfaz web.</item>
+        <item quantity="other">%1$d variables de {{placeholders}}; edita sus tipos y valores predeterminados en la interfaz web.</item>
+    </plurals>
+    <string name="routine_schedules">Programaciones</string>
+    <string name="routine_no_triggers">No hay disparadores. Añade una programación o ejecútala manualmente.</string>
+    <string name="routine_schedule_enabled">Programación activada</string>
+    <string name="routine_schedule_paused">Programación en pausa</string>
+    <string name="routine_when_overlap">Si las ejecuciones se superponen</string>
+    <string name="routine_missed_schedules">Programaciones perdidas</string>
+    <string name="routine_default_agent">Agente predeterminado</string>
+    <string name="routine_add_schedule">Añadir programación</string>
+    <string name="routine_edit_schedule">Editar programación</string>
+    <string name="routine_remove_schedule">Eliminar programación</string>
+    <string name="routine_schedule_added">Programación añadida</string>
+    <string name="routine_schedule_saved">Programación guardada</string>
+    <string name="routine_conflict_title">La rutina cambió en otro lugar</string>
+    <string name="routine_conflict_body">Alguien más guardó esta rutina después de que la abriste. Recarga para ver su versión (se descartan tus cambios) o sobrescríbela con la tuya.</string>
+    <string name="routine_overwrite">Sobrescribir</string>
+    <string name="routine_reload_latest">Recargar la última</string>
+    <string name="routine_discard_body">No se guardaron tus cambios en esta rutina.</string>
+    <string name="routine_run_title">¿Ejecutar ahora?</string>
+    <string name="routine_run_body">Iniciar \"%1$s\" ahora.</string>
+    <string name="routine_run_body_assigned">Iniciar \"%1$s\" ahora — se asignará a %2$s.</string>
+    <string name="routine_started">Se inició %1$s</string>
+    <string name="routine_run">Ejecutar</string>
+    <string name="routine_trigger_paused">en pausa</string>
+    <string name="routine_trigger_next">próxima %1$s</string>
+    <!-- Non-schedule trigger without a label, e.g. "Webhook trigger". -->
+    <string name="routine_trigger_named">Disparador %1$s</string>
+    <string name="routine_trigger_manage">Gestiona los disparadores %1$s en la interfaz web</string>
+    <!-- Routine trigger kinds (server values webhook, api). -->
+    <string name="routine_kind_webhook">webhook</string>
+    <string name="routine_kind_api">API</string>
+    <string name="routine_cron_label">Cron (minuto hora día mes día-semana)</string>
+    <string name="routine_minute_past_hour">Minuto de cada hora</string>
+    <string name="routine_day">Día</string>
+    <string name="routine_day_of_month">Día del mes</string>
+    <string name="routine_hour">Hora (0–23)</string>
+    <string name="routine_minute">Minuto</string>
+    <string name="routine_time_zone">Zona horaria</string>
+    <string name="routine_zone_help">Sigue esta zona, incluido el horario de verano.</string>
+    <string name="routine_zone_invalid">Usa un nombre IANA, p. ej., America/Mexico_City</string>
+
+    <!-- Projects, goals and routines lists -->
+    <string name="projects_title">Proyectos</string>
+    <string name="projects_empty">Aún no hay proyectos.</string>
+    <plurals name="projects_tasks">
+        <item quantity="one">%1$d tarea</item>
+        <item quantity="many">%1$d tareas</item>
+        <item quantity="other">%1$d tareas</item>
+    </plurals>
+    <string name="projects_target_short">fecha objetivo %1$s</string>
+    <string name="projects_lead_short">líder %1$s</string>
+    <string name="projects_project">Proyecto</string>
+    <string name="projects_new_task">Nueva tarea</string>
+    <string name="projects_lead">Líder: %1$s</string>
+    <string name="projects_target">Fecha objetivo: %1$s</string>
+    <string name="projects_seg_active">Activas</string>
+    <string name="projects_no_active_tasks">No hay tareas activas en este proyecto.</string>
+    <string name="projects_no_tasks">Aún no hay tareas en este proyecto.</string>
+    <string name="projects_goals_title">Objetivos</string>
+    <string name="projects_goals_empty">Aún no hay objetivos.</string>
+    <string name="projects_goals_company">Objetivos de la empresa</string>
+    <string name="projects_goals_team">Objetivos del equipo</string>
+    <string name="projects_goals_agent">Objetivos de agentes</string>
+    <string name="projects_goals_task">Objetivos de tareas</string>
+    <string name="projects_goals_level">Objetivos: %1$s</string>
+    <string name="projects_routines_title">Rutinas</string>
+    <string name="projects_routines_empty">Aún no hay rutinas.</string>
+    <string name="projects_routine_paused">%1$s en pausa</string>
+    <string name="projects_routine_resumed">%1$s reanudada</string>
+    <string name="projects_schedule">Programación</string>
+    <!-- Schedule label followed by its cron expression. -->
+    <string name="projects_schedule_with_cron">%1$s (%2$s)</string>
+    <string name="projects_schedule_disabled">desactivada</string>
+    <string name="projects_also_triggered_by">También se dispara por %1$s</string>
+    <string name="projects_last_run">Última ejecución %1$s</string>
+
+    <!-- Activity and search -->
+    <!-- Vacío a propósito: las frases de actividad usan la tercera persona ("%1$s creó"), así que se muestra el nombre de la persona en lugar de "Tú". -->
+    <string name="activity_actor_you"></string>
+    <string name="activity_title">Actividad</string>
+    <string name="activity_filter_agents">Agentes</string>
+    <string name="activity_filter_people">Personas</string>
+    <string name="activity_filter_system">Sistema</string>
+    <string name="activity_empty">Aún no hay actividad.</string>
+    <string name="activity_search_type_issue">Tareas</string>
+    <string name="activity_search_type_comment">Comentarios</string>
+    <string name="activity_search_type_document">Documentos</string>
+    <string name="activity_search_type_artifact">Artefactos</string>
+    <string name="activity_search_type_agent">Agentes</string>
+    <string name="activity_search_type_project">Proyectos</string>
+    <!-- Group heading for an unknown result type; the argument is the type name. -->
+    <string name="activity_search_type_other">%1$s</string>
+    <string name="activity_search_placeholder">Busca tareas, comentarios, docs…</string>
+    <string name="activity_search_hint">Escribe al menos dos caracteres para buscar en %1$s.</string>
+    <string name="activity_search_hint_company">Escribe al menos dos caracteres para buscar en toda la empresa.</string>
+    <string name="activity_search_no_results">No hay resultados para \"%1$s\".</string>
+    <!-- Search results group heading with its count, e.g. "Tasks · 4". -->
+    <string name="activity_search_group">%1$s · %2$d</string>
+    <string name="activity_search_untitled">Sin título</string>
+
+    <!-- Activity sentences: %1$s is who acted, %2$s what it acted on (task id, name…), %3$s an extra value. -->
+    <string name="activity_created">%1$s creó %2$s</string>
+    <string name="activity_moved_to">%1$s movió %2$s a %3$s</string>
+    <string name="activity_reassigned">%1$s reasignó %2$s</string>
+    <string name="activity_set_priority">%1$s cambió la prioridad de %2$s a %3$s</string>
+    <string name="activity_updated">%1$s actualizó %2$s</string>
+    <string name="activity_commented">%1$s comentó en %2$s</string>
+    <string name="activity_picked_up">%1$s tomó %2$s</string>
+    <string name="activity_released">%1$s liberó %2$s</string>
+    <string name="activity_document_updated">%1$s actualizó un documento en %2$s</string>
+    <string name="activity_attached">%1$s adjuntó un archivo a %2$s</string>
+    <string name="activity_output_added">%1$s añadió resultados a %2$s</string>
+    <string name="activity_approval_requested">%1$s solicitó una aprobación</string>
+    <string name="activity_approved">%1$s aprobó %2$s</string>
+    <string name="activity_rejected">%1$s rechazó %2$s</string>
+    <string name="activity_paused">%1$s pausó %2$s</string>
+    <string name="activity_resumed">%1$s reanudó %2$s</string>
+    <string name="activity_hired">%1$s contrató a %2$s</string>
+    <string name="activity_interaction_created">%1$s pidió una respuesta en %2$s</string>
+    <string name="activity_interaction_accepted">%1$s aceptó una solicitud en %2$s</string>
+    <string name="activity_interaction_rejected">%1$s rechazó una solicitud en %2$s</string>
+    <string name="activity_interaction_answered">%1$s respondió en %2$s</string>
+    <!-- Unknown request event; %3$s is the raw event name, e.g. "expired". -->
+    <string name="activity_interaction_other">%1$s %3$s en %2$s</string>
+    <!-- Unknown activity; %3$s is the raw action name, e.g. "archived". -->
+    <string name="activity_other">%1$s %3$s %2$s</string>
+</resources>

@@ -19,6 +19,7 @@ import com.bu.paperclip.data.AppSettings
 import com.bu.paperclip.data.AppState
 import com.bu.paperclip.ui.AppRoot
 import com.bu.paperclip.ui.theme.PaperclipTheme
+import com.bu.paperclip.util.L10n
 
 /** AppCompat so the in-app language (AppCompatDelegate.setApplicationLocales) also applies below Android 13. */
 class MainActivity : AppCompatActivity() {
@@ -34,6 +35,11 @@ class MainActivity : AppCompatActivity() {
             if (url != null) kotlinx.coroutines.runBlocking {
                 AppState.settings.setBaseUrl(url)
                 AppState.settings.setApiToken(key ?: "")
+            }
+            // "pt-BR", "es", "en" or "system"; recreates the activity once when it changes.
+            intent?.getStringExtra("setupLanguage")?.let { lang ->
+                val tag = if (lang == "system") "" else lang
+                if (L10n.appLanguageTag() != tag) L10n.setAppLanguage(tag)
             }
         }
         setContent {

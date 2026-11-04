@@ -123,6 +123,13 @@ It covers the board operator's daily loop: answer what agents ask, approve or de
   </tr>
 </table>
 
+### Languages
+
+English, Português (Brasil) and Español, picked in **Settings → Language** or following the phone. [Add yours](docs/TRANSLATING.md).
+
+<img src="docs/screenshots/languages-pt-BR.png" alt="Home, Decisions, Tasks, Agents and More in Brazilian Portuguese" width="100%">
+<img src="docs/screenshots/languages-es.png" alt="Home, Decisions, Tasks, Agents and More in Spanish" width="100%">
+
 ## Install
 
 1. On your phone, download `paperclip-android-<version>-debug.apk` from the [latest release](https://github.com/splitpierre/paperclip-android/releases/latest).

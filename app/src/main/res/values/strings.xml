@@ -1056,6 +1056,8 @@
     <string name="projects_last_run">Last run %1$s</string>
 
     <!-- Activity and search -->
+    <!-- You, as the subject of activity sentences ("You created LUM-12"). Leave it empty if your language conjugates verbs differently for "you"; sentences then use the person's name instead. -->
+    <string name="activity_actor_you">You</string>
     <string name="activity_title">Activity</string>
     <string name="activity_filter_agents">Agents</string>
     <string name="activity_filter_people">People</string>

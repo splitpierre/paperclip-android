@@ -60,7 +60,7 @@ You need JDK 17 and the Android SDK (see the [README](../README.md#building)). T
 - has different format arguments from the English (`%1$s` missing, or `%1$d` where English has `%1$s`),
 - is in a `values-<lang>` folder that isn't listed in `locales_config.xml`, or the other way round.
 
-Missing keys are only a **warning** (look for `warning:` in the output, or run with `--info`), because Android falls back to English. Lint reports them as `MissingTranslation` warnings.
+Missing keys are only a **warning** (a `warning: values-<lang> is missing N key(s)` line in the output), because Android falls back to English. Lint reports them as `MissingTranslation` warnings.
 
 To try it on a phone or emulator, install the APK (`adb install -r app/build/outputs/apk/debug/app-debug.apk`), open **Settings → Language** and pick yours. The [demo server](../tools/demo-server) gives you something to look at without a Paperclip account; see [DEVELOPMENT.md](DEVELOPMENT.md#running-against-the-demo-server). Watch for text that gets cut off or wraps badly on narrow screens.
 

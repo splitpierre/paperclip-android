@@ -41,6 +41,15 @@ android {
     }
     testOptions {
         unitTests.isReturnDefaultValues = true
+        // Print TranslationsTest's warnings and full failure messages on the console.
+        unitTests.all {
+            // TranslationsTest reads the resource files directly, so a changed translation must rerun it.
+            it.inputs.dir("src/main/res")
+            it.testLogging {
+                events("failed", "standard_error")
+                exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+            }
+        }
     }
     bundle {
         // The language can be changed in the app, so every language must be in the install.
