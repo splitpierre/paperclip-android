@@ -50,6 +50,8 @@ import com.bu.paperclip.net.AuthState
 import com.bu.paperclip.net.LiveEvents
 import com.bu.paperclip.ui.components.AppBottomBar
 import com.bu.paperclip.ui.components.BarItem
+import com.bu.paperclip.ui.components.FileOpener
+import com.bu.paperclip.ui.components.FileOpenerHost
 import com.bu.paperclip.ui.components.Links
 import com.bu.paperclip.ui.components.errorMessage
 import com.bu.paperclip.ui.screens.*
@@ -129,7 +131,8 @@ private fun MainShell(pendingLink: String?, onLinkConsumed: () -> Unit, onSigned
     }
 
     DisposableEffect(nav) {
-        Links.handler = { nav.handleLink(it) }
+        // Server files first: they need the session, so they must never reach the external browser.
+        Links.handler = { FileOpener.handle(it) || nav.handleLink(it) }
         onDispose { Links.handler = { false } }
     }
 
@@ -248,5 +251,6 @@ private fun MainShell(pendingLink: String?, onLinkConsumed: () -> Unit, onSigned
             composable(Routes.SETTINGS) { SettingsScreen(nav, onSignedOut) }
         }
     }
+    FileOpenerHost()
     }
 }
