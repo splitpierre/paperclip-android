@@ -1,7 +1,9 @@
 package com.bu.paperclip.ui.components
 
 import android.content.Context
+import android.text.TextPaint
 import android.text.method.LinkMovementMethod
+import android.text.style.ClickableSpan
 import android.util.TypedValue
 import android.view.View
 import android.widget.TextView
@@ -25,14 +27,17 @@ import io.noties.markwon.AbstractMarkwonPlugin
 import io.noties.markwon.LinkResolver
 import io.noties.markwon.Markwon
 import io.noties.markwon.MarkwonConfiguration
+import io.noties.markwon.MarkwonSpansFactory
 import io.noties.markwon.core.MarkwonTheme
 import io.noties.markwon.ext.strikethrough.StrikethroughPlugin
 import io.noties.markwon.ext.tables.TablePlugin
 import io.noties.markwon.ext.tasklist.TaskListPlugin
+import io.noties.markwon.image.ImageProps
 import io.noties.markwon.image.ImagesPlugin
 import io.noties.markwon.image.destination.ImageDestinationProcessor
 import io.noties.markwon.image.network.OkHttpNetworkSchemeHandler
 import io.noties.markwon.linkify.LinkifyPlugin
+import org.commonmark.node.Image
 
 /** App-wide link router; set by the navigation host. Returns true when the link was handled in-app. */
 object Links {
@@ -72,19 +77,32 @@ private fun markwon(context: Context, codeBg: Int): Markwon {
                     override fun process(destination: String): String = Api.absolute(destination)
                 })
                 builder.linkResolver(object : LinkResolver {
-                    override fun resolve(view: View, link: String) {
-                        if (Links.handler(link)) return
-                        runCatching {
-                            val i = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(Api.absolute(link)))
-                            view.context.startActivity(i)
-                        }
-                    }
+                    override fun resolve(view: View, link: String) = openLink(view, link)
                 })
+            }
+
+            // Tapping an image opens it like a link, so an attachment shown inline saves and opens in one tap.
+            override fun configureSpansFactory(builder: MarkwonSpansFactory.Builder) {
+                builder.appendFactory(Image::class.java) { _, props ->
+                    val dest = ImageProps.DESTINATION.get(props) ?: return@appendFactory null
+                    object : ClickableSpan() {
+                        override fun onClick(widget: View) = openLink(widget, dest)
+                        override fun updateDrawState(ds: TextPaint) {}
+                    }
+                }
             }
         })
         .build()
     cached = Triple(codeBg, Api.baseUrl, m)
     return m
+}
+
+private fun openLink(view: View, link: String) {
+    if (Links.handler(link)) return
+    runCatching {
+        val i = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(Api.absolute(link)))
+        view.context.startActivity(i)
+    }
 }
 
 private fun spToPx(context: Context, sp: Float): Int =

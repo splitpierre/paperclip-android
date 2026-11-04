@@ -1,6 +1,5 @@
 package com.bu.paperclip.ui.screens
 
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
@@ -31,6 +30,7 @@ import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.automirrored.outlined.MergeType
 import androidx.compose.material.icons.outlined.Dns
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,7 +44,6 @@ import com.bu.paperclip.data.openBlockers
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,7 +58,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
 import com.bu.paperclip.data.ActivityEvent
 import com.bu.paperclip.data.AppState
@@ -70,6 +68,7 @@ import com.bu.paperclip.data.WorkProduct
 import com.bu.paperclip.net.Api
 import com.bu.paperclip.ui.Nav
 import com.bu.paperclip.ui.components.AgentAvatar
+import com.bu.paperclip.ui.components.AttachmentLinks
 import com.bu.paperclip.ui.components.Avatar
 import com.bu.paperclip.ui.components.Card
 import com.bu.paperclip.ui.components.Divider
@@ -81,18 +80,12 @@ import com.bu.paperclip.ui.components.SectionHeader
 import com.bu.paperclip.ui.components.activityActor
 import com.bu.paperclip.ui.components.activityLink
 import com.bu.paperclip.ui.components.activitySentence
-import com.bu.paperclip.ui.components.errorMessage
 import com.bu.paperclip.ui.components.runStatusColor
 import com.bu.paperclip.ui.components.statusLabel
 import com.bu.paperclip.ui.theme.LocalStatusColors
 import com.bu.paperclip.util.durationLabel
 import com.bu.paperclip.util.relativeTime
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonObject
-import okhttp3.Request
-import java.io.File
 
 private val ISSUE_SYSTEM_DOC_KEYS = setOf("continuation-summary", "pipeline-case-body")
 
@@ -207,7 +200,6 @@ internal fun IssueSubtasksTab(issue: Issue, children: List<Issue>?, nav: Nav) {
 @Composable
 internal fun IssueFilesTab(attachments: List<Attachment>?, workProducts: List<WorkProduct>?) {
     val ctx = LocalContext.current
-    val scope = rememberCoroutineScope()
     var viewing by remember { mutableStateOf<Attachment?>(null) }
     var opening by remember { mutableStateOf<String?>(null) }
     Column {
@@ -243,10 +235,7 @@ internal fun IssueFilesTab(attachments: List<Attachment>?, workProducts: List<Wo
                     Row(
                         Modifier.fillMaxWidth().clickable(enabled = opening == null) {
                             opening = a.id
-                            scope.launch {
-                                try { issueOpenAttachment(ctx, a) } catch (t: Throwable) { AppState.toast("Couldn't open: ${errorMessage(t)}") }
-                                opening = null
-                            }
+                            AttachmentLinks.open(ctx, a.id) { opening = null }
                         }.padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -266,7 +255,12 @@ internal fun IssueFilesTab(attachments: List<Attachment>?, workProducts: List<Wo
             }
         }
     }
-    viewing?.let { a -> IssueImageViewer(Api.absolute(a.contentPath ?: "/api/attachments/${a.id}/content"), a.originalFilename) { viewing = null } }
+    viewing?.let { a ->
+        IssueImageViewer(
+            Api.absolute(a.contentPath ?: "/api/attachments/${a.id}/content"), a.originalFilename,
+            onDownload = { AttachmentLinks.open(ctx, a.id) },
+        ) { viewing = null }
+    }
 }
 
 private fun issueSize(b: Long): String = when {
@@ -275,28 +269,8 @@ private fun issueSize(b: Long): String = when {
     else -> String.format("%.1f MB", b / 1048576.0)
 }
 
-/** Downloads with the session cookies (the browser has none) and hands the file to another app. */
-private suspend fun issueOpenAttachment(ctx: Context, a: Attachment) {
-    val file = withContext(Dispatchers.IO) {
-        val dir = File(ctx.cacheDir, "attachments").apply { mkdirs() }
-        val safe = (a.originalFilename ?: "file").replace(Regex("[^A-Za-z0-9._-]"), "_")
-        val out = File(dir, "${a.id.take(8)}_$safe")
-        if (!out.exists() || out.length() == 0L) {
-            val url = Api.absolute(a.downloadPath ?: a.contentPath ?: "/api/attachments/${a.id}/content")
-            Api.mediaClient.newCall(Request.Builder().url(url).build()).execute().use { r ->
-                if (!r.isSuccessful) error("HTTP ${r.code}")
-                out.outputStream().use { os -> r.body!!.byteStream().copyTo(os) }
-            }
-        }
-        out
-    }
-    val uri = FileProvider.getUriForFile(ctx, ctx.packageName + ".files", file)
-    val intent = Intent(Intent.ACTION_VIEW).setDataAndType(uri, a.contentType ?: "*/*").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    ctx.startActivity(Intent.createChooser(intent, a.originalFilename ?: "Open"))
-}
-
 @Composable
-internal fun IssueImageViewer(url: String, title: String?, onClose: () -> Unit) {
+internal fun IssueImageViewer(url: String, title: String?, onDownload: (() -> Unit)? = null, onClose: () -> Unit) {
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         var scale by remember { mutableFloatStateOf(1f) }
         var offset by remember { mutableStateOf(Offset.Zero) }
@@ -316,6 +290,7 @@ internal fun IssueImageViewer(url: String, title: String?, onClose: () -> Unit) 
             )
             Row(Modifier.fillMaxWidth().statusBarsPadding().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(title ?: "", color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f).padding(start = 8.dp))
+                if (onDownload != null) IconButton(onClick = onDownload) { Icon(Icons.Outlined.Download, "Download", tint = Color.White) }
                 IconButton(onClick = onClose) { Icon(Icons.Default.Close, "Close", tint = Color.White) }
             }
         }

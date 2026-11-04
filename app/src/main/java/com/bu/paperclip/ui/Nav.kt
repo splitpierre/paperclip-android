@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import com.bu.paperclip.net.Api
+import com.bu.paperclip.ui.components.AttachmentLinks
 
 object Routes {
     const val DASHBOARD = "dashboard"
@@ -120,6 +121,7 @@ class Nav(val controller: NavHostController) {
             Api.baseUrl.isNotEmpty() && link.startsWith(Api.baseUrl) -> link.removePrefix(Api.baseUrl)
             else -> return false
         }
+        AttachmentLinks.id(local)?.let { AttachmentLinks.open(controller.context, it); return true }
         if (decisionsRe.containsMatchIn(local)) {
             DecisionFocus.pending.value = decisionIdRe.find(local)?.groupValues?.get(1)
             tab(Routes.DECISIONS); return true
