@@ -226,6 +226,8 @@ An agent's page has four tabs:
 
 Open a run from Home, an agent's Runs tab or a task's live banner. **Transcript** shows the run as a conversation: the agent's messages, collapsed reasoning, and tool calls you can expand to see their input and output, with token counts and cost at the end. A live run streams as it goes; **Jump to latest** follows the output (scroll up and it becomes **Jump to top**), and **Stop** cancels the run. **Raw log** and **Events** show the underlying data.
 
+Images and other binary data that agents put in their output show as a short placeholder with the type and size, such as `[image image/png, ~29 KB]`, so very large runs stay quick to open and scroll.
+
 Transcripts support Claude, Codex, ACP and Antigravity agents. Output from other adapters shows as plain log lines.
 
 <br clear="right">
