@@ -230,11 +230,14 @@ object Api {
      */
     suspend fun gateHost(): String? {
         val r = execute(Request.Builder().url(url("/health")).get().build())
-        return r.use {
-            when {
-                it.code in 300..399 -> it.header("Location")?.let { loc -> runCatching { loc.toHttpUrl().host }.getOrNull() } ?: "a sign-in page"
-                it.header("Content-Type").orEmpty().contains("text/html") -> "a sign-in page"
-                else -> null
+        // Closing the response can touch the socket, so keep it off the main thread.
+        return withContext(Dispatchers.IO) {
+            r.use {
+                when {
+                    it.code in 300..399 -> it.header("Location")?.let { loc -> runCatching { loc.toHttpUrl().host }.getOrNull() } ?: "a sign-in page"
+                    it.header("Content-Type").orEmpty().contains("text/html") -> "a sign-in page"
+                    else -> null
+                }
             }
         }
     }

@@ -624,6 +624,10 @@ def jdump(o):
     return json.dumps(o).encode()
 
 
+# Sign-in state, so the app can be taken through sign-out and sign-in again. Any credentials are accepted.
+SESSION = {"signed_out": False}
+
+
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     avatars_from = None
@@ -687,10 +691,14 @@ class Handler(BaseHTTPRequestHandler):
         if p == "/health":
             return {"status": "ok"}
         if p == "/auth/get-session":
+            if SESSION["signed_out"]:
+                return None
             return {"session": {"id": "demo", "userId": ME}, "user": USER}
         if p == "/auth/sign-in/email":
+            SESSION["signed_out"] = False
             return {"user": USER, "token": "demo"}
         if p == "/auth/sign-out":
+            SESSION["signed_out"] = True
             return {"success": True}
         if p == "/companies":
             return [COMPANY]

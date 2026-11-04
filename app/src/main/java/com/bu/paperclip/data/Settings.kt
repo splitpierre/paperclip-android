@@ -18,6 +18,8 @@ data class AppSettings(
     val theme: String = "system",
     val notifications: Boolean = true,
     val lastNotifiedAt: String = "",
+    /** Email of the last successful sign-in; survives sign-out. The password is never stored here. */
+    val lastEmail: String = "",
 )
 
 class SettingsStore(private val context: Context) {
@@ -28,6 +30,7 @@ class SettingsStore(private val context: Context) {
         val theme = stringPreferencesKey("theme")
         val notifications = booleanPreferencesKey("notifications")
         val lastNotifiedAt = stringPreferencesKey("lastNotifiedAt")
+        val lastEmail = stringPreferencesKey("lastEmail")
     }
 
     val flow: Flow<AppSettings> = context.dataStore.data.map { p ->
@@ -38,6 +41,7 @@ class SettingsStore(private val context: Context) {
             theme = p[K.theme] ?: "system",
             notifications = p[K.notifications] ?: true,
             lastNotifiedAt = p[K.lastNotifiedAt] ?: "",
+            lastEmail = p[K.lastEmail] ?: "",
         )
     }
 
@@ -49,6 +53,7 @@ class SettingsStore(private val context: Context) {
     suspend fun setTheme(v: String) = context.dataStore.edit { it[K.theme] = v }
     suspend fun setNotifications(v: Boolean) = context.dataStore.edit { it[K.notifications] = v }
     suspend fun setLastNotifiedAt(v: String) = context.dataStore.edit { it[K.lastNotifiedAt] = v }
+    suspend fun setLastEmail(v: String) = context.dataStore.edit { it[K.lastEmail] = v }
 
     /** Free-form persisted UI state (view modes, filters). */
     fun string(key: String): Flow<String?> = context.dataStore.data.map { it[stringPreferencesKey("ui.$key")] }
