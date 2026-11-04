@@ -40,7 +40,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.annotation.StringRes
+import com.bu.paperclip.R
 import com.bu.paperclip.data.AppState
 import com.bu.paperclip.data.Issue
 import com.bu.paperclip.data.Rollup
@@ -48,6 +52,25 @@ import com.bu.paperclip.data.TaskGraph
 import com.bu.paperclip.data.TaskNode
 import com.bu.paperclip.data.isClosed
 import com.bu.paperclip.ui.theme.LocalStatusColors
+import com.bu.paperclip.util.L10n
+
+@StringRes
+fun taskStatusRes(status: String): Int? = if (status in ISSUE_STATUSES) statusLabelRes(status) else null
+
+@StringRes
+fun taskPriorityRes(priority: String): Int? = when (priority) {
+    "critical" -> R.string.task_priority_critical
+    "high" -> R.string.task_priority_high
+    "medium" -> R.string.task_priority_medium
+    "low" -> R.string.task_priority_low
+    else -> null
+}
+
+/** Task status label; unknown values fall back to [statusLabel]. Usable outside Compose. */
+fun taskStatusLabel(status: String): String = statusLabel(status)
+
+/** Task priority label; unknown values are capitalised as-is. Usable outside Compose. */
+fun taskPriorityLabel(priority: String): String = taskPriorityRes(priority)?.let { L10n.str(it) } ?: priority.replaceFirstChar { it.uppercase() }
 
 /** Thin progress bar with "closed/total"; green when everything is closed. */
 @Composable
@@ -67,8 +90,8 @@ fun RollupBar(r: Rollup, modifier: Modifier = Modifier, showLabel: Boolean = tru
             Spacer(Modifier.width(6.dp))
             Text("${r.closed}/${r.total}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        if (r.live > 0) { Spacer(Modifier.width(8.dp)); Pill("${r.live} live", colors.blue) }
-        if (r.blocked > 0) { Spacer(Modifier.width(6.dp)); Pill("${r.blocked} blocked", colors.red) }
+        if (r.live > 0) { Spacer(Modifier.width(8.dp)); Pill(pluralStringResource(R.plurals.task_rollup_live, r.live, r.live), colors.blue) }
+        if (r.blocked > 0) { Spacer(Modifier.width(6.dp)); Pill(pluralStringResource(R.plurals.task_rollup_blocked, r.blocked, r.blocked), colors.red) }
     }
 }
 
@@ -118,7 +141,7 @@ fun TaskTreeRow(
             if (hasChildren) {
                 Icon(
                     if (expanded) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    contentDescription = stringResource(if (expanded) R.string.task_collapse else R.string.task_expand),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(20.dp),
                 )
@@ -129,11 +152,11 @@ fun TaskTreeRow(
         Column(Modifier.weight(1f).padding(vertical = 8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(i.ref, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (isNext) { Spacer(Modifier.width(6.dp)); Pill("next", colors.green) }
-                if (live) { Spacer(Modifier.width(6.dp)); Pill("live", colors.blue) }
+                if (isNext) { Spacer(Modifier.width(6.dp)); Pill(stringResource(R.string.task_pill_next), colors.green) }
+                if (live) { Spacer(Modifier.width(6.dp)); Pill(stringResource(R.string.task_pill_live), colors.blue) }
                 if (blocked && i.status != "blocked") {
                     Spacer(Modifier.width(6.dp))
-                    Icon(Icons.Default.Block, "Waiting on a blocker", tint = colors.red, modifier = Modifier.size(13.dp))
+                    Icon(Icons.Default.Block, stringResource(R.string.task_waiting_on_blocker), tint = colors.red, modifier = Modifier.size(13.dp))
                 }
             }
             Text(
@@ -168,7 +191,7 @@ fun NextUpCard(
     inFlight: List<Issue>,
     onOpen: (Issue) -> Unit,
     modifier: Modifier = Modifier,
-    title: String = "Next up",
+    title: String = stringResource(R.string.task_next_up),
 ) {
     if (next.isEmpty() && inFlight.isEmpty()) return
     val colors = LocalStatusColors.current
@@ -203,14 +226,14 @@ fun NextUpCard(
                 Spacer(Modifier.width(4.dp))
                 Icon(
                     if (expanded) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    contentDescription = stringResource(if (expanded) R.string.task_collapse else R.string.task_expand),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(18.dp),
                 )
             }
             if (!expanded) return@Column
             if (next.isEmpty()) Text(
-                "Nothing ready: every open task is blocked, in flight, or waiting on sub-tasks.",
+                stringResource(R.string.task_next_up_empty),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp),
@@ -231,14 +254,14 @@ fun NextUpCard(
                         if (n.reasons.isNotEmpty()) {
                             Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 2.dp)) {
                                 n.reasons.forEach { r ->
-                                    val c = when {
-                                        r.startsWith("Unblocks") -> colors.green
-                                        r == "Critical" -> colors.red
-                                        r == "High" -> colors.orange
-                                        r == "Unassigned" -> colors.yellow
-                                        else -> colors.gray
+                                    val (label, c) = when (r) {
+                                        TaskGraph.Reason.Unblocks -> stringResource(R.string.task_next_unblocks, n.unblocks) to colors.green
+                                        TaskGraph.Reason.Critical -> stringResource(R.string.task_priority_critical) to colors.red
+                                        TaskGraph.Reason.High -> stringResource(R.string.task_priority_high) to colors.orange
+                                        TaskGraph.Reason.Unassigned -> stringResource(R.string.common_unassigned) to colors.yellow
+                                        TaskGraph.Reason.Backlog -> stringResource(R.string.status_backlog) to colors.gray
                                     }
-                                    Pill(r, c)
+                                    Pill(label, c)
                                 }
                             }
                         }
@@ -253,7 +276,7 @@ fun NextUpCard(
             if (inFlight.isNotEmpty()) {
                 Divider()
                 Text(
-                    "In flight",
+                    stringResource(R.string.task_in_flight),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 14.dp, top = 8.dp, bottom = 2.dp),
@@ -276,7 +299,7 @@ fun NextUpCard(
                     }
                 }
                 if (inFlight.size > 3) Text(
-                    "+${inFlight.size - 3} more",
+                    pluralStringResource(R.plurals.task_more_count, inFlight.size - 3, inFlight.size - 3),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp),
@@ -301,8 +324,8 @@ fun BoardCard(issue: Issue, parent: Issue?, rollup: Rollup, live: Boolean, block
                 PriorityIcon(issue.priority, 14.dp)
                 Spacer(Modifier.width(4.dp))
                 Text(issue.ref, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (live) { Spacer(Modifier.width(6.dp)); Pill("live", colors.blue) }
-                if (blocked && issue.status != "blocked") { Spacer(Modifier.width(6.dp)); Icon(Icons.Default.Block, "Waiting on a blocker", tint = colors.red, modifier = Modifier.size(13.dp)) }
+                if (live) { Spacer(Modifier.width(6.dp)); Pill(stringResource(R.string.task_pill_live), colors.blue) }
+                if (blocked && issue.status != "blocked") { Spacer(Modifier.width(6.dp)); Icon(Icons.Default.Block, stringResource(R.string.task_waiting_on_blocker), tint = colors.red, modifier = Modifier.size(13.dp)) }
                 Spacer(Modifier.weight(1f))
                 when {
                     issue.assigneeAgentId != null -> AgentAvatar(issue.assigneeAgentId, 20.dp)

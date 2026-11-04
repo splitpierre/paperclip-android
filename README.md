@@ -27,6 +27,9 @@ It covers the board operator's daily loop: answer what agents ask, approve or de
 - **Agents, approvals, costs and quotas, projects, goals, routines, activity and search.** Pause, resume or wake agents, reset sessions, read or edit their instruction files, and edit routines and their schedules.
 - **Notifications** for new items that need you, checked in the background about every 15 minutes.
 - A clean, monochrome design in light and dark, set in Inter. Works on Android 8.0 and later.
+- **In English, Português (Brasil) and Español,** with the language picked in Settings or following the phone.
+
+> **Translations welcome.** Adding a language takes one translated file and no code. See [docs/TRANSLATING.md](docs/TRANSLATING.md).
 
 ## Screenshots
 
@@ -120,6 +123,13 @@ It covers the board operator's daily loop: answer what agents ask, approve or de
   </tr>
 </table>
 
+### Languages
+
+English, Português (Brasil) and Español, picked in **Settings → Language** or following the phone. [Add yours](docs/TRANSLATING.md).
+
+<img src="docs/screenshots/languages-pt-BR.png" alt="Home, Decisions, Tasks, Agents and More in Brazilian Portuguese" width="100%">
+<img src="docs/screenshots/languages-es.png" alt="Home, Decisions, Tasks, Agents and More in Spanish" width="100%">
+
 ## Install
 
 1. On your phone, download `paperclip-android-<version>-debug.apk` from the [latest release](https://github.com/splitpierre/paperclip-android/releases/latest).
@@ -142,10 +152,10 @@ The server must accept the hostname you connect with. If you get a hostname erro
 The [demo server](tools/demo-server) is a single Python file with no dependencies. It serves a made-up company with agents, a task tree, pending requests and live runs:
 
 ```bash
-python3 tools/demo-server/demo_server.py --host 0.0.0.0 --port 3100
+python3 tools/demo-server/demo_server.py --host 0.0.0.0 --port 3199
 ```
 
-Point the app at `http://<your computer's IP>:3100` and sign in with any email and password. On an emulator, run `adb reverse tcp:3100 tcp:3100` and use `http://localhost:3100`.
+Point the app at `http://<your computer's IP>:3199` and sign in with any email and password. On an emulator, run `adb reverse tcp:3199 tcp:3199` and use `http://localhost:3199`.
 
 ## Building
 
@@ -157,7 +167,7 @@ echo "sdk.dir=/path/to/android/sdk" > local.properties
 # app/build/outputs/apk/debug/app-debug.apk
 ```
 
-See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the architecture, tests, regenerating screenshots and cutting a release.
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the architecture, tests, regenerating screenshots and cutting a release, and [docs/TRANSLATING.md](docs/TRANSLATING.md) to add or improve a translation.
 
 ## Notes
 

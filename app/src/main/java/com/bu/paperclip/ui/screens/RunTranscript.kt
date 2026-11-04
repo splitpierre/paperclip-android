@@ -1,5 +1,7 @@
 package com.bu.paperclip.ui.screens
 
+import com.bu.paperclip.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -45,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bu.paperclip.ui.theme.Mono
 import com.bu.paperclip.data.TEntry
+import com.bu.paperclip.data.TextSanitizer
 import com.bu.paperclip.data.TranscriptBuilder
 import com.bu.paperclip.net.AppJson
 import com.bu.paperclip.ui.components.Markdown
@@ -82,14 +85,14 @@ class RunTranscriptState(adapterType: String?) {
             val o = runCatching { AppJson.parseToJsonElement(l) }.getOrNull() as? JsonObject ?: continue
             val seq = (o["seq"] as? JsonPrimitive)?.longOrNull
             if (seq != null && !rawSeqs.add(seq)) continue
-            raw.add(RunRawLine((o["stream"] as? JsonPrimitive)?.contentOrNull ?: "stdout", (o["chunk"] as? JsonPrimitive)?.contentOrNull ?: ""))
+            raw.add(RunRawLine((o["stream"] as? JsonPrimitive)?.contentOrNull ?: "stdout", TextSanitizer.sanitize((o["chunk"] as? JsonPrimitive)?.contentOrNull ?: "")))
         }
         dirty = true
     }
 
     fun feedLive(ts: String?, stream: String, chunk: String, seq: Long?) {
         builder.feedRecord(ts, stream, chunk, seq)
-        if (seq == null || rawSeqs.add(seq)) raw.add(RunRawLine(stream, chunk))
+        if (seq == null || rawSeqs.add(seq)) raw.add(RunRawLine(stream, TextSanitizer.sanitize(chunk)))
         dirty = true
     }
 }
@@ -107,7 +110,7 @@ fun RunEntryView(e: TEntry) {
         is TEntry.Init -> Row(Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
             Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
                 Text(
-                    "Session started · ${e.model}",
+                    stringResource(R.string.run_session_started, e.model),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
@@ -129,7 +132,7 @@ private fun RunThinking(text: String) {
             Icon(Icons.Outlined.Lightbulb, null, Modifier.size(15.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(6.dp))
             Text(
-                if (open) "Thinking" else text.lineSequence().firstOrNull { it.isNotBlank() }?.trim() ?: "Thinking",
+                if (open) stringResource(R.string.run_thinking) else text.lineSequence().firstOrNull { it.isNotBlank() }?.trim() ?: stringResource(R.string.run_thinking),
                 style = MaterialTheme.typography.bodySmall,
                 fontStyle = FontStyle.Italic,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -164,8 +167,8 @@ private fun RunUserMessage(text: String) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.Person, null, Modifier.size(15.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.width(6.dp))
-                Text("Prompt", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
-                if (long) Text(if (open) "Collapse" else "Show all", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
+                Text(stringResource(R.string.run_prompt), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                if (long) Text(stringResource(if (open) R.string.run_collapse else R.string.run_show_all), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
             }
             Spacer(Modifier.height(4.dp))
             if (open) Markdown(text, fontSizeSp = 14f)
@@ -216,8 +219,8 @@ private fun RunToolCard(e: TEntry.ToolCall) {
             ) {
                 when {
                     !e.done -> CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 1.6.dp)
-                    e.isError -> Icon(Icons.Outlined.ErrorOutline, "Failed", Modifier.size(16.dp), tint = red)
-                    else -> Icon(Icons.Outlined.CheckCircle, "Done", Modifier.size(16.dp), tint = green)
+                    e.isError -> Icon(Icons.Outlined.ErrorOutline, stringResource(R.string.run_tool_failed), Modifier.size(16.dp), tint = red)
+                    else -> Icon(Icons.Outlined.CheckCircle, stringResource(R.string.common_done), Modifier.size(16.dp), tint = green)
                 }
                 Spacer(Modifier.width(8.dp))
                 Icon(Icons.Outlined.Build, null, Modifier.size(13.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -240,9 +243,9 @@ private fun RunToolCard(e: TEntry.ToolCall) {
                 )
             }
             if (open) {
-                if (e.input.isNotBlank()) RunCodeBlock("Input", e.input, null)
-                if (e.result != null) RunCodeBlock(if (e.isError) "Error" else "Result", e.result.ifBlank { "(empty)" }, if (e.isError) red else null)
-                else if (!e.done) Text("Running…", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 12.dp, bottom = 10.dp))
+                if (e.input.isNotBlank()) RunCodeBlock(stringResource(R.string.run_tool_input), e.input, null)
+                if (e.result != null) RunCodeBlock(stringResource(if (e.isError) R.string.run_tool_error else R.string.run_tool_result), e.result.ifBlank { stringResource(R.string.run_tool_empty) }, if (e.isError) red else null)
+                else if (!e.done) Text(stringResource(R.string.run_tool_running), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 12.dp, bottom = 10.dp))
                 Spacer(Modifier.height(4.dp))
             }
         }
@@ -268,7 +271,7 @@ private fun RunCodeBlock(label: String, text: String, tint: Color?) {
             }
         }
         if (!full && text.length > RUN_RESULT_PREVIEW) {
-            TextButton(onClick = { full = true }) { Text("Show all ${text.length / 1000}k chars") }
+            TextButton(onClick = { full = true }) { Text(stringResource(R.string.run_show_all_chars, text.length / 1000)) }
         }
     }
 }
@@ -288,13 +291,13 @@ private fun RunResultCard(e: TEntry.Result) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(if (e.isError) Icons.Outlined.ErrorOutline else Icons.Outlined.CheckCircle, null, Modifier.size(16.dp), tint = color)
                 Spacer(Modifier.width(6.dp))
-                Text(if (e.isError) "Turn failed" else "Turn complete", style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
-                if (e.costUsd > 0) Text(String.format("$%.4f", e.costUsd), style = MaterialTheme.typography.labelMedium)
+                Text(stringResource(if (e.isError) R.string.run_turn_failed else R.string.run_turn_complete), style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
+                if (e.costUsd > 0) Text(com.bu.paperclip.util.formatUsd(e.costUsd, 4), style = MaterialTheme.typography.labelMedium)
             }
             val tokens = listOfNotNull(
-                e.inTok.takeIf { it > 0 }?.let { "${agentFmtTokens(it)} in" },
-                e.cachedTok.takeIf { it > 0 }?.let { "${agentFmtTokens(it)} cached" },
-                e.outTok.takeIf { it > 0 }?.let { "${agentFmtTokens(it)} out" },
+                e.inTok.takeIf { it > 0 }?.let { stringResource(R.string.run_tokens_in, agentFmtTokens(it)) },
+                e.cachedTok.takeIf { it > 0 }?.let { stringResource(R.string.run_tokens_cached, agentFmtTokens(it)) },
+                e.outTok.takeIf { it > 0 }?.let { stringResource(R.string.run_tokens_out, agentFmtTokens(it)) },
             )
             if (tokens.isNotEmpty()) {
                 Text(tokens.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

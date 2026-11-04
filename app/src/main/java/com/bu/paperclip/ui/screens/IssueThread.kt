@@ -4,7 +4,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.net.Uri
-import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,6 +28,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import com.bu.paperclip.net.ServerFiles
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.material.icons.outlined.AttachFile
+import androidx.compose.material.icons.automirrored.outlined.InsertDriveFile
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AlternateEmail
 import androidx.compose.material.icons.filled.Close
@@ -61,20 +65,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.bu.paperclip.R
 import com.bu.paperclip.ui.components.AppFilterChip
 import com.bu.paperclip.data.AppState
 import com.bu.paperclip.data.IssueComment
-import com.bu.paperclip.data.Repo
 import com.bu.paperclip.ui.components.AgentAvatar
 import com.bu.paperclip.ui.components.Avatar
 import com.bu.paperclip.ui.components.Markdown
 import com.bu.paperclip.ui.components.errorMessage
 import com.bu.paperclip.ui.theme.LocalStatusColors
+import com.bu.paperclip.util.L10n
 import com.bu.paperclip.util.absoluteTime
 import com.bu.paperclip.util.relativeTime
 import kotlinx.coroutines.CancellationException
@@ -111,7 +117,7 @@ internal fun IssueCommentItem(c: IssueComment, onDelete: (() -> Unit)?) {
     val sending = c.id.startsWith(ISSUE_LOCAL_PREFIX)
     if (c.deletedAt != null) {
         Text(
-            "${issueCommentAuthor(c)} deleted a comment · ${relativeTime(c.createdAt)}",
+            stringResource(R.string.issue_thread_deleted_comment, issueCommentAuthor(c), relativeTime(c.createdAt)),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
@@ -162,7 +168,7 @@ internal fun IssueCommentItem(c: IssueComment, onDelete: (() -> Unit)?) {
                 Text(issueCommentAuthor(c), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    if (sending) "Sending…" else relativeTime(c.createdAt),
+                    if (sending) stringResource(R.string.issue_thread_sending) else relativeTime(c.createdAt),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -176,30 +182,24 @@ internal fun IssueCommentItem(c: IssueComment, onDelete: (() -> Unit)?) {
 
 @Composable
 private fun IssueCommentMenu(open: Boolean, onClose: () -> Unit, ctx: Context, c: IssueComment, onDelete: (() -> Unit)?) {
+    val copied = stringResource(R.string.common_copied)
     DropdownMenu(expanded = open, onDismissRequest = onClose) {
-        DropdownMenuItem(text = { Text("Copy text") }, onClick = {
+        DropdownMenuItem(text = { Text(stringResource(R.string.issue_thread_copy_text)) }, onClick = {
             onClose()
             (ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("comment", c.body))
-            AppState.toast("Copied")
+            AppState.toast(copied)
         })
         DropdownMenuItem(text = { Text(absoluteTime(c.createdAt)) }, onClick = onClose, enabled = false)
         if (onDelete != null && !c.id.startsWith(ISSUE_LOCAL_PREFIX)) {
-            DropdownMenuItem(text = { Text("Delete", color = MaterialTheme.colorScheme.error) }, onClick = { onClose(); onDelete() })
+            DropdownMenuItem(text = { Text(stringResource(R.string.common_delete), color = MaterialTheme.colorScheme.error) }, onClick = { onClose(); onDelete() })
         }
     }
 }
 
-private data class IssuePendingUpload(val uri: Uri, val attachmentId: String? = null, val failed: Boolean = false)
-
-private fun issueDisplayName(ctx: Context, uri: Uri): String {
-    ctx.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
-        if (c.moveToFirst()) c.getString(0)?.let { return it }
-    }
-    return "image-${System.currentTimeMillis()}.jpg"
-}
+private data class IssuePendingUpload(val uri: Uri, val file: PickedFile? = null, val attachmentId: String? = null, val failed: Boolean = false)
 
 /**
- * Bottom composer: markdown text, @mentions (agent links), image attachments and an
+ * Bottom composer: markdown text, @mentions (agent links), image and file attachments and an
  * "interrupt" toggle while an agent run is live. Optimistic: [onLocal] shows the message
  * immediately; [onSent]/[onFailed] reconcile it.
  */
@@ -218,16 +218,15 @@ internal fun IssueComposer(
     var mentionSheet by remember { mutableStateOf(false) }
     val uploads = remember(issueId) { mutableStateListOf<IssuePendingUpload>() }
 
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(6)) { uris ->
+    var attachMenu by remember { mutableStateOf(false) }
+    fun upload(uris: List<Uri>) {
         uris.forEach { uri ->
             uploads.add(IssuePendingUpload(uri))
             scope.launch {
                 try {
-                    val (bytes, name, mime) = withContext(Dispatchers.IO) {
-                        val b = ctx.contentResolver.openInputStream(uri)!!.use { it.readBytes() }
-                        Triple(b, issueDisplayName(ctx, uri), ctx.contentResolver.getType(uri) ?: "image/jpeg")
-                    }
-                    val att = Repo.uploadAttachment(AppState.cid, issueId, name, mime, bytes)
+                    val file = withContext(Dispatchers.IO) { pickedFile(ctx, uri) }
+                    uploads.indexOfFirst { it.uri == uri }.takeIf { it >= 0 }?.let { uploads[it] = uploads[it].copy(file = file) }
+                    val att = uploadPickedFile(ctx, issueId, file)
                     val i = uploads.indexOfFirst { it.uri == uri }
                     if (i >= 0) uploads[i] = uploads[i].copy(attachmentId = att.id)
                 } catch (c: CancellationException) {
@@ -235,11 +234,13 @@ internal fun IssueComposer(
                 } catch (t: Throwable) {
                     val i = uploads.indexOfFirst { it.uri == uri }
                     if (i >= 0) uploads[i] = uploads[i].copy(failed = true)
-                    AppState.toast("Upload failed: ${errorMessage(t)}")
+                    AppState.toast(L10n.str(R.string.issue_thread_upload_failed, errorMessage(t)))
                 }
             }
         }
     }
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(6)) { upload(it) }
+    val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { upload(it) }
 
     val uploading = uploads.any { it.attachmentId == null && !it.failed }
     val canSend = text.text.isNotBlank() && !uploading
@@ -266,7 +267,7 @@ internal fun IssueComposer(
                 onFailed(localId)
                 text = saved
                 uploads.addAll(savedUploads)
-                AppState.toast("Not sent: ${errorMessage(t)}")
+                AppState.toast(L10n.str(R.string.issue_thread_not_sent, errorMessage(t)))
             }
         }
     }
@@ -277,8 +278,15 @@ internal fun IssueComposer(
             if (uploads.isNotEmpty()) {
                 Row(Modifier.horizontalScroll(rememberScrollState()).padding(bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     uploads.forEach { u ->
-                        Box(Modifier.size(56.dp).clip(RoundedCornerShape(8.dp))) {
-                            AsyncImage(model = u.uri, contentDescription = null, modifier = Modifier.size(56.dp))
+                        Box(Modifier.size(56.dp).clip(RoundedCornerShape(8.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
+                            if (u.file == null || ServerFiles.isImage(u.file.mime)) {
+                                AsyncImage(model = u.uri, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(56.dp))
+                            } else {
+                                Column(Modifier.size(56.dp).padding(4.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                                    Icon(Icons.AutoMirrored.Outlined.InsertDriveFile, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(u.file.name, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                            }
                             if (u.attachmentId == null && !u.failed) {
                                 CircularProgressIndicator(Modifier.size(22.dp).align(Alignment.Center), strokeWidth = 2.dp)
                             }
@@ -286,7 +294,7 @@ internal fun IssueComposer(
                             IconButton(
                                 onClick = { uploads.remove(u) },
                                 modifier = Modifier.size(22.dp).align(Alignment.TopEnd).background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(50)),
-                            ) { Icon(Icons.Default.Close, "Remove", tint = Color.White, modifier = Modifier.size(14.dp)) }
+                            ) { Icon(Icons.Default.Close, stringResource(R.string.common_remove), tint = Color.White, modifier = Modifier.size(14.dp)) }
                         }
                     }
                 }
@@ -295,19 +303,31 @@ internal fun IssueComposer(
                 AppFilterChip(
                     selected = interrupt,
                     onClick = { interrupt = !interrupt },
-                    label = { Text(if (interrupt) "Will interrupt the running agent" else "Interrupt running agent") },
+                    label = { Text(stringResource(if (interrupt) R.string.issue_thread_will_interrupt else R.string.issue_thread_interrupt)) },
                     modifier = Modifier.padding(start = 4.dp),
                 )
             }
             Row(verticalAlignment = Alignment.Bottom) {
-                IconButton(onClick = { mentionSheet = true }) { Icon(Icons.Default.AlternateEmail, "Mention agent") }
-                IconButton(onClick = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }) {
-                    Icon(Icons.Outlined.Image, "Attach image")
+                IconButton(onClick = { mentionSheet = true }) { Icon(Icons.Default.AlternateEmail, stringResource(R.string.issue_thread_mention_agent)) }
+                Box {
+                    IconButton(onClick = { attachMenu = true }) { Icon(Icons.Outlined.AttachFile, stringResource(R.string.issue_thread_attach)) }
+                    DropdownMenu(expanded = attachMenu, onDismissRequest = { attachMenu = false }) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.issue_thread_attach_photo)) },
+                            leadingIcon = { Icon(Icons.Outlined.Image, null) },
+                            onClick = { attachMenu = false; photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.issue_thread_attach_file)) },
+                            leadingIcon = { Icon(Icons.AutoMirrored.Outlined.InsertDriveFile, null) },
+                            onClick = { attachMenu = false; filePicker.launch(arrayOf("*/*")) },
+                        )
+                    }
                 }
                 TextField(
                     value = text,
                     onValueChange = { text = it },
-                    placeholder = { Text("Write a comment…") },
+                    placeholder = { Text(stringResource(R.string.issue_thread_placeholder)) },
                     modifier = Modifier.weight(1f).heightIn(min = 48.dp, max = 180.dp),
                     shape = RoundedCornerShape(24.dp),
                     colors = TextFieldDefaults.colors(
@@ -328,7 +348,7 @@ internal fun IssueComposer(
                     modifier = Modifier.padding(bottom = 2.dp).size(44.dp).background(sendBg, RoundedCornerShape(50)),
                 ) {
                     Icon(
-                        Icons.AutoMirrored.Filled.Send, "Send",
+                        Icons.AutoMirrored.Filled.Send, stringResource(R.string.common_send),
                         tint = if (canSend) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp),
                     )
@@ -338,7 +358,7 @@ internal fun IssueComposer(
     }
 
     if (mentionSheet) {
-        IssueAgentPickerSheet(title = "Mention an agent", onDismiss = { mentionSheet = false }) { agentId ->
+        IssueAgentPickerSheet(title = stringResource(R.string.issue_thread_mention_title), onDismiss = { mentionSheet = false }) { agentId ->
             val name = AppState.agentName(agentId)
             val insert = "[@$name](agent://$agentId) "
             val sel = text.selection
@@ -358,7 +378,7 @@ internal fun IssueAgentPickerSheet(title: String, onDismiss: () -> Unit, onPick:
     var q by remember { mutableStateOf("") }
     IssueSheet(title, onDismiss) {
         if (agents.size > 8) {
-            OutlinedTextField(q, { q = it }, singleLine = true, placeholder = { Text("Filter") }, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp))
+            OutlinedTextField(q, { q = it }, singleLine = true, placeholder = { Text(stringResource(R.string.issue_thread_filter_agents)) }, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp))
         }
         LazyColumn(Modifier.heightIn(max = 520.dp)) {
             items(agents.filter { q.isBlank() || it.name.contains(q, true) }, key = { it.id }) { a ->
@@ -372,6 +392,6 @@ internal fun IssueAgentPickerSheet(title: String, onDismiss: () -> Unit, onPick:
 internal fun IssueLoadOlderButton(loading: Boolean, onClick: () -> Unit) {
     Box(Modifier.fillMaxWidth().padding(8.dp), contentAlignment = Alignment.Center) {
         if (loading) CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
-        else TextButton(onClick = onClick) { Text("Load older comments") }
+        else TextButton(onClick = onClick) { Text(stringResource(R.string.issue_thread_load_older)) }
     }
 }

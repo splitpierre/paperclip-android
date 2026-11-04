@@ -2,10 +2,10 @@ package com.bu.paperclip
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -19,8 +19,10 @@ import com.bu.paperclip.data.AppSettings
 import com.bu.paperclip.data.AppState
 import com.bu.paperclip.ui.AppRoot
 import com.bu.paperclip.ui.theme.PaperclipTheme
+import com.bu.paperclip.util.L10n
 
-class MainActivity : ComponentActivity() {
+/** AppCompat so the in-app language (AppCompatDelegate.setApplicationLocales) also applies below Android 13. */
+class MainActivity : AppCompatActivity() {
     private val pendingLink = mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,6 +35,11 @@ class MainActivity : ComponentActivity() {
             if (url != null) kotlinx.coroutines.runBlocking {
                 AppState.settings.setBaseUrl(url)
                 AppState.settings.setApiToken(key ?: "")
+            }
+            // "pt-BR", "es", "en" or "system"; recreates the activity once when it changes.
+            intent?.getStringExtra("setupLanguage")?.let { lang ->
+                val tag = if (lang == "system") "" else lang
+                if (L10n.appLanguageTag() != tag) L10n.setAppLanguage(tag)
             }
         }
         setContent {

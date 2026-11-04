@@ -1,5 +1,10 @@
 package com.bu.paperclip.ui.screens
 
+import com.bu.paperclip.ui.components.taskPriorityLabel
+import com.bu.paperclip.util.L10n
+import com.bu.paperclip.R
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -93,14 +98,20 @@ import kotlinx.serialization.json.JsonObject
 import java.time.ZoneId
 
 private val CONCURRENCY = listOf(
-    Triple("coalesce_if_active", "Merge into the open run", "If a run is still open, fold the new trigger into it."),
-    Triple("skip_if_active", "Skip while one is open", "Ignore triggers until the open run finishes."),
-    Triple("always_enqueue", "Always start a new run", "Every trigger creates its own task."),
+    Triple("coalesce_if_active", R.string.routine_concurrency_coalesce, R.string.routine_concurrency_coalesce_help),
+    Triple("skip_if_active", R.string.routine_concurrency_skip, R.string.routine_concurrency_skip_help),
+    Triple("always_enqueue", R.string.routine_concurrency_always, R.string.routine_concurrency_always_help),
 )
 private val CATCH_UP = listOf(
-    Triple("skip_missed", "Skip missed runs", "Schedules missed while paused or offline are dropped."),
-    Triple("enqueue_missed_with_cap", "Catch up, with a cap", "Missed schedules run when possible, up to a limit."),
+    Triple("skip_missed", R.string.routine_catch_up_skip, R.string.routine_catch_up_skip_help),
+    Triple("enqueue_missed_with_cap", R.string.routine_catch_up_cap, R.string.routine_catch_up_cap_help),
 )
+
+internal fun routineKindLabel(kind: String): String = when (kind) {
+    "webhook" -> L10n.str(R.string.routine_kind_webhook)
+    "api" -> L10n.str(R.string.routine_kind_api)
+    else -> kind
+}
 
 /** The editable part of a routine; Save sends all of it, like the web UI's save bar. */
 private data class RoutineDraft(
@@ -171,7 +182,7 @@ fun RoutineEditScreen(nav: Nav, id: String) {
             try {
                 Repo.updateRoutine(cur.id, body.body(if (force) null else cur.latestRevisionId))
                 load(resetDraft = true)
-                AppState.toast("Routine saved")
+                AppState.toast(L10n.str(R.string.routine_saved))
             } catch (c: CancellationException) { throw c } catch (t: Throwable) {
                 if (t is ApiException.Http && t.status == 409) conflict = true else AppState.toast(errorMessage(t))
             } finally { saving = false }
@@ -181,14 +192,14 @@ fun RoutineEditScreen(nav: Nav, id: String) {
     fun setStatus(next: String) {
         val cur = routine ?: return
         if (next == "active" && cur.assigneeAgentId == null) {
-            AppState.toast("Set a default agent (and save) before enabling automation.")
+            AppState.toast(L10n.str(R.string.routine_needs_agent_toast))
             return
         }
         routine = cur.copy(status = next)
         scope.launch {
             try {
                 Repo.updateRoutine(cur.id, jsonOf("status" to next))
-                AppState.toast(if (next == "paused") "Automation paused" else "Automation enabled")
+                AppState.toast(L10n.str(if (next == "paused") R.string.routine_automation_paused else R.string.routine_automation_enabled))
             } catch (c: CancellationException) { throw c } catch (t: Throwable) {
                 routine = cur; AppState.toast(errorMessage(t))
             }
@@ -211,7 +222,7 @@ fun RoutineEditScreen(nav: Nav, id: String) {
             try {
                 Repo.updateRoutineTrigger(t.id, jsonOf("archived" to true))
                 load(resetDraft = false)
-                if (snackbar.showSnackbar("Schedule removed", "Undo", duration = SnackbarDuration.Short) == SnackbarResult.ActionPerformed) {
+                if (snackbar.showSnackbar(L10n.str(R.string.routine_schedule_removed), L10n.str(R.string.routine_undo), duration = SnackbarDuration.Short) == SnackbarResult.ActionPerformed) {
                     Repo.updateRoutineTrigger(t.id, jsonOf("archived" to false))
                     load(resetDraft = false)
                 }
@@ -228,14 +239,14 @@ fun RoutineEditScreen(nav: Nav, id: String) {
         topBar = {
             TopAppBar(
                 navigationIcon = { BackIcon { if (dirty) confirmDiscard = true else nav.back() } },
-                title = { Text(if (dirty) "Edit routine •" else "Routine", maxLines = 1) },
+                title = { Text(stringResource(if (dirty) R.string.routine_title_editing else R.string.routine_title), maxLines = 1) },
                 actions = {
                     if (saving) CircularProgressIndicator(Modifier.padding(end = 16.dp).size(22.dp), strokeWidth = 2.dp)
                     else if (dirty) {
-                        TextButton(onClick = { draft = r?.let(::RoutineDraft) }) { Text("Discard") }
-                        TextButton(onClick = { save() }, enabled = d?.title?.isNotBlank() == true) { Text("Save") }
+                        TextButton(onClick = { draft = r?.let(::RoutineDraft) }) { Text(stringResource(R.string.common_discard)) }
+                        TextButton(onClick = { save() }, enabled = d?.title?.isNotBlank() == true) { Text(stringResource(R.string.common_save)) }
                     } else if (r != null) {
-                        IconButton(onClick = { confirmRun = true }, enabled = r.status != "archived") { Icon(Icons.Outlined.PlayArrow, "Run now") }
+                        IconButton(onClick = { confirmRun = true }, enabled = r.status != "archived") { Icon(Icons.Outlined.PlayArrow, stringResource(R.string.routine_run_now)) }
                     }
                 },
             )
@@ -252,20 +263,22 @@ fun RoutineEditScreen(nav: Nav, id: String) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Automation", style = MaterialTheme.typography.titleSmall)
+                                Text(stringResource(R.string.routine_automation), style = MaterialTheme.typography.titleSmall)
                                 Spacer(Modifier.width(8.dp))
                                 Pill(
                                     when {
-                                        r.status == "archived" -> "Archived"
-                                        r.assigneeAgentId == null -> "Draft"
+                                        r.status == "archived" -> stringResource(R.string.routine_archived)
+                                        r.assigneeAgentId == null -> stringResource(R.string.routine_draft)
                                         else -> statusLabel(r.status)
                                     },
                                     adminStatusColor(r.status),
                                 )
                             }
                             Text(
-                                if (r.assigneeAgentId == null) "Needs a default agent before schedules can run. It can still run manually."
-                                else if (r.status == "active") "Schedules and triggers start runs." else "Triggers are ignored until you resume.",
+                                stringResource(
+                                    if (r.assigneeAgentId == null) R.string.routine_needs_agent
+                                    else if (r.status == "active") R.string.routine_active_help else R.string.routine_paused_help,
+                                ),
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -277,26 +290,26 @@ fun RoutineEditScreen(nav: Nav, id: String) {
                     }
                 }
                 r.managedByPlugin?.let {
-                    Text("Managed by a plugin; its defaults may override edits.", style = MaterialTheme.typography.bodySmall,
+                    Text(stringResource(R.string.routine_managed_by_plugin), style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp))
                 }
 
                 // ---- overview ----
-                SectionHeader("Overview")
+                SectionHeader(stringResource(R.string.routine_overview))
                 Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedTextField(
                         value = d.title,
                         onValueChange = { draft = d.copy(title = it) },
-                        label = { Text("Title") },
+                        label = { Text(stringResource(R.string.routine_field_title)) },
                         isError = d.title.isBlank(),
-                        supportingText = if (d.title.isBlank()) ({ Text("A title is required") }) else null,
+                        supportingText = if (d.title.isBlank()) ({ Text(stringResource(R.string.routine_title_required)) }) else null,
                         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                         modifier = Modifier.fillMaxWidth(),
                     )
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         PropertyChip(
                             onClick = { sheet = "assignee" },
-                            label = { Text(d.assigneeAgentId?.let { AppState.agentName(it) } ?: "No default agent") },
+                            label = { Text(d.assigneeAgentId?.let { AppState.agentName(it) } ?: stringResource(R.string.routine_no_default_agent)) },
                             leadingIcon = {
                                 if (d.assigneeAgentId != null) AgentAvatar(d.assigneeAgentId, 18.dp)
                                 else Icon(Icons.Outlined.PersonOutline, null, Modifier.size(18.dp))
@@ -304,31 +317,31 @@ fun RoutineEditScreen(nav: Nav, id: String) {
                         )
                         PropertyChip(
                             onClick = { sheet = "project" },
-                            label = { Text(AppState.project(d.projectId)?.name ?: "No project") },
+                            label = { Text(AppState.project(d.projectId)?.name ?: stringResource(R.string.routine_no_project)) },
                             leadingIcon = { Icon(Icons.Outlined.FolderOpen, null, Modifier.size(18.dp)) },
                         )
                         PropertyChip(
                             onClick = { sheet = "priority" },
-                            label = { Text(d.priority.replaceFirstChar { it.uppercase() }) },
+                            label = { Text(taskPriorityLabel(d.priority)) },
                             leadingIcon = { PriorityIcon(d.priority, 16.dp) },
                         )
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Instructions", style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
-                        FilterChip(selected = !preview, onClick = { preview = false }, label = { Text("Edit") })
+                        Text(stringResource(R.string.routine_instructions), style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
+                        FilterChip(selected = !preview, onClick = { preview = false }, label = { Text(stringResource(R.string.common_edit)) })
                         Spacer(Modifier.width(6.dp))
-                        FilterChip(selected = preview, onClick = { preview = true }, label = { Text("Preview") })
+                        FilterChip(selected = preview, onClick = { preview = true }, label = { Text(stringResource(R.string.routine_preview)) })
                     }
                     if (preview) {
                         Card {
-                            if (d.description.isBlank()) Text("No instructions yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            if (d.description.isBlank()) Text(stringResource(R.string.routine_no_instructions), color = MaterialTheme.colorScheme.onSurfaceVariant)
                             else Markdown(d.description, fontSizeSp = 14f)
                         }
                     } else {
                         OutlinedTextField(
                             value = d.description,
                             onValueChange = { draft = d.copy(description = it) },
-                            placeholder = { Text("Add instructions… (markdown, {{variables}})") },
+                            placeholder = { Text(stringResource(R.string.routine_instructions_placeholder)) },
                             minLines = 6,
                             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                             modifier = Modifier.fillMaxWidth().heightIn(min = 160.dp),
@@ -336,40 +349,40 @@ fun RoutineEditScreen(nav: Nav, id: String) {
                     }
                     val vars = r.variables?.size ?: 0
                     if (vars > 0) Text(
-                        "$vars variable${if (vars == 1) "" else "s"} from {{placeholders}}; edit their types and defaults in the web UI.",
+                        pluralStringResource(R.plurals.routine_variables, vars, vars),
                         style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
 
                 // ---- schedules ----
-                SectionHeader("Schedules") {
+                SectionHeader(stringResource(R.string.routine_schedules)) {
                     TextButton(onClick = { addingTrigger = true }) {
-                        Icon(Icons.Outlined.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(4.dp)); Text("Add")
+                        Icon(Icons.Outlined.Add, null, Modifier.size(18.dp)); Spacer(Modifier.width(4.dp)); Text(stringResource(R.string.common_add))
                     }
                 }
                 val triggers = r.triggers.orEmpty().filter { !it.archived && it.id !in hiddenTriggers }
                 if (triggers.isEmpty()) Text(
-                    "No triggers. Add a schedule, or run it manually.",
+                    stringResource(R.string.routine_no_triggers),
                     style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 )
                 triggers.forEach { t ->
                     RoutineTriggerRow(
                         t,
-                        onToggle = { on -> triggerCall(if (on) "Schedule enabled" else "Schedule paused") { Repo.updateRoutineTrigger(t.id, jsonOf("enabled" to on)) } },
+                        onToggle = { on -> triggerCall(L10n.str(if (on) R.string.routine_schedule_enabled else R.string.routine_schedule_paused)) { Repo.updateRoutineTrigger(t.id, jsonOf("enabled" to on)) } },
                         onEdit = { editTrigger = t },
                         onRemove = { removeTrigger(t) },
                     )
                 }
 
                 // ---- delivery ----
-                SectionHeader("When runs overlap")
+                SectionHeader(stringResource(R.string.routine_when_overlap))
                 CONCURRENCY.forEach { (value, label, help) ->
-                    RoutineRadio(d.concurrencyPolicy == value, label, help) { draft = d.copy(concurrencyPolicy = value) }
+                    RoutineRadio(d.concurrencyPolicy == value, stringResource(label), stringResource(help)) { draft = d.copy(concurrencyPolicy = value) }
                 }
-                SectionHeader("Missed schedules")
+                SectionHeader(stringResource(R.string.routine_missed_schedules))
                 CATCH_UP.forEach { (value, label, help) ->
-                    RoutineRadio(d.catchUpPolicy == value, label, help) { draft = d.copy(catchUpPolicy = value) }
+                    RoutineRadio(d.catchUpPolicy == value, stringResource(label), stringResource(help)) { draft = d.copy(catchUpPolicy = value) }
                 }
                 Spacer(Modifier.height(48.dp))
             }
@@ -377,7 +390,7 @@ fun RoutineEditScreen(nav: Nav, id: String) {
     }
 
     when (sheet) {
-        "assignee" -> IssueAssigneeSheet(d?.assigneeAgentId, null, allowMe = false, title = "Default agent", onPick = { a ->
+        "assignee" -> IssueAssigneeSheet(d?.assigneeAgentId, null, allowMe = false, title = stringResource(R.string.routine_default_agent), onPick = { a ->
             draft = draft?.copy(assigneeAgentId = (a as? IssueAssignee.AgentA)?.id)
         }, onDismiss = { sheet = null })
         "project" -> IssueProjectSheet(d?.projectId, onPick = { draft = draft?.copy(projectId = it) }, onDismiss = { sheet = null })
@@ -389,14 +402,14 @@ fun RoutineEditScreen(nav: Nav, id: String) {
         ScheduleDialog(
             initialCron = t?.cronExpression ?: "0 9 * * 1-5",
             initialZone = t?.timezone ?: ZoneId.systemDefault().id,
-            title = if (t == null) "Add schedule" else "Edit schedule",
+            title = stringResource(if (t == null) R.string.routine_add_schedule else R.string.routine_edit_schedule),
             onDismiss = { addingTrigger = false; editTrigger = null },
             onSave = { cron, zone ->
                 addingTrigger = false; editTrigger = null
                 val cur = routine ?: return@ScheduleDialog
-                if (t == null) triggerCall("Schedule added") {
+                if (t == null) triggerCall(L10n.str(R.string.routine_schedule_added)) {
                     Repo.createRoutineTrigger(cur.id, jsonOf("kind" to "schedule", "cronExpression" to cron, "timezone" to zone))
-                } else triggerCall("Schedule saved") {
+                } else triggerCall(L10n.str(R.string.routine_schedule_saved)) {
                     Repo.updateRoutineTrigger(t.id, jsonOf("cronExpression" to cron, "timezone" to zone))
                 }
             },
@@ -405,31 +418,31 @@ fun RoutineEditScreen(nav: Nav, id: String) {
 
     if (conflict) AlertDialog(
         onDismissRequest = { conflict = false },
-        title = { Text("Routine changed elsewhere") },
-        text = { Text("Someone else saved this routine since you opened it. Reload to see their version (your edits are discarded), or overwrite it with yours.") },
-        confirmButton = { TextButton(onClick = { conflict = false; save(force = true) }) { Text("Overwrite") } },
-        dismissButton = { TextButton(onClick = { conflict = false; scope.launch { load(resetDraft = true) } }) { Text("Reload latest") } },
+        title = { Text(stringResource(R.string.routine_conflict_title)) },
+        text = { Text(stringResource(R.string.routine_conflict_body)) },
+        confirmButton = { TextButton(onClick = { conflict = false; save(force = true) }) { Text(stringResource(R.string.routine_overwrite)) } },
+        dismissButton = { TextButton(onClick = { conflict = false; scope.launch { load(resetDraft = true) } }) { Text(stringResource(R.string.routine_reload_latest)) } },
     )
 
     if (confirmDiscard) AlertDialog(
         onDismissRequest = { confirmDiscard = false },
-        title = { Text("Discard changes?") },
-        text = { Text("Your edits to this routine haven't been saved.") },
-        confirmButton = { TextButton(onClick = { confirmDiscard = false; draft = r?.let(::RoutineDraft); nav.back() }) { Text("Discard") } },
-        dismissButton = { TextButton(onClick = { confirmDiscard = false }) { Text("Keep editing") } },
+        title = { Text(stringResource(R.string.instructions_discard_title)) },
+        text = { Text(stringResource(R.string.routine_discard_body)) },
+        confirmButton = { TextButton(onClick = { confirmDiscard = false; draft = r?.let(::RoutineDraft); nav.back() }) { Text(stringResource(R.string.common_discard)) } },
+        dismissButton = { TextButton(onClick = { confirmDiscard = false }) { Text(stringResource(R.string.common_keep_editing)) } },
     )
 
     if (confirmRun && r != null) AlertDialog(
         onDismissRequest = { confirmRun = false },
-        title = { Text("Run now?") },
-        text = { Text("Start \"${r.title}\" now${AppState.agent(r.assigneeAgentId)?.let { " — it will be assigned to ${it.name}" } ?: ""}.") },
+        title = { Text(stringResource(R.string.routine_run_title)) },
+        text = { Text(AppState.agent(r.assigneeAgentId)?.let { stringResource(R.string.routine_run_body_assigned, r.title, it.name) } ?: stringResource(R.string.routine_run_body, r.title)) },
         confirmButton = {
             TextButton(onClick = {
                 confirmRun = false
-                triggerCall("Started ${r.title}") { Repo.runRoutine(r.id) }
-            }) { Text("Run") }
+                triggerCall(L10n.str(R.string.routine_started, r.title)) { Repo.runRoutine(r.id) }
+            }) { Text(stringResource(R.string.routine_run)) }
         },
-        dismissButton = { TextButton(onClick = { confirmRun = false }) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = { confirmRun = false }) { Text(stringResource(R.string.common_cancel)) } },
     )
 }
 
@@ -444,19 +457,19 @@ private fun RoutineTriggerRow(t: RoutineTrigger, onToggle: (Boolean) -> Unit, on
                 Text(
                     listOfNotNull(
                         t.timezone,
-                        if (!t.enabled) "paused" else t.nextRunAt?.let { "next ${relativeTime(it)}" },
+                        if (!t.enabled) stringResource(R.string.routine_trigger_paused) else t.nextRunAt?.let { stringResource(R.string.routine_trigger_next, relativeTime(it)) },
                     ).joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else {
-                Text(t.label ?: "${t.kind.replaceFirstChar { it.uppercase() }} trigger", style = MaterialTheme.typography.bodyLarge)
-                Text("Manage ${t.kind} triggers in the web UI", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(t.label ?: stringResource(R.string.routine_trigger_named, routineKindLabel(t.kind).replaceFirstChar { it.uppercase() }), style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(R.string.routine_trigger_manage, routineKindLabel(t.kind)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         Switch(checked = t.enabled, onCheckedChange = onToggle)
         if (t.kind == "schedule") {
-            IconButton(onClick = onEdit) { Icon(Icons.Outlined.Edit, "Edit schedule") }
-            IconButton(onClick = onRemove) { Icon(Icons.Outlined.Delete, "Remove schedule") }
+            IconButton(onClick = onEdit) { Icon(Icons.Outlined.Edit, stringResource(R.string.routine_edit_schedule)) }
+            IconButton(onClick = onRemove) { Icon(Icons.Outlined.Delete, stringResource(R.string.routine_remove_schedule)) }
         }
     }
 }
@@ -500,35 +513,35 @@ private fun ScheduleDialog(initialCron: String, initialZone: String, title: Stri
                 when (s.preset) {
                     Schedule.Preset.Custom -> OutlinedTextField(
                         value = s.custom, onValueChange = { s = s.copy(custom = it) }, singleLine = true,
-                        label = { Text("Cron (minute hour day month weekday)") },
+                        label = { Text(stringResource(R.string.routine_cron_label)) },
                         isError = cronError != null,
                         supportingText = { Text(cronError ?: Schedule.describe(s.custom)) },
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    Schedule.Preset.Hourly -> NumberField("Minute past the hour", s.minute, 0..59) { s = s.copy(minute = it) }
+                    Schedule.Preset.Hourly -> NumberField(stringResource(R.string.routine_minute_past_hour), s.minute, 0..59) { s = s.copy(minute = it) }
                     else -> {
                         if (s.preset == Schedule.Preset.Weekly) {
-                            ScheduleDropdown("Day", Schedule.WEEKDAYS[s.weekday], Schedule.WEEKDAYS) { s = s.copy(weekday = Schedule.WEEKDAYS.indexOf(it)) }
+                            ScheduleDropdown(stringResource(R.string.routine_day), Schedule.WEEKDAYS[s.weekday], Schedule.WEEKDAYS) { s = s.copy(weekday = Schedule.WEEKDAYS.indexOf(it)) }
                         }
-                        if (s.preset == Schedule.Preset.Monthly) NumberField("Day of month", s.dayOfMonth, 1..31) { s = s.copy(dayOfMonth = it) }
+                        if (s.preset == Schedule.Preset.Monthly) NumberField(stringResource(R.string.routine_day_of_month), s.dayOfMonth, 1..31) { s = s.copy(dayOfMonth = it) }
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Box(Modifier.weight(1f)) { NumberField("Hour (0–23)", s.hour, 0..23) { s = s.copy(hour = it) } }
-                            Box(Modifier.weight(1f)) { NumberField("Minute", s.minute, 0..59) { s = s.copy(minute = it) } }
+                            Box(Modifier.weight(1f)) { NumberField(stringResource(R.string.routine_hour), s.hour, 0..23) { s = s.copy(hour = it) } }
+                            Box(Modifier.weight(1f)) { NumberField(stringResource(R.string.routine_minute), s.minute, 0..59) { s = s.copy(minute = it) } }
                         }
                     }
                 }
                 OutlinedTextField(
                     value = zone, onValueChange = { zone = it }, singleLine = true,
-                    label = { Text("Time zone") },
+                    label = { Text(stringResource(R.string.routine_time_zone)) },
                     isError = !zoneValid,
-                    supportingText = { Text(if (zoneValid) "Follows this zone, including daylight saving." else "Use an IANA name, e.g. America/Sao_Paulo") },
+                    supportingText = { Text(stringResource(if (zoneValid) R.string.routine_zone_help else R.string.routine_zone_invalid)) },
                     modifier = Modifier.fillMaxWidth(),
                 )
                 if (cronError == null) Text(Schedule.describe(cron), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
             }
         },
-        confirmButton = { TextButton(onClick = { onSave(cron, zone.trim()) }, enabled = cronError == null && zoneValid) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = { onSave(cron, zone.trim()) }, enabled = cronError == null && zoneValid) { Text(stringResource(R.string.common_save)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
     )
 }
 

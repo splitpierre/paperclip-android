@@ -177,19 +177,33 @@ Use the search icon to match task IDs and titles. The **⋮** menu has **Expand 
 
 <br clear="right">
 
+### New tasks
+
+Tap **New task** to create one, or **New sub-task** in a task's **⋮** menu. Set its title, status, priority, assignee, project and description. **Attach files** adds any files from your phone; each shows its name and size, and **×** removes it. When you tap **Create**, the task is created first and the files upload one at a time, each one ticked off as it lands. Then the new task opens. If a file doesn't upload, for example because it's over the server's size limit, the task is still created and a message names each file that failed and why. Attach those again from the task's thread.
+
+<p>
+  <img src="screenshots/new-task-files.png" alt="A new task with an image and a PDF attached" width="280">
+  <img src="screenshots/new-task-upload-failed.png" alt="The new task opened, with a message naming the file that didn't upload" width="280">
+</p>
+
 ## A task's page
 
 The top of a task shows its title, status, priority, assignee and project. Tap any of these to change it. Below that are who created it, its cost, its number of runs and the description, which you can edit. If an agent is working on the task, a banner links to the live run.
 
 The tabs are:
 
-- **Thread**: agent request cards waiting for you, then the conversation in order, with older comments loaded on demand. In a long thread a round button follows your reading direction: scrolling down it jumps to the latest comment, scrolling up it flips to jump back to the top. Write comments in Markdown, @-mention agents or people, and attach images. Long-press a comment to copy it.
+- **Thread**: agent request cards waiting for you, then the conversation in order, with older comments loaded on demand. In a long thread a round button follows your reading direction: scrolling down it jumps to the latest comment, scrolling up it flips to jump back to the top. Write comments in Markdown, @-mention agents or people, and attach photos or files with the paperclip button. Long-press a comment to copy it.
 - **Docs**: the task's documents, such as plans. You can read and edit them.
 - **Sub-tasks**: a tree of this task's sub-tasks with overall progress and **Next up** for this branch. **Show closed** adds finished sub-tasks. **New sub-task** is in the **⋮** menu.
-- **Files**: attachments and work products such as pull requests.
+- **Files**: attachments and work products such as pull requests. Images, text and Markdown files open in the app, with **Share** and **Save** at the top. Other files open in an app that handles them, such as a PDF viewer; if no app can, you can share or save the file instead. Links to files in comments, documents and run transcripts open the same way.
 - **Activity**: everything that happened to the task.
 
 The **⋮** menu also has **Copy link**, **Open in browser** and **Mark unread**.
+
+<p>
+  <img src="screenshots/file-viewer.png" alt="A Markdown attachment open in the app" width="280">
+  <img src="screenshots/file-cant-open.png" alt="A file no app can open, with Share and Save" width="280">
+</p>
 
 ## Getting around
 
@@ -211,6 +225,8 @@ An agent's page has four tabs:
 ### Run transcripts
 
 Open a run from Home, an agent's Runs tab or a task's live banner. **Transcript** shows the run as a conversation: the agent's messages, collapsed reasoning, and tool calls you can expand to see their input and output, with token counts and cost at the end. A live run streams as it goes; **Jump to latest** follows the output (scroll up and it becomes **Jump to top**), and **Stop** cancels the run. **Raw log** and **Events** show the underlying data.
+
+Images and other binary data that agents put in their output show as a short placeholder with the type and size, such as `[image image/png, ~29 KB]`, so very large runs stay quick to open and scroll.
 
 Transcripts support Claude, Codex, ACP and Antigravity agents. Output from other adapters shows as plain log lines.
 
@@ -234,8 +250,9 @@ Open **Settings** from Home or More:
 - **Account**: who you're signed in as, the server, how you're connected and whether the live connection is up.
 - **Company**: switch between companies if you have more than one.
 - **Appearance**: follow the system, or always use dark or light.
+- **Language**: English, Português (Brasil) or Español, or follow the phone's language (**System default**). The app switches straight away and remembers the choice. On Android 13 and later you can also set it in the phone's **Settings → Apps → Paperclip → Language**. Dates and numbers follow the chosen language; what agents and people write stays as written.
 - **Notifications**: **Agent requests** checks about every 15 minutes for new questions, confirmations, approvals and failed runs, and posts a notification for each. Tapping one opens the item. **Check now** runs the check immediately.
-- **Sign out** clears the app's Paperclip and sign-in proxy sessions.
+- **Sign out** clears the app's Paperclip and sign-in proxy sessions. The email you signed in with stays pre-filled on the sign-in screen. Passwords are never stored by the app: it offers to save them in your phone's password manager (Google Password Manager or similar), and "Use a saved sign-in" fills them back in.
 
 ## Live updates
 

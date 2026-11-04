@@ -1,5 +1,7 @@
 package com.bu.paperclip.ui.components
 
+import com.bu.paperclip.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -46,7 +48,7 @@ fun IssueRow(issue: Issue, onClick: () -> Unit, modifier: Modifier = Modifier, s
                 )
                 if (issue.activeRun != null && (issue.activeRun.status == "running" || issue.activeRun.status == "queued")) {
                     Spacer(Modifier.width(6.dp))
-                    Pill("live", LocalStatusColors.current.blue)
+                    Pill(stringResource(R.string.component_live), LocalStatusColors.current.blue)
                 }
                 if (showProject) {
                     val p = issue.project ?: AppState.project(issue.projectId)?.let { com.bu.paperclip.data.ProjectRef(it.id, it.name, it.color) }
@@ -107,7 +109,7 @@ fun LiveRunRow(run: LiveRun, onClick: () -> Unit, issueLabel: String? = null) {
                 Spacer(Modifier.weight(1f))
                 Text(durationLabel(run.startedAt ?: run.createdAt, run.finishedAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            val line = run.currentStatusMessage ?: run.lastAssistantSnippet ?: run.currentToolName?.let { "Using $it" }
+            val line = run.currentStatusMessage ?: run.lastAssistantSnippet ?: run.currentToolName?.let { stringResource(R.string.component_using_tool, it) }
             if (issueLabel != null) Text(issueLabel, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (!line.isNullOrBlank()) Text(line, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
