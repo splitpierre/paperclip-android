@@ -251,7 +251,8 @@ fun IssuesScreen(nav: Nav) {
             }
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { nav.newIssue(parentId = if (view == TaskView.Tree) focusId else null) }) { Icon(Icons.Default.Add, "New task") }
+            // A sub-task of the focused tree node needs the full form; anything else starts from the simple box.
+            FloatingActionButton(onClick = { if (view == TaskView.Tree && focusId != null) nav.newIssue(parentId = focusId) else nav.quickTask() }) { Icon(Icons.Default.Add, "New task") }
         },
     ) { pad ->
         Box(Modifier.fillMaxSize().padding(pad)) {

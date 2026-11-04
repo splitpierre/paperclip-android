@@ -231,6 +231,7 @@ private fun MainShell(pendingLink: String?, onLinkConsumed: () -> Unit, onSigned
                     a?.getString("assigneeAgentId")?.ifEmpty { null },
                 )
             }
+            composable(Routes.QUICK_TASK) { QuickTaskScreen(nav) }
             composable(Routes.DOCUMENT) { DocumentScreen(nav, it.arguments?.getString("issueId")!!, it.arguments?.getString("key")!!) }
             composable(Routes.AGENT) { AgentDetailScreen(nav, it.arguments?.getString("id")!!) }
             composable(Routes.RUN) { RunScreen(nav, it.arguments?.getString("id")!!) }
