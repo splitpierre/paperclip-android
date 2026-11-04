@@ -31,6 +31,7 @@ object Routes {
 
     const val ISSUE = "issue/{id}"
     const val NEW_ISSUE = "newIssue?parentId={parentId}&projectId={projectId}&assigneeAgentId={assigneeAgentId}"
+    const val QUICK_TASK = "quickTask"
     const val DOCUMENT = "document/{issueId}/{key}"
     const val AGENT = "agent/{id}"
     const val RUN = "run/{id}"
@@ -81,6 +82,7 @@ class Nav(val controller: NavHostController) {
     fun issue(id: String) = controller.navigate("issue/${enc(id)}")
     fun newIssue(parentId: String? = null, projectId: String? = null, assigneeAgentId: String? = null) =
         controller.navigate("newIssue?parentId=${enc(parentId ?: "")}&projectId=${enc(projectId ?: "")}&assigneeAgentId=${enc(assigneeAgentId ?: "")}")
+    fun quickTask() = controller.navigate(Routes.QUICK_TASK)
     fun document(issueId: String, key: String) = controller.navigate("document/${enc(issueId)}/${enc(key)}")
     fun agent(id: String) = controller.navigate("agent/${enc(id)}")
     fun run(id: String) = controller.navigate("run/${enc(id)}")
