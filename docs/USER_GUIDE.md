@@ -186,10 +186,15 @@ The tabs are:
 - **Thread**: agent request cards waiting for you, then the conversation in order, with older comments loaded on demand. In a long thread a round button follows your reading direction: scrolling down it jumps to the latest comment, scrolling up it flips to jump back to the top. Write comments in Markdown, @-mention agents or people, and attach images. Long-press a comment to copy it.
 - **Docs**: the task's documents, such as plans. You can read and edit them.
 - **Sub-tasks**: a tree of this task's sub-tasks with overall progress and **Next up** for this branch. **Show closed** adds finished sub-tasks. **New sub-task** is in the **⋮** menu.
-- **Files**: attachments and work products such as pull requests.
+- **Files**: attachments and work products such as pull requests. Images, text and Markdown files open in the app, with **Share** and **Save** at the top. Other files open in an app that handles them, such as a PDF viewer; if no app can, you can share or save the file instead. Links to files in comments, documents and run transcripts open the same way.
 - **Activity**: everything that happened to the task.
 
 The **⋮** menu also has **Copy link**, **Open in browser** and **Mark unread**.
+
+<p>
+  <img src="screenshots/file-viewer.png" alt="A Markdown attachment open in the app" width="280">
+  <img src="screenshots/file-cant-open.png" alt="A file no app can open, with Share and Save" width="280">
+</p>
 
 ## Getting around
 
