@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Languages the app ships. Add one line per values-<lang> folder; the in-app picker reads this list too. -->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en" />
+    <locale android:name="pt-BR" />
+    <locale android:name="es" />
+</locale-config>

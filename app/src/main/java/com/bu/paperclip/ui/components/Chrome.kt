@@ -1,5 +1,6 @@
 package com.bu.paperclip.ui.components
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -208,7 +209,7 @@ fun BrandMark(size: androidx.compose.ui.unit.Dp = 56.dp) {
     ) {
         Icon(
             androidx.compose.ui.res.painterResource(com.bu.paperclip.R.drawable.ic_paperclip),
-            "Paperclip",
+            stringResource(com.bu.paperclip.R.string.app_name),
             tint = cs.surface,
             modifier = Modifier.size(size * 0.56f),
         )

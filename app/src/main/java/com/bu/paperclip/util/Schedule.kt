@@ -1,5 +1,14 @@
 package com.bu.paperclip.util
 
+import androidx.annotation.StringRes
+import com.bu.paperclip.R
+import java.time.DayOfWeek
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.time.format.TextStyle
+import java.util.Locale
+
 /**
  * Routine schedules as the web UI's presets (every hour/day/weekday/week/month, or custom cron).
  * Weekdays use cron numbering: 0 = Sunday … 6 = Saturday.
@@ -12,7 +21,19 @@ data class Schedule(
     val dayOfMonth: Int = 1,
     val custom: String = "",
 ) {
-    enum class Preset(val label: String) { Hourly("Every hour"), Daily("Every day"), Weekdays("Weekdays"), Weekly("Weekly"), Monthly("Monthly"), Custom("Custom (cron)") }
+    enum class Preset(@StringRes val labelRes: Int) {
+        Hourly(R.string.schedule_preset_hourly), Daily(R.string.schedule_preset_daily), Weekdays(R.string.schedule_preset_weekdays),
+        Weekly(R.string.schedule_preset_weekly), Monthly(R.string.schedule_preset_monthly), Custom(R.string.schedule_preset_custom);
+
+        val label: String get() = L10n.str(labelRes)
+    }
+
+    /** Why a cron expression is rejected; see [validate]. */
+    sealed interface CronError {
+        data object Empty : CronError
+        data class FieldCount(val count: Int) : CronError
+        data object BadField : CronError
+    }
 
     fun toCron(): String = when (preset) {
         Preset.Hourly -> "$minute * * * *"
@@ -24,7 +45,11 @@ data class Schedule(
     }
 
     companion object {
-        val WEEKDAYS = listOf("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+        /** Weekday names in the app locale, Sunday first (cron numbering). */
+        val WEEKDAYS: List<String> get() = (0..6).map { weekdayName(it) }
+
+        fun weekdayName(cronDay: Int, locale: Locale = L10n.locale()): String =
+            DayOfWeek.of(if (cronDay % 7 == 0) 7 else cronDay % 7).getDisplayName(TextStyle.FULL, locale)
 
         private fun num(s: String, range: IntRange): Int? = s.toIntOrNull()?.takeIf { it in range }
 
@@ -47,35 +72,42 @@ data class Schedule(
             }
         }
 
-        fun clock(hour: Int, minute: Int): String {
-            val h12 = if (hour % 12 == 0) 12 else hour % 12
-            return "%d:%02d %s".format(h12, minute, if (hour < 12) "AM" else "PM")
-        }
+        /** A wall-clock time in the locale's short style, e.g. "6:30 PM" or "18:30". */
+        fun clock(hour: Int, minute: Int, locale: Locale = L10n.locale()): String =
+            DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(locale).format(LocalTime.of(hour, minute))
 
         /** "Every day at 9:00 AM", "Weekdays at 6:30 PM", "Every Monday at …", or the raw cron. */
         fun describe(cron: String?): String {
             val s = parse(cron)
             return when (s.preset) {
-                Preset.Hourly -> if (s.minute == 0) "Every hour" else "Every hour at :%02d".format(s.minute)
-                Preset.Daily -> "Every day at ${clock(s.hour, s.minute)}"
-                Preset.Weekdays -> "Weekdays at ${clock(s.hour, s.minute)}"
-                Preset.Weekly -> "Every ${WEEKDAYS[s.weekday]} at ${clock(s.hour, s.minute)}"
-                Preset.Monthly -> "Monthly on day ${s.dayOfMonth} at ${clock(s.hour, s.minute)}"
-                Preset.Custom -> if (s.custom == "* * * * *") "Every minute" else "Cron: ${s.custom}"
+                Preset.Hourly -> if (s.minute == 0) L10n.str(R.string.schedule_every_hour) else L10n.str(R.string.schedule_every_hour_at, s.minute)
+                Preset.Daily -> L10n.str(R.string.schedule_daily_at, clock(s.hour, s.minute))
+                Preset.Weekdays -> L10n.str(R.string.schedule_weekdays_at, clock(s.hour, s.minute))
+                Preset.Weekly -> L10n.str(R.string.schedule_weekly_at, weekdayName(s.weekday), clock(s.hour, s.minute))
+                Preset.Monthly -> L10n.str(R.string.schedule_monthly_at, s.dayOfMonth, clock(s.hour, s.minute))
+                Preset.Custom -> if (s.custom == "* * * * *") L10n.str(R.string.schedule_every_minute) else L10n.str(R.string.schedule_cron, s.custom)
             }
         }
 
         private val cronField = Regex("""^(\*|\d+(-\d+)?)(/\d+)?(,(\*|\d+(-\d+)?)(/\d+)?)*$""")
 
         /** The web UI's checks; null when valid. The server still has the final word. */
-        fun validate(cron: String): String? {
+        fun check(cron: String): CronError? {
             val f = cron.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
             return when {
-                f.isEmpty() -> "Enter a 5-field cron expression."
-                f.size != 5 -> "Use exactly 5 fields; this has ${f.size}."
-                f.any { !cronField.matches(it) } -> "Cron fields must use valid numbers, ranges, lists, wildcards, or steps."
+                f.isEmpty() -> CronError.Empty
+                f.size != 5 -> CronError.FieldCount(f.size)
+                f.any { !cronField.matches(it) } -> CronError.BadField
                 else -> null
             }
+        }
+
+        /** [check] as a message for the user; null when valid. */
+        fun validate(cron: String): String? = when (val e = check(cron)) {
+            null -> null
+            CronError.Empty -> L10n.str(R.string.schedule_error_empty)
+            is CronError.FieldCount -> L10n.str(R.string.schedule_error_field_count, e.count)
+            CronError.BadField -> L10n.str(R.string.schedule_error_bad_field)
         }
     }
 }

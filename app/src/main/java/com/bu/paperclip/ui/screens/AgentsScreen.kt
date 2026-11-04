@@ -1,5 +1,8 @@
 package com.bu.paperclip.ui.screens
 
+import com.bu.paperclip.util.L10n
+import com.bu.paperclip.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -59,7 +62,13 @@ import com.bu.paperclip.ui.theme.LocalStatusColors
 import com.bu.paperclip.ui.theme.Mono
 import androidx.compose.ui.text.font.FontWeight
 
-private val agentFilters = listOf("all" to "All", "running" to "Running", "active" to "Active", "paused" to "Paused", "error" to "Error")
+private val agentFilters = listOf(
+    "all" to R.string.common_all,
+    "running" to R.string.agents_filter_running,
+    "active" to R.string.agents_filter_active,
+    "paused" to R.string.agents_filter_paused,
+    "error" to R.string.agents_filter_error,
+)
 
 private data class AgentsData(val agents: List<Agent>, val live: List<LiveRun>)
 
@@ -71,7 +80,7 @@ internal fun agentAdapterLabel(adapterType: String?): String = when (adapterType
     "antigravity_local" -> "Antigravity"
     "cursor", "cursor_cloud" -> "Cursor"
     "opencode_local" -> "OpenCode"
-    "process" -> "Process"
+    "process" -> L10n.str(R.string.agent_adapter_process)
     "http" -> "HTTP"
     else -> adapterType.removeSuffix("_local").replace('_', ' ').replaceFirstChar { it.uppercase() }
 }
@@ -106,10 +115,10 @@ fun AgentsScreen(nav: Nav) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Agents", style = MaterialTheme.typography.headlineSmall) },
+                title = { Text(stringResource(R.string.agents_title), style = MaterialTheme.typography.headlineSmall) },
                 actions = {
                     IconToggleButton(checked = orgView, onCheckedChange = { orgView = it }) {
-                        Icon(Icons.Outlined.AccountTree, "Org view", tint = if (orgView) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(Icons.Outlined.AccountTree, stringResource(R.string.agents_org_view), tint = if (orgView) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },
             )
@@ -121,12 +130,13 @@ fun AgentsScreen(nav: Nav) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 val counts = loader.value?.agents?.groupingBy { agentFilterBucket(it.status) }?.eachCount().orEmpty()
-                agentFilters.forEach { (k, label) ->
+                agentFilters.forEach { (k, labelRes) ->
+                    val label = stringResource(labelRes)
                     val n = if (k == "all") loader.value?.agents?.size else counts[k]
                     AppFilterChip(
                         selected = filter == k,
                         onClick = { filter = k },
-                        label = { Text(if (n != null && n > 0) "$label $n" else label) },
+                        label = { Text(if (n != null && n > 0) stringResource(R.string.agents_filter_count, label, n) else label) },
                     )
                 }
             }
@@ -136,7 +146,17 @@ fun AgentsScreen(nav: Nav) {
                 val shown = agents.filter { filter == "all" || agentFilterBucket(it.status) == filter }
                 val rows: List<Pair<Agent, Int>> = if (orgView && filter == "all") agentOrgOrder(shown) else shown.sortedWith(agentSort).map { it to 0 }
                 if (rows.isEmpty()) {
-                    EmptyState(if (filter == "all") "No agents yet" else "No ${filter} agents")
+                    EmptyState(
+                        stringResource(
+                            when (filter) {
+                                "running" -> R.string.agents_empty_running
+                                "active" -> R.string.agents_empty_active
+                                "paused" -> R.string.agents_empty_paused
+                                "error" -> R.string.agents_empty_error
+                                else -> R.string.agents_empty
+                            },
+                        ),
+                    )
                 } else {
                     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 16.dp)) {
                         items(rows, key = { it.first.id }) { (a, depth) ->
@@ -156,7 +176,7 @@ fun AgentsScreen(nav: Nav) {
                                         } finally {
                                             pending.remove(a.id)
                                         }
-                                    }, if (resume) "${a.name} resumed" else "${a.name} paused")
+                                    }, L10n.str(if (resume) R.string.agents_resumed else R.string.agents_paused, a.name))
                                 },
                             )
                         }
@@ -221,16 +241,16 @@ private fun AgentListRow(agent: Agent, depth: Int, live: LiveRun?, onClick: () -
             if (modelLine.isNotEmpty()) {
                 Text(modelLine, style = MaterialTheme.typography.labelSmall.copy(fontFamily = Mono, fontWeight = FontWeight.Normal), color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
             }
-            val snippet = live?.let { it.currentStatusMessage ?: it.currentToolName?.let { t -> "Using $t" } ?: it.lastAssistantSnippet }
-                ?: if (agent.status == "error") agent.errorReason else if (agent.status == "paused") agent.pauseReason?.let { "Paused: $it" } else null
+            val snippet = live?.let { it.currentStatusMessage ?: it.currentToolName?.let { t -> stringResource(R.string.agents_using_tool, t) } ?: it.lastAssistantSnippet }
+                ?: if (agent.status == "error") agent.errorReason else if (agent.status == "paused") agent.pauseReason?.let { stringResource(R.string.agents_paused_reason, it) } else null
             if (!snippet.isNullOrBlank()) {
                 Text(snippet, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
         if (agent.status != "pending_approval") {
             IconButton(onClick = onToggle, modifier = Modifier.size(48.dp)) {
-                if (agent.status == "paused") Icon(Icons.Outlined.PlayCircle, "Resume ${agent.name}", tint = LocalStatusColors.current.yellow, modifier = Modifier.size(22.dp))
-                else Icon(Icons.Outlined.PauseCircle, "Pause ${agent.name}", tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f), modifier = Modifier.size(22.dp))
+                if (agent.status == "paused") Icon(Icons.Outlined.PlayCircle, stringResource(R.string.agents_resume_cd, agent.name), tint = LocalStatusColors.current.yellow, modifier = Modifier.size(22.dp))
+                else Icon(Icons.Outlined.PauseCircle, stringResource(R.string.agents_pause_cd, agent.name), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f), modifier = Modifier.size(22.dp))
             }
         }
     }

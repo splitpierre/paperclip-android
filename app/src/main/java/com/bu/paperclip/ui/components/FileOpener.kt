@@ -1,5 +1,8 @@
 package com.bu.paperclip.ui.components
 
+import com.bu.paperclip.util.L10n
+import com.bu.paperclip.R
+import androidx.compose.ui.res.stringResource
 import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.Context
@@ -141,12 +144,12 @@ object FileOpener {
 
     private fun failure(t: Throwable): String = when (t) {
         is HttpFailure -> when (t.code) {
-            401, 403 -> "You don't have access to this file. Try signing in again."
-            404 -> "This file no longer exists."
-            else -> "Couldn't download the file (HTTP ${t.code})."
+            401, 403 -> L10n.str(R.string.file_no_access)
+            404 -> L10n.str(R.string.file_not_found)
+            else -> L10n.str(R.string.file_download_failed_http, t.code)
         }
-        is IOException -> "Couldn't download the file: ${t.message ?: "network error"}"
-        else -> "Couldn't open the file: ${errorMessage(t)}"
+        is IOException -> L10n.str(R.string.file_download_failed, t.message ?: L10n.str(R.string.file_network_error))
+        else -> L10n.str(R.string.file_open_failed, errorMessage(t))
     }
 
     private class HttpFailure(val code: Int) : IOException("HTTP $code")
@@ -191,7 +194,7 @@ object FileOpener {
         try {
             ctx.startActivity(Intent.createChooser(send, f.name))
         } catch (_: ActivityNotFoundException) {
-            AppState.toast("No app can share this file")
+            AppState.toast(L10n.str(R.string.file_no_share_app))
         }
     }
 
@@ -229,7 +232,7 @@ fun FileOpenerHost() {
             val ok = withContext(Dispatchers.IO) {
                 runCatching { ctx.contentResolver.openOutputStream(dest)!!.use { os -> f.file.inputStream().use { it.copyTo(os) } } }.isSuccess
             }
-            AppState.toast(if (ok) "Saved ${f.name}" else "Couldn't save ${f.name}")
+            AppState.toast(L10n.str(if (ok) R.string.file_saved else R.string.file_save_failed, f.name))
         }
     }
     val onSave: (LocalFile) -> Unit = { f -> saving = f; save.launch(f.name) }
@@ -240,12 +243,12 @@ fun FileOpenerHost() {
         is FileView.Loading -> AlertDialog(
             onDismissRequest = { FileOpener.cancel() },
             confirmButton = {},
-            dismissButton = { TextButton(onClick = { FileOpener.cancel() }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { FileOpener.cancel() }) { Text(stringResource(R.string.common_cancel)) } },
             text = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
                     Spacer(Modifier.width(16.dp))
-                    Text("Opening ${v.name ?: "file"}…", maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(v.name?.let { stringResource(R.string.file_opening, it) } ?: stringResource(R.string.file_opening_unnamed), maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
             },
         )
@@ -254,13 +257,13 @@ fun FileOpenerHost() {
         }
         is FileView.NoApp -> AlertDialog(
             onDismissRequest = { FileOpener.close() },
-            title = { Text("Can't open ${v.f.name}") },
-            text = { Text("No app on this device opens ${v.f.mime} files. You can share it to another app or save it to your files.") },
-            confirmButton = { TextButton(onClick = { FileOpener.close(); onSave(v.f) }) { Text("Save") } },
+            title = { Text(stringResource(R.string.file_cant_open, v.f.name)) },
+            text = { Text(stringResource(R.string.file_no_app, v.f.mime)) },
+            confirmButton = { TextButton(onClick = { FileOpener.close(); onSave(v.f) }) { Text(stringResource(R.string.common_save)) } },
             dismissButton = {
                 Row {
-                    TextButton(onClick = { FileOpener.close() }) { Text("Close") }
-                    TextButton(onClick = { FileOpener.close(); onShare(v.f) }) { Text("Share") }
+                    TextButton(onClick = { FileOpener.close() }) { Text(stringResource(R.string.common_close)) }
+                    TextButton(onClick = { FileOpener.close(); onShare(v.f) }) { Text(stringResource(R.string.common_share)) }
                 }
             },
         )
@@ -304,10 +307,10 @@ private fun FileDialog(f: LocalFile, onShare: (LocalFile) -> Unit, onSave: (Loca
         Surface(Modifier.fillMaxSize(), color = bg, contentColor = fg) {
             Column(Modifier.fillMaxSize()) {
                 Row(Modifier.fillMaxWidth().statusBarsPadding().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { FileOpener.close() }) { Icon(Icons.Default.Close, "Close", tint = fg) }
+                    IconButton(onClick = { FileOpener.close() }) { Icon(Icons.Default.Close, stringResource(R.string.common_close), tint = fg) }
                     Text(f.name, color = fg, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f).padding(horizontal = 4.dp))
-                    IconButton(onClick = { onShare(f) }) { Icon(Icons.Outlined.Share, "Share", tint = fg) }
-                    IconButton(onClick = { onSave(f) }) { Icon(Icons.Outlined.Download, "Save", tint = fg) }
+                    IconButton(onClick = { onShare(f) }) { Icon(Icons.Outlined.Share, stringResource(R.string.common_share), tint = fg) }
+                    IconButton(onClick = { onSave(f) }) { Icon(Icons.Outlined.Download, stringResource(R.string.common_save), tint = fg) }
                 }
                 Box(Modifier.weight(1f).fillMaxWidth().background(bg)) { content() }
             }

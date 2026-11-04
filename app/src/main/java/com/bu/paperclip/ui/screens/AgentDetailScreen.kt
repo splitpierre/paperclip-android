@@ -1,5 +1,8 @@
 package com.bu.paperclip.ui.screens
 
+import com.bu.paperclip.util.L10n
+import com.bu.paperclip.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -86,7 +89,7 @@ private data class AgentDetailData(
     val live: List<LiveRun>,
 )
 
-private val agentTabs = listOf("Overview", "Runs", "Tasks", "Instructions")
+private val agentTabs = listOf(R.string.agent_tab_overview, R.string.agent_tab_runs, R.string.agent_tab_tasks, R.string.agent_tab_instructions)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -130,7 +133,7 @@ fun AgentDetailScreen(nav: Nav, id: String) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(loader.value?.agent?.name ?: "Agent", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                title = { Text(loader.value?.agent?.name ?: stringResource(R.string.common_agent), maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 navigationIcon = { BackIcon { nav.back() } },
             )
         },
@@ -145,33 +148,33 @@ fun AgentDetailScreen(nav: Nav, id: String) {
                         Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 4.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        AgentActionChip("Run now", Icons.Outlined.Bolt) {
+                        AgentActionChip(stringResource(R.string.agent_run_now), Icons.Outlined.Bolt) {
                             act({
                                 val r = Repo.invoke(a.id)
                                 nav.run(r.id)
                             }, null)
                         }
                         if (a.status == "paused") {
-                            AgentActionChip("Resume", Icons.Outlined.PlayArrow) {
-                                act({ Repo.resume(a.id); AppState.refreshAgents(); loader.refresh() }, "${a.name} resumed")
+                            AgentActionChip(stringResource(R.string.agent_resume), Icons.Outlined.PlayArrow) {
+                                act({ Repo.resume(a.id); AppState.refreshAgents(); loader.refresh() }, L10n.str(R.string.agents_resumed, a.name))
                             }
                         } else if (a.status != "pending_approval" && a.status != "terminated") {
-                            AgentActionChip("Pause", Icons.Outlined.Pause) {
-                                act({ Repo.pause(a.id); AppState.refreshAgents(); loader.refresh() }, "${a.name} paused")
+                            AgentActionChip(stringResource(R.string.agent_pause), Icons.Outlined.Pause) {
+                                act({ Repo.pause(a.id); AppState.refreshAgents(); loader.refresh() }, L10n.str(R.string.agents_paused, a.name))
                             }
                         }
                         if (a.status == "error") {
-                            AgentActionChip("Clear error", Icons.Outlined.ErrorOutline) {
-                                act({ Repo.clearError(a.id); AppState.refreshAgents(); loader.refresh() }, "Error cleared")
+                            AgentActionChip(stringResource(R.string.agent_clear_error), Icons.Outlined.ErrorOutline) {
+                                act({ Repo.clearError(a.id); AppState.refreshAgents(); loader.refresh() }, L10n.str(R.string.agent_error_cleared))
                             }
                         }
-                        AgentActionChip("Reset session", Icons.Outlined.RestartAlt) { confirmReset = true }
+                        AgentActionChip(stringResource(R.string.agent_reset_session), Icons.Outlined.RestartAlt) { confirmReset = true }
                     }
                 }
                 item(key = "tabs") {
                     PrimaryScrollableTabRow(selectedTabIndex = tab, edgePadding = 8.dp) {
                         agentTabs.forEachIndexed { i, t ->
-                            Tab(selected = tab == i, onClick = { tab = i }, text = { Text(t) })
+                            Tab(selected = tab == i, onClick = { tab = i }, text = { Text(stringResource(t)) })
                         }
                     }
                 }
@@ -180,13 +183,13 @@ fun AgentDetailScreen(nav: Nav, id: String) {
                     1 -> {
                         val list = runs.value
                         when {
-                            list == null -> item(key = "runs-loading") { EmptyState("Loading runs…") }
-                            list.isEmpty() -> item(key = "runs-empty") { EmptyState("No runs yet") }
+                            list == null -> item(key = "runs-loading") { EmptyState(stringResource(R.string.agent_runs_loading)) }
+                            list.isEmpty() -> item(key = "runs-empty") { EmptyState(stringResource(R.string.agent_runs_empty)) }
                             else -> {
                                 items(list, key = { "run-" + it.id }) { r -> RunRow(r, onClick = { nav.run(r.id) }, showAgent = false) }
                                 if (list.size >= runLimit) {
                                     item(key = "runs-more") {
-                                        TextButton(onClick = { runLimit += 30 }, modifier = Modifier.fillMaxWidth().padding(8.dp)) { Text("Load more") }
+                                        TextButton(onClick = { runLimit += 30 }, modifier = Modifier.fillMaxWidth().padding(8.dp)) { Text(stringResource(R.string.agent_load_more)) }
                                     }
                                 }
                             }
@@ -195,18 +198,18 @@ fun AgentDetailScreen(nav: Nav, id: String) {
                     2 -> {
                         val list = tasks.value
                         when {
-                            list == null -> item(key = "tasks-loading") { EmptyState("Loading tasks…") }
-                            list.isEmpty() -> item(key = "tasks-empty") { EmptyState("No open tasks assigned") }
+                            list == null -> item(key = "tasks-loading") { EmptyState(stringResource(R.string.agent_tasks_loading)) }
+                            list.isEmpty() -> item(key = "tasks-empty") { EmptyState(stringResource(R.string.agent_tasks_empty)) }
                             else -> items(list.sortedWith(agentTaskSort), key = { "task-" + it.id }) { i -> IssueRow(i, onClick = { nav.issue(i.identifier ?: i.id) }) }
                         }
                     }
                     else -> item(key = "instr") {
                         Card(Modifier.padding(16.dp)) {
                             Column {
-                                Text("Instructions bundle", style = MaterialTheme.typography.titleSmall)
+                                Text(stringResource(R.string.agent_instructions_bundle), style = MaterialTheme.typography.titleSmall)
                                 Spacer(Modifier.height(4.dp))
                                 Text(
-                                    "View or edit the AGENTS.md and other instruction files this agent runs with.",
+                                    stringResource(R.string.agent_instructions_bundle_body),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -214,7 +217,7 @@ fun AgentDetailScreen(nav: Nav, id: String) {
                                 TextButton(onClick = { nav.instructions(a.id) }) {
                                     Icon(Icons.AutoMirrored.Outlined.Article, null)
                                     Spacer(Modifier.width(6.dp))
-                                    Text("Open instructions")
+                                    Text(stringResource(R.string.agent_open_instructions))
                                 }
                             }
                         }
@@ -228,15 +231,15 @@ fun AgentDetailScreen(nav: Nav, id: String) {
         val a = loader.value?.agent
         AlertDialog(
             onDismissRequest = { confirmReset = false },
-            title = { Text("Reset session?") },
-            text = { Text("${a?.name ?: "The agent"} will start its next run with a fresh session and no memory of the current conversation.") },
+            title = { Text(stringResource(R.string.agent_reset_title)) },
+            text = { Text(stringResource(R.string.agent_reset_body, a?.name ?: stringResource(R.string.agent_reset_the_agent))) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmReset = false
-                    if (a != null) act({ Repo.resetSession(a.id); loader.refresh() }, "Session reset")
-                }) { Text("Reset") }
+                    if (a != null) act({ Repo.resetSession(a.id); loader.refresh() }, L10n.str(R.string.agent_session_reset))
+                }) { Text(stringResource(R.string.common_reset)) }
             },
-            dismissButton = { TextButton(onClick = { confirmReset = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { confirmReset = false }) { Text(stringResource(R.string.common_cancel)) } },
         )
     }
 }
@@ -275,8 +278,8 @@ private fun AgentHeader(a: Agent) {
             }
         }
         val note = when {
-            a.status == "error" && !a.errorReason.isNullOrBlank() -> "Error: ${a.errorReason}"
-            a.status == "paused" -> "Paused" + (a.pauseReason?.let { " ($it)" } ?: "") + (a.pausedAt?.let { " · ${relativeTime(it)}" } ?: "")
+            a.status == "error" && !a.errorReason.isNullOrBlank() -> stringResource(R.string.agent_error_note, a.errorReason)
+            a.status == "paused" -> (a.pauseReason?.let { stringResource(R.string.agent_paused_note_reason, it) } ?: stringResource(R.string.agent_paused_note)) + (a.pausedAt?.let { " · ${relativeTime(it)}" } ?: "")
             else -> null
         }
         if (note != null) {
@@ -293,11 +296,11 @@ private fun AgentHeader(a: Agent) {
 private fun LazyListScope.agentOverview(d: AgentDetailData, nav: Nav) {
     val a = d.agent
     if (d.live.isNotEmpty()) {
-        item(key = "ov-live-h") { SectionHeader("Running now") }
+        item(key = "ov-live-h") { SectionHeader(stringResource(R.string.agent_running_now)) }
         items(d.live, key = { "ov-live-" + it.id }) { r -> LiveRunRow(r, onClick = { nav.run(r.id) }) }
     }
     item(key = "ov-budget") {
-        SectionHeader("This month")
+        SectionHeader(stringResource(R.string.agent_this_month))
         Card(Modifier.padding(horizontal = 16.dp)) {
             Column {
                 val spent = a.spentMonthlyCents ?: 0
@@ -305,7 +308,7 @@ private fun LazyListScope.agentOverview(d: AgentDetailData, nav: Nav) {
                 Row(verticalAlignment = Alignment.Bottom) {
                     Text(formatCents(spent), style = MaterialTheme.typography.headlineSmall)
                     Spacer(Modifier.width(6.dp))
-                    Text(if (budget > 0) "of ${formatCents(budget)}" else "no monthly budget", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(if (budget > 0) stringResource(R.string.agent_budget_of, formatCents(budget)) else stringResource(R.string.agent_no_budget), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 if (budget > 0) {
                     val frac = (spent.toFloat() / budget).coerceIn(0f, 1f)
@@ -324,16 +327,16 @@ private fun LazyListScope.agentOverview(d: AgentDetailData, nav: Nav) {
     }
     d.runtime?.let { rt ->
         item(key = "ov-runtime") {
-            SectionHeader("Runtime")
+            SectionHeader(stringResource(R.string.agent_runtime))
             Card(Modifier.padding(horizontal = 16.dp)) {
                 Column {
-                    KeyValue("Session", rt.sessionId?.take(18) ?: "none")
-                    KeyValue("Last run", rt.lastRunStatus?.let { statusLabel(it) } ?: "—")
-                    KeyValue("Tokens in", agentFmtTokens(rt.totalInputTokens))
-                    KeyValue("Cached in", agentFmtTokens(rt.totalCachedInputTokens))
-                    KeyValue("Tokens out", agentFmtTokens(rt.totalOutputTokens))
-                    KeyValue("Total cost", formatCents(rt.totalCostCents))
-                    if (!rt.lastError.isNullOrBlank()) KeyValue("Last error", rt.lastError)
+                    KeyValue(stringResource(R.string.agent_session), rt.sessionId?.take(18) ?: stringResource(R.string.agent_session_none))
+                    KeyValue(stringResource(R.string.agent_last_run), rt.lastRunStatus?.let { statusLabel(it) } ?: "—")
+                    KeyValue(stringResource(R.string.agent_tokens_in), agentFmtTokens(rt.totalInputTokens))
+                    KeyValue(stringResource(R.string.agent_cached_in), agentFmtTokens(rt.totalCachedInputTokens))
+                    KeyValue(stringResource(R.string.agent_tokens_out), agentFmtTokens(rt.totalOutputTokens))
+                    KeyValue(stringResource(R.string.agent_total_cost), formatCents(rt.totalCostCents))
+                    if (!rt.lastError.isNullOrBlank()) KeyValue(stringResource(R.string.agent_last_error), rt.lastError)
                 }
             }
         }
@@ -341,28 +344,28 @@ private fun LazyListScope.agentOverview(d: AgentDetailData, nav: Nav) {
     item(key = "ov-org") {
         val manager = AppState.agent(a.reportsTo)
         val reports = AppState.agents.collectAsState().value.filter { it.reportsTo == a.id }
-        SectionHeader("Team")
+        SectionHeader(stringResource(R.string.agent_team))
         Card(Modifier.padding(horizontal = 16.dp), padding = PaddingValues(vertical = 6.dp)) {
             Column {
-                if (manager != null) AgentPersonRow("Reports to", manager) { nav.agent(manager.id) }
+                if (manager != null) AgentPersonRow(stringResource(R.string.agent_reports_to), manager) { nav.agent(manager.id) }
                 if (reports.isEmpty() && manager == null) {
-                    Text("No reporting lines", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(14.dp))
+                    Text(stringResource(R.string.agent_no_reporting_lines), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(14.dp))
                 }
-                reports.sortedBy { it.name }.forEach { r -> AgentPersonRow("Direct report", r) { nav.agent(r.id) } }
+                reports.sortedBy { it.name }.forEach { r -> AgentPersonRow(stringResource(R.string.agent_direct_report), r) { nav.agent(r.id) } }
             }
         }
     }
     item(key = "ov-meta") {
-        SectionHeader("Details")
+        SectionHeader(stringResource(R.string.agent_details))
         Card(Modifier.padding(horizontal = 16.dp)) {
             Column {
-                KeyValue("Role", agentRoleLabel(a.role))
-                KeyValue("Adapter", a.adapterType ?: "—")
-                KeyValue("Model", a.model ?: "default")
-                KeyValue("Last heartbeat", a.lastHeartbeatAt?.let { "${relativeTime(it)} · ${absoluteTime(it)}" } ?: "never")
-                KeyValue("Created", absoluteTime(a.createdAt).ifEmpty { "—" })
+                KeyValue(stringResource(R.string.agent_role), agentRoleLabel(a.role))
+                KeyValue(stringResource(R.string.agent_adapter), a.adapterType ?: "—")
+                KeyValue(stringResource(R.string.agent_model), a.model ?: stringResource(R.string.agent_model_default))
+                KeyValue(stringResource(R.string.agent_last_heartbeat), a.lastHeartbeatAt?.let { "${relativeTime(it)} · ${absoluteTime(it)}" } ?: stringResource(R.string.agent_never))
+                KeyValue(stringResource(R.string.agent_created), absoluteTime(a.createdAt).ifEmpty { "—" })
                 val cwd = (a.adapterConfig?.get("cwd") as? JsonPrimitive)?.contentOrNull
-                if (!cwd.isNullOrBlank()) KeyValue("Working dir", cwd)
+                if (!cwd.isNullOrBlank()) KeyValue(stringResource(R.string.agent_working_dir), cwd)
             }
         }
     }
@@ -384,10 +387,4 @@ private fun AgentPersonRow(label: String, agent: Agent, onClick: () -> Unit) {
     }
 }
 
-internal fun agentFmtTokens(n: Long): String = when {
-    n >= 1_000_000_000 -> String.format("%.2fB", n / 1e9)
-    n >= 1_000_000 -> String.format("%.1fM", n / 1e6)
-    n >= 10_000 -> String.format("%.0fk", n / 1e3)
-    n >= 1_000 -> String.format("%.1fk", n / 1e3)
-    else -> n.toString()
-}
+internal fun agentFmtTokens(n: Long): String = com.bu.paperclip.util.formatCompact(n, billionsDigits = 2)

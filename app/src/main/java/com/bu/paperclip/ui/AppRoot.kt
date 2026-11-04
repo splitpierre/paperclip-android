@@ -1,5 +1,7 @@
 package com.bu.paperclip.ui
 
+import com.bu.paperclip.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -103,13 +105,13 @@ fun AppRoot(pendingLink: String?, onLinkConsumed: () -> Unit) {
         Phase.Setup -> SetupScreen(Api.baseUrl, Api.bearer ?: "") { url, token ->
             scope.launch { AppState.settings.setBaseUrl(url); AppState.settings.setApiToken(token); bootKey++ }
         }
-        Phase.Login -> if (Api.bearer != null) SplashScreen("The API key was rejected.", onRetry = { phase = Phase.Setup }) else SignInScreen(
+        Phase.Login -> if (Api.bearer != null) SplashScreen(stringResource(R.string.app_api_key_rejected), onRetry = { phase = Phase.Setup }) else SignInScreen(
             baseUrl = Api.baseUrl,
             onSignedIn = { bootKey++ },
             onChangeServer = { phase = Phase.Setup },
         )
         is Phase.Failed -> SplashScreen(p.message, onRetry = { bootKey++ }, onSignIn = { phase = Phase.Login })
-        Phase.NoCompany -> SplashScreen("Your account has no Paperclip company yet.", onRetry = { bootKey++ })
+        Phase.NoCompany -> SplashScreen(stringResource(R.string.app_no_company), onRetry = { bootKey++ })
         Phase.Ready -> MainShell(pendingLink, onLinkConsumed, onSignedOut = { phase = Phase.Login })
     }
 }
@@ -190,7 +192,7 @@ private fun MainShell(pendingLink: String?, onLinkConsumed: () -> Unit, onSigned
                             Routes.MORE -> badges.inbox + badges.approvals
                             else -> 0
                         }
-                        BarItem(t.route, t.label, t.icon, t.selectedIcon, badge)
+                        BarItem(t.route, stringResource(t.label), t.icon, t.selectedIcon, badge)
                     },
                     selected = route,
                     onSelect = { nav.tab(it) },

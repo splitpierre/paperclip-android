@@ -1,5 +1,7 @@
 package com.bu.paperclip.net
 
+import com.bu.paperclip.util.L10n
+import com.bu.paperclip.R
 import android.webkit.CookieManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -59,7 +61,7 @@ object WebViewCookieJar : CookieJar {
 }
 
 sealed class ApiException(message: String) : Exception(message) {
-    class AuthRequired(message: String = "Sign-in required") : ApiException(message)
+    class AuthRequired(message: String = L10n.str(R.string.error_sign_in_required)) : ApiException(message)
     class Http(val status: Int, message: String, val body: JsonElement?) : ApiException(message)
     class Network(message: String) : ApiException(message)
 }
@@ -134,7 +136,7 @@ object Api {
         cont.invokeOnCancellation { call.cancel() }
         call.enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                if (cont.isActive) cont.resumeWithException(ApiException.Network(e.message ?: "Network error"))
+                if (cont.isActive) cont.resumeWithException(ApiException.Network(e.message ?: L10n.str(R.string.error_network)))
             }
             override fun onResponse(call: Call, response: Response) {
                 cont.resume(response)
@@ -143,7 +145,7 @@ object Api {
     }
 
     suspend fun requestJson(method: String, path: String, query: Map<String, Any?> = emptyMap(), body: JsonElement? = null): JsonElement {
-        if (baseUrl.isEmpty()) throw ApiException.AuthRequired("No server configured")
+        if (baseUrl.isEmpty()) throw ApiException.AuthRequired(L10n.str(R.string.error_no_server))
         val rb: RequestBody? = when {
             body != null -> AppJson.encodeToString(JsonElement.serializer(), body).toRequestBody(jsonType)
             method == "GET" || method == "HEAD" -> null
@@ -170,7 +172,7 @@ object Api {
             if (code in 300..399) {
                 _auth.value = AuthState.SignedOut
                 throw ApiException.AuthRequired(
-                    if (location.contains("cloudflareaccess")) "Cloudflare Access session expired" else "Redirected to sign-in",
+                    L10n.str(if (location.contains("cloudflareaccess")) R.string.error_access_session_expired else R.string.error_redirected_to_sign_in),
                 )
             }
             val contentType = r.header("Content-Type").orEmpty()
@@ -178,14 +180,14 @@ object Api {
             if (code in 200..299) {
                 if (parsed == null && text.isNotBlank() && contentType.contains("text/html")) {
                     _auth.value = AuthState.SignedOut
-                    throw ApiException.AuthRequired("Got a web page instead of data — sign in again")
+                    throw ApiException.AuthRequired(L10n.str(R.string.error_got_web_page))
                 }
                 if (_auth.value != AuthState.SignedIn) _auth.value = AuthState.SignedIn
                 return@withContext parsed ?: JsonNull
             }
             val msg = (parsed as? JsonObject)?.let { o ->
                 o["error"]?.jsonPrimitive?.contentOrNull ?: o["message"]?.jsonPrimitive?.contentOrNull
-            } ?: "Request failed ($code)"
+            } ?: L10n.str(R.string.error_request_failed_code, code)
             val authMsg = msg.contains("Board authentication required") || msg.contains("Board access required") ||
                 msg.contains("Unauthorized", ignoreCase = true)
             if (code == 401 || (code == 403 && authMsg)) {
@@ -234,8 +236,8 @@ object Api {
         return withContext(Dispatchers.IO) {
             r.use {
                 when {
-                    it.code in 300..399 -> it.header("Location")?.let { loc -> runCatching { loc.toHttpUrl().host }.getOrNull() } ?: "a sign-in page"
-                    it.header("Content-Type").orEmpty().contains("text/html") -> "a sign-in page"
+                    it.code in 300..399 -> it.header("Location")?.let { loc -> runCatching { loc.toHttpUrl().host }.getOrNull() } ?: L10n.str(R.string.error_gate_sign_in_page)
+                    it.header("Content-Type").orEmpty().contains("text/html") -> L10n.str(R.string.error_gate_sign_in_page)
                     else -> null
                 }
             }

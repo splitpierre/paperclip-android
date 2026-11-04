@@ -248,6 +248,7 @@ Open **Settings** from Home or More:
 - **Account**: who you're signed in as, the server, how you're connected and whether the live connection is up.
 - **Company**: switch between companies if you have more than one.
 - **Appearance**: follow the system, or always use dark or light.
+- **Language**: English, Português (Brasil) or Español, or follow the phone's language (**System default**). The app switches straight away and remembers the choice. On Android 13 and later you can also set it in the phone's **Settings → Apps → Paperclip → Language**. Dates and numbers follow the chosen language; what agents and people write stays as written.
 - **Notifications**: **Agent requests** checks about every 15 minutes for new questions, confirmations, approvals and failed runs, and posts a notification for each. Tapping one opens the item. **Check now** runs the check immediately.
 - **Sign out** clears the app's Paperclip and sign-in proxy sessions. The email you signed in with stays pre-filled on the sign-in screen. Passwords are never stored by the app: it offers to save them in your phone's password manager (Google Password Manager or similar), and "Use a saved sign-in" fills them back in.
 

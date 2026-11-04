@@ -35,8 +35,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.background
+import com.bu.paperclip.R
 import com.bu.paperclip.data.AppState
 import com.bu.paperclip.ui.components.AgentAvatar
 import com.bu.paperclip.ui.components.Avatar
@@ -46,6 +48,8 @@ import com.bu.paperclip.ui.components.PriorityIcon
 import com.bu.paperclip.ui.components.StatusIcon
 import com.bu.paperclip.ui.components.agentStatusColor
 import com.bu.paperclip.ui.components.statusLabel
+import com.bu.paperclip.ui.components.taskPriorityLabel
+import com.bu.paperclip.ui.components.taskStatusLabel
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -106,18 +110,18 @@ internal fun IssueSheet(title: String, onDismiss: () -> Unit, content: @Composab
 
 @Composable
 internal fun IssueStatusSheet(current: String?, onPick: (String) -> Unit, onDismiss: () -> Unit) {
-    IssueSheet("Status", onDismiss) {
+    IssueSheet(stringResource(R.string.task_field_status), onDismiss) {
         ISSUE_STATUSES.forEach { s ->
-            IssueSheetRow(s == current, { onPick(s); onDismiss() }, { StatusIcon(s, 18.dp) }, statusLabel(s))
+            IssueSheetRow(s == current, { onPick(s); onDismiss() }, { StatusIcon(s, 18.dp) }, taskStatusLabel(s))
         }
     }
 }
 
 @Composable
 internal fun IssuePrioritySheet(current: String?, onPick: (String) -> Unit, onDismiss: () -> Unit) {
-    IssueSheet("Priority", onDismiss) {
+    IssueSheet(stringResource(R.string.task_field_priority), onDismiss) {
         PRIORITIES.forEach { p ->
-            IssueSheetRow(p == current, { onPick(p); onDismiss() }, { PriorityIcon(p, 20.dp) }, p.replaceFirstChar { it.uppercase() })
+            IssueSheetRow(p == current, { onPick(p); onDismiss() }, { PriorityIcon(p, 20.dp) }, taskPriorityLabel(p))
         }
     }
 }
@@ -134,7 +138,7 @@ internal fun IssueAssigneeSheet(
     currentAgentId: String?,
     currentUserId: String?,
     allowMe: Boolean = true,
-    title: String = "Assignee",
+    title: String = stringResource(R.string.task_field_assignee),
     unassignedSelected: Boolean = currentAgentId == null && currentUserId == null,
     onPick: (IssueAssignee) -> Unit,
     onDismiss: () -> Unit,
@@ -146,7 +150,7 @@ internal fun IssueAssigneeSheet(
         if (agents.size > 8) {
             OutlinedTextField(
                 value = q, onValueChange = { q = it }, singleLine = true,
-                placeholder = { Text("Filter agents") },
+                placeholder = { Text(stringResource(R.string.issue_sheet_filter_agents)) },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
             )
         }
@@ -154,11 +158,11 @@ internal fun IssueAssigneeSheet(
             if (q.isBlank()) {
                 item {
                     IssueSheetRow(unassignedSelected, { onPick(IssueAssignee.Nobody); onDismiss() },
-                        { Icon(Icons.Outlined.PersonOff, null, Modifier.size(28.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) }, "Unassigned")
+                        { Icon(Icons.Outlined.PersonOff, null, Modifier.size(28.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) }, stringResource(R.string.common_unassigned))
                 }
                 if (allowMe && me != null) item {
                     IssueSheetRow(currentUserId != null && currentUserId == me?.id, { onPick(IssueAssignee.Me); onDismiss() },
-                        { Avatar(me?.name ?: "Me", me?.image, 28.dp, isAgent = false) }, "Me", me?.email)
+                        { Avatar(me?.name ?: stringResource(R.string.task_assignee_me), me?.image, 28.dp, isAgent = false) }, stringResource(R.string.task_assignee_me), me?.email)
                 }
             }
             val filtered = agents.filter { q.isBlank() || it.name.contains(q, true) || (it.title ?: "").contains(q, true) }
@@ -178,11 +182,11 @@ internal fun IssueAssigneeSheet(
 @Composable
 internal fun IssueProjectSheet(currentId: String?, onPick: (String?) -> Unit, onDismiss: () -> Unit) {
     val projects by AppState.projects.collectAsState()
-    IssueSheet("Project", onDismiss) {
+    IssueSheet(stringResource(R.string.task_field_project), onDismiss) {
         LazyColumn(Modifier.heightIn(max = 520.dp)) {
             item {
                 IssueSheetRow(currentId == null, { onPick(null); onDismiss() },
-                    { Icon(Icons.Outlined.FolderOff, null, Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) }, "No project")
+                    { Icon(Icons.Outlined.FolderOff, null, Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) }, stringResource(R.string.task_no_project))
             }
             items(projects.filter { it.archivedAt == null }, key = { it.id }) { p ->
                 IssueSheetRow(currentId == p.id, { onPick(p.id); onDismiss() }, {

@@ -32,8 +32,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import com.bu.paperclip.R
 import com.bu.paperclip.ui.theme.Mono
 import com.bu.paperclip.data.AppState
 import com.bu.paperclip.data.IssueDocument
@@ -45,6 +47,7 @@ import com.bu.paperclip.ui.components.LoadContent
 import com.bu.paperclip.ui.components.Markdown
 import com.bu.paperclip.ui.components.errorMessage
 import com.bu.paperclip.ui.components.rememberLoader
+import com.bu.paperclip.util.L10n
 import com.bu.paperclip.util.relativeTime
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -74,12 +77,12 @@ fun DocumentScreen(nav: Nav, issueId: String, key: String) {
                 val saved = Repo.saveDocument(issueId, key, titleDraft.trim().ifEmpty { null }, draft, d.latestRevisionId)
                 loader.set(saved)
                 editing = false
-                AppState.toast("Saved revision ${saved.latestRevisionNumber ?: ""}".trim())
+                AppState.toast(saved.latestRevisionNumber?.let { L10n.str(R.string.document_saved_revision, it) } ?: L10n.str(R.string.document_saved))
             } catch (c: CancellationException) {
                 throw c
             } catch (t: Throwable) {
                 if (t is ApiException.Http && t.status == 409) {
-                    AppState.toast("Someone changed this document meanwhile. Reloaded the latest version; your edit is still in the editor.")
+                    AppState.toast(L10n.str(R.string.document_conflict))
                     runCatching { loader.set(Repo.document(issueId, key)) }
                 } else AppState.toast(errorMessage(t))
             } finally {
@@ -98,7 +101,7 @@ fun DocumentScreen(nav: Nav, issueId: String, key: String) {
                     Column {
                         Text(doc?.title?.takeIf { it.isNotBlank() } ?: key, style = MaterialTheme.typography.titleMedium)
                         if (doc != null) Text(
-                            listOfNotNull(key, doc.latestRevisionNumber?.let { "rev $it" }, relativeTime(doc.updatedAt).ifEmpty { null }).joinToString(" · "),
+                            listOfNotNull(key, doc.latestRevisionNumber?.let { stringResource(R.string.document_rev, it) }, relativeTime(doc.updatedAt).ifEmpty { null }).joinToString(" · "),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -108,8 +111,8 @@ fun DocumentScreen(nav: Nav, issueId: String, key: String) {
                     if (doc != null) {
                         if (editing) {
                             if (saving) CircularProgressIndicator(Modifier.padding(end = 16.dp).size(22.dp), strokeWidth = 2.dp)
-                            else TextButton(onClick = { save(doc) }) { Text("Save") }
-                        } else IconButton(onClick = { startEdit(doc) }) { Icon(Icons.Outlined.Edit, "Edit") }
+                            else TextButton(onClick = { save(doc) }) { Text(stringResource(R.string.common_save)) }
+                        } else IconButton(onClick = { startEdit(doc) }) { Icon(Icons.Outlined.Edit, stringResource(R.string.common_edit)) }
                     }
                 },
             )
@@ -119,7 +122,7 @@ fun DocumentScreen(nav: Nav, issueId: String, key: String) {
             LoadContent(loader) { d ->
                 if (editing) {
                     Column(Modifier.fillMaxSize().imePadding().padding(12.dp)) {
-                        OutlinedTextField(titleDraft, { titleDraft = it }, label = { Text("Title") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                        OutlinedTextField(titleDraft, { titleDraft = it }, label = { Text(stringResource(R.string.document_title_label)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
                         Spacer(Modifier.height(8.dp))
                         OutlinedTextField(
                             value = draft,
@@ -130,7 +133,7 @@ fun DocumentScreen(nav: Nav, issueId: String, key: String) {
                     }
                 } else {
                     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
-                        if (d.body.isBlank()) Text("This document is empty.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (d.body.isBlank()) Text(stringResource(R.string.document_empty), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         else Markdown(d.body, fontSizeSp = 15f)
                         Spacer(Modifier.height(48.dp))
                     }
@@ -142,9 +145,9 @@ fun DocumentScreen(nav: Nav, issueId: String, key: String) {
     if (confirmDiscard) {
         AlertDialog(
             onDismissRequest = { confirmDiscard = false },
-            title = { Text("Discard changes?") },
-            confirmButton = { TextButton(onClick = { confirmDiscard = false; editing = false }) { Text("Discard") } },
-            dismissButton = { TextButton(onClick = { confirmDiscard = false }) { Text("Keep editing") } },
+            title = { Text(stringResource(R.string.document_discard_title)) },
+            confirmButton = { TextButton(onClick = { confirmDiscard = false; editing = false }) { Text(stringResource(R.string.common_discard)) } },
+            dismissButton = { TextButton(onClick = { confirmDiscard = false }) { Text(stringResource(R.string.common_keep_editing)) } },
         )
     }
 }

@@ -32,7 +32,8 @@ app/src/main/java/com/bu/paperclip/
 │   ├── screens/          one file (or a few) per screen
 │   └── theme/            colours, type scale, shapes, fonts
 └── util/
-    ├── Time.kt           timestamp parsing and relative times
+    ├── L10n.kt           app language, and strings outside Compose
+    ├── Time.kt           timestamps, relative times, locale-aware numbers, money and sizes
     └── Schedule.kt       routine cron presets: parse, describe, validate
 ```
 
@@ -72,6 +73,16 @@ The look follows Paperclip's web UI: neutral, monochrome chrome, with colour res
   Use these instead of the stock Material components, so new screens match the rest.
 - **Launch screen and icon.** `res/drawable/launch_screen.xml` (with light and dark colours in `values` and `values-night`) shows the mark while the app starts. The launcher icon is an adaptive icon with a monochrome layer.
 
+## Strings and languages
+
+Every user-facing string lives in `res/values/strings.xml`, with translations in `values-pt-rBR` and `values-es`. Keys are prefixed by screen (`issues_`, `decisions_`, `run_`…); shared words use `common_`.
+
+- In composables use `stringResource` / `pluralStringResource`. Outside Compose (workers, the data layer, formatters) use `L10n.str` / `L10n.plural`: below Android 13 the in-app language only applies to activities, and `L10n` resolves strings in that language instead of the system's.
+- Use format arguments (`%1$s`) and `plurals` rather than building sentences from pieces, so translators can reorder them.
+- Format numbers, money, sizes and dates with the helpers in `Time.kt`, which follow `L10n.locale()`.
+- The language picker is built from `res/xml/locales_config.xml`. The choice is stored by AppCompat (`AppCompatDelegate.setApplicationLocales`, with `autoStoreLocales` below Android 13), so `MainActivity` is an `AppCompatActivity`.
+- `TranslationsTest` fails on keys a translation has that the default file doesn't, on format arguments that differ, and on languages missing from `locales_config.xml`. Missing keys are only warnings, since they fall back to English. See [TRANSLATING.md](TRANSLATING.md).
+
 ## Building
 
 ```bash
@@ -87,6 +98,7 @@ The APK is written to `app/build/outputs/apk/debug/app-debug.apk`. Install it wi
 ./gradlew testDebugUnitTest
 ```
 
+- `TranslationsTest` checks every translation against the default strings (see [TRANSLATING.md](TRANSLATING.md)).
 - `TaskGraphTest` covers filters, trees, rollups and Next up on small hand-made graphs.
 - `FixtureDecodeTest` and the snapshot cases in `TaskGraphTest` run against captured API responses. Captures contain private data, so they aren't committed. Set `PAPERCLIP_FIXTURES` to a directory of captured JSON to run them; without it, they're skipped.
 
@@ -104,6 +116,8 @@ Debug builds accept a `setupUrl` intent extra (and an optional `setupKey` board 
 ```bash
 adb shell am start -n com.bu.paperclip/.MainActivity --es setupUrl http://localhost:3100
 ```
+
+Add `--es setupLanguage pt-BR` (or `es`, `en`, `system`) to switch the app language at the same time, for example when taking screenshots of a translation.
 
 The demo server accepts any sign-in and keeps writes in memory until it restarts. It includes an open agent decision (with a comparison table), a review comment with a wide table on LUM-148, and editable routines, so Decisions, tables and the routine editor can all be tried. It also accepts the live WebSocket, so the connection dot goes green, but it never pushes events.
 
