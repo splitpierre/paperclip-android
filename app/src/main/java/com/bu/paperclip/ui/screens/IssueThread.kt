@@ -4,7 +4,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.net.Uri
-import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,6 +28,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import com.bu.paperclip.net.ServerFiles
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.material.icons.outlined.AttachFile
+import androidx.compose.material.icons.automirrored.outlined.InsertDriveFile
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AlternateEmail
 import androidx.compose.material.icons.filled.Close
@@ -69,7 +73,6 @@ import coil.compose.AsyncImage
 import com.bu.paperclip.ui.components.AppFilterChip
 import com.bu.paperclip.data.AppState
 import com.bu.paperclip.data.IssueComment
-import com.bu.paperclip.data.Repo
 import com.bu.paperclip.ui.components.AgentAvatar
 import com.bu.paperclip.ui.components.Avatar
 import com.bu.paperclip.ui.components.Markdown
@@ -189,17 +192,10 @@ private fun IssueCommentMenu(open: Boolean, onClose: () -> Unit, ctx: Context, c
     }
 }
 
-private data class IssuePendingUpload(val uri: Uri, val attachmentId: String? = null, val failed: Boolean = false)
-
-private fun issueDisplayName(ctx: Context, uri: Uri): String {
-    ctx.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
-        if (c.moveToFirst()) c.getString(0)?.let { return it }
-    }
-    return "image-${System.currentTimeMillis()}.jpg"
-}
+private data class IssuePendingUpload(val uri: Uri, val file: PickedFile? = null, val attachmentId: String? = null, val failed: Boolean = false)
 
 /**
- * Bottom composer: markdown text, @mentions (agent links), image attachments and an
+ * Bottom composer: markdown text, @mentions (agent links), image and file attachments and an
  * "interrupt" toggle while an agent run is live. Optimistic: [onLocal] shows the message
  * immediately; [onSent]/[onFailed] reconcile it.
  */
@@ -218,16 +214,15 @@ internal fun IssueComposer(
     var mentionSheet by remember { mutableStateOf(false) }
     val uploads = remember(issueId) { mutableStateListOf<IssuePendingUpload>() }
 
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(6)) { uris ->
+    var attachMenu by remember { mutableStateOf(false) }
+    fun upload(uris: List<Uri>) {
         uris.forEach { uri ->
             uploads.add(IssuePendingUpload(uri))
             scope.launch {
                 try {
-                    val (bytes, name, mime) = withContext(Dispatchers.IO) {
-                        val b = ctx.contentResolver.openInputStream(uri)!!.use { it.readBytes() }
-                        Triple(b, issueDisplayName(ctx, uri), ctx.contentResolver.getType(uri) ?: "image/jpeg")
-                    }
-                    val att = Repo.uploadAttachment(AppState.cid, issueId, name, mime, bytes)
+                    val file = withContext(Dispatchers.IO) { pickedFile(ctx, uri) }
+                    uploads.indexOfFirst { it.uri == uri }.takeIf { it >= 0 }?.let { uploads[it] = uploads[it].copy(file = file) }
+                    val att = uploadPickedFile(ctx, issueId, file)
                     val i = uploads.indexOfFirst { it.uri == uri }
                     if (i >= 0) uploads[i] = uploads[i].copy(attachmentId = att.id)
                 } catch (c: CancellationException) {
@@ -240,6 +235,8 @@ internal fun IssueComposer(
             }
         }
     }
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(6)) { upload(it) }
+    val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { upload(it) }
 
     val uploading = uploads.any { it.attachmentId == null && !it.failed }
     val canSend = text.text.isNotBlank() && !uploading
@@ -277,8 +274,15 @@ internal fun IssueComposer(
             if (uploads.isNotEmpty()) {
                 Row(Modifier.horizontalScroll(rememberScrollState()).padding(bottom = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     uploads.forEach { u ->
-                        Box(Modifier.size(56.dp).clip(RoundedCornerShape(8.dp))) {
-                            AsyncImage(model = u.uri, contentDescription = null, modifier = Modifier.size(56.dp))
+                        Box(Modifier.size(56.dp).clip(RoundedCornerShape(8.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
+                            if (u.file == null || ServerFiles.isImage(u.file.mime)) {
+                                AsyncImage(model = u.uri, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(56.dp))
+                            } else {
+                                Column(Modifier.size(56.dp).padding(4.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                                    Icon(Icons.AutoMirrored.Outlined.InsertDriveFile, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(u.file.name, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                            }
                             if (u.attachmentId == null && !u.failed) {
                                 CircularProgressIndicator(Modifier.size(22.dp).align(Alignment.Center), strokeWidth = 2.dp)
                             }
@@ -301,8 +305,20 @@ internal fun IssueComposer(
             }
             Row(verticalAlignment = Alignment.Bottom) {
                 IconButton(onClick = { mentionSheet = true }) { Icon(Icons.Default.AlternateEmail, "Mention agent") }
-                IconButton(onClick = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }) {
-                    Icon(Icons.Outlined.Image, "Attach image")
+                Box {
+                    IconButton(onClick = { attachMenu = true }) { Icon(Icons.Outlined.AttachFile, "Attach") }
+                    DropdownMenu(expanded = attachMenu, onDismissRequest = { attachMenu = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Photo") },
+                            leadingIcon = { Icon(Icons.Outlined.Image, null) },
+                            onClick = { attachMenu = false; photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("File") },
+                            leadingIcon = { Icon(Icons.AutoMirrored.Outlined.InsertDriveFile, null) },
+                            onClick = { attachMenu = false; filePicker.launch(arrayOf("*/*")) },
+                        )
+                    }
                 }
                 TextField(
                     value = text,

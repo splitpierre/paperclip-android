@@ -21,6 +21,7 @@ import androidx.compose.material.icons.outlined.Inbox
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.SmartToy
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -127,7 +128,11 @@ private fun MainShell(pendingLink: String?, onLinkConsumed: () -> Unit, onSigned
     val snack by AppState.snack.collectAsState()
 
     LaunchedEffect(snack) {
-        snack?.let { snackHost.showSnackbar(it); AppState.clearToast() }
+        snack?.let {
+            if (it.sticky) snackHost.showSnackbar(it.message, withDismissAction = true, duration = SnackbarDuration.Indefinite)
+            else snackHost.showSnackbar(it.message)
+            AppState.clearToast()
+        }
     }
 
     DisposableEffect(nav) {

@@ -1,6 +1,32 @@
 package com.bu.paperclip.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.automirrored.outlined.InsertDriveFile
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.AttachFile
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
+import coil.compose.AsyncImage
+import com.bu.paperclip.net.ServerFiles
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -58,6 +84,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgentId: String?) {
+    val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     var title by rememberSaveable { mutableStateOf("") }
     var description by rememberSaveable { mutableStateOf("") }
@@ -71,6 +98,18 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
     var error by remember { mutableStateOf<String?>(null) }
     var parent by remember { mutableStateOf<Issue?>(null) }
     val focus = remember { FocusRequester() }
+    val files = rememberSaveable(saver = pickedFilesSaver) { mutableStateListOf() }
+    val uploadState = remember { mutableStateMapOf<Uri, NewIssueUpload>() }
+    var uploadIndex by remember { mutableStateOf(0) }
+
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        scope.launch {
+            val picked = withContext(Dispatchers.IO) { uris.map { pickedFile(ctx, it) } }
+            picked.forEach { f -> if (files.none { it.uri == f.uri }) files.add(f) }
+        }
+    }
+    // Leaving while files upload would cancel them halfway; the screen moves on by itself when done.
+    BackHandler(enabled = saving) {}
 
     LaunchedEffect(parentId) {
         if (parentId != null) runCatching { parent = Repo.issue(parentId) }.onSuccess {
@@ -95,7 +134,22 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
                     "parentId" to (parent?.id ?: parentId),
                 ).let { o -> kotlinx.serialization.json.JsonObject(o.filterValues { v -> v !is kotlinx.serialization.json.JsonNull }) }
                 val created = Repo.createIssue(AppState.cid, body)
-                AppState.toast("Created ${created.identifier ?: "task"}")
+                // The task exists from here on: a failed upload is reported, never undoes it.
+                val failed = mutableListOf<Pair<String, String>>()
+                files.toList().forEachIndexed { n, f ->
+                    uploadIndex = n + 1
+                    uploadState[f.uri] = NewIssueUpload.Uploading
+                    try {
+                        uploadPickedFile(ctx, created.id, f)
+                        uploadState[f.uri] = NewIssueUpload.Done
+                    } catch (c: CancellationException) {
+                        throw c
+                    } catch (t: Throwable) {
+                        uploadState[f.uri] = NewIssueUpload.Failed
+                        failed += f.name to errorMessage(t)
+                    }
+                }
+                AppState.toast(uploadFailureMessage(created.identifier ?: "task", failed, files.size), sticky = failed.isNotEmpty())
                 nav.back()
                 nav.issue(created.identifier ?: created.id)
             } catch (c: CancellationException) {
@@ -111,7 +165,7 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
     Scaffold(
         topBar = {
             TopAppBar(
-                navigationIcon = { BackIcon { nav.back() } },
+                navigationIcon = { BackIcon { if (!saving) nav.back() } },
                 title = { Text(if (parentId != null) "New sub-task" else "New task") },
                 actions = {
                     if (saving) CircularProgressIndicator(Modifier.padding(end = 16.dp).size(22.dp), strokeWidth = 2.dp)
@@ -162,6 +216,20 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                 modifier = Modifier.fillMaxWidth().heightIn(min = 200.dp),
             )
+            NewIssueFiles(
+                files = files,
+                state = uploadState,
+                enabled = !saving,
+                onAdd = { picker.launch(arrayOf("*/*")) },
+                onRemove = { f -> files.remove(f) },
+            )
+            if (saving && files.isNotEmpty() && uploadIndex > 0) {
+                Text(
+                    "Uploading $uploadIndex of ${files.size}…",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             if (status == "in_progress" && agentId == null && userId == null) {
                 Text("In progress tasks need an assignee.", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
@@ -181,5 +249,65 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
             }
         }, onDismiss = { sheet = null })
         "project" -> IssueProjectSheet(project, onPick = { project = it }, onDismiss = { sheet = null })
+    }
+}
+
+private enum class NewIssueUpload { Uploading, Done, Failed }
+
+/** Picks survive rotation; the document permission belongs to the activity, which outlives it. */
+private val pickedFilesSaver = listSaver<MutableList<PickedFile>, String>(
+    save = { list -> list.flatMap { listOf(it.uri.toString(), it.name, it.size?.toString().orEmpty(), it.mime) } },
+    restore = { flat ->
+        mutableStateListOf<PickedFile>().apply {
+            flat.chunked(4).forEach { (uri, name, size, mime) -> add(PickedFile(Uri.parse(uri), name, size.toLongOrNull(), mime)) }
+        }
+    },
+)
+
+@Composable
+private fun NewIssueFiles(
+    files: List<PickedFile>,
+    state: Map<Uri, NewIssueUpload>,
+    enabled: Boolean,
+    onAdd: () -> Unit,
+    onRemove: (PickedFile) -> Unit,
+) {
+    Column {
+        files.forEach { f ->
+            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (ServerFiles.isImage(f.mime)) {
+                    AsyncImage(
+                        model = f.uri,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.size(40.dp).clip(RoundedCornerShape(8.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh),
+                    )
+                } else {
+                    Icon(
+                        Icons.AutoMirrored.Outlined.InsertDriveFile, null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(40.dp).padding(8.dp),
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(f.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    f.size?.let {
+                        Text(issueSize(it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                when (state[f.uri]) {
+                    NewIssueUpload.Uploading -> CircularProgressIndicator(Modifier.padding(12.dp).size(22.dp), strokeWidth = 2.dp)
+                    NewIssueUpload.Done -> Icon(Icons.Outlined.CheckCircle, "Uploaded", Modifier.padding(12.dp), tint = MaterialTheme.colorScheme.primary)
+                    NewIssueUpload.Failed -> Icon(Icons.Outlined.ErrorOutline, "Upload failed", Modifier.padding(12.dp), tint = MaterialTheme.colorScheme.error)
+                    null -> IconButton(onClick = { onRemove(f) }, enabled = enabled) { Icon(Icons.Default.Close, "Remove ${f.name}") }
+                }
+            }
+        }
+        TextButton(onClick = onAdd, enabled = enabled) {
+            Icon(Icons.Outlined.AttachFile, null, Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Attach files")
+        }
     }
 }
