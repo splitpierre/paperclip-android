@@ -1143,4 +1143,6 @@
     <string name="work_mode_standard">Auto mode</string>
     <string name="work_mode_planning">Plan mode</string>
     <string name="work_mode_ask">Ask mode</string>
+    <string name="code_copy">Copy</string>
+    <string name="code_copied">Copied</string>
 </resources>

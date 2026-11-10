@@ -92,6 +92,8 @@ Card details are full Markdown, so tables, code blocks and links render as they 
 
 **Tables** keep readable columns on a phone: each column is as wide as its content (long cells wrap), and wide tables scroll sideways instead of squeezing to fit. A fade at the edge shows there's more. This applies everywhere agent output appears: threads, cards, documents, decisions and run transcripts.
 
+**Code blocks** (fenced with three backticks) show in a monospace block that scrolls sideways, with a **Copy** button that copies the whole block and briefly reads "Copied".
+
 <br clear="right">
 
 ## Tasks
