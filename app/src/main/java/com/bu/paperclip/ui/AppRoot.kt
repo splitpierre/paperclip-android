@@ -165,6 +165,8 @@ private fun MainShell(pendingLink: String?, onLinkConsumed: () -> Unit, onSigned
 
     // The local task mirror behind the Tasks views and sub-task trees.
     LaunchedEffect(company?.id) { company?.id?.let { com.bu.paperclip.data.IssueStore.start(it) } }
+    // Draft markers belong to the server + company in view.
+    LaunchedEffect(company?.id) { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { com.bu.paperclip.data.Drafts.refresh() } }
 
     // Keep agent names/statuses and badge counts fresh.
     LaunchedEffect(company?.id) {

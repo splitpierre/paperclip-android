@@ -45,6 +45,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -61,6 +62,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.bu.paperclip.R
 import com.bu.paperclip.data.AppState
+import com.bu.paperclip.data.AnswerDraft
+import com.bu.paperclip.data.DraftStore
 import com.bu.paperclip.data.Interaction
 import com.bu.paperclip.data.Repo
 import com.bu.paperclip.data.jsonOf
@@ -318,7 +321,10 @@ private fun IssueQuestionsBody(issueId: String, it: Interaction, pending: Boolea
     val setQuestions = payload.issueObj("questionSet").issueObjs("questions").associateBy { q -> q.issueStr("id") ?: "" }
     payload.issueObj("questionSet").issueStr("description")?.takeIf { d -> d.isNotBlank() }?.let { d -> Markdown(d, fontSizeSp = 14f); Spacer(Modifier.height(8.dp)) }
 
+    val draftKey = DraftStore.answerKey(it.id)
     if (!pending) {
+        // Answered here or elsewhere: nothing left to keep.
+        LaunchedEffect(it.id) { clearDraft(draftKey) }
         val answers = it.result.issueObjs("answers").associateBy { a -> a.issueStr("questionId") ?: "" }
         questions.forEach { q ->
             val qid = q.issueStr("id") ?: return@forEach
@@ -348,6 +354,19 @@ private fun IssueQuestionsBody(issueId: String, it: Interaction, pending: Boolea
         }
     }
     val otherText = remember(it.id) { mutableStateMapOf<String, String>() }
+    var draftLoaded by remember(it.id) { mutableStateOf(false) }
+    var submitted by remember(it.id) { mutableStateOf(false) }
+    LaunchedEffect(it.id) {
+        loadDraft(draftKey, AnswerDraft.serializer())?.let { d ->
+            selected.putAll(d.selected); otherActive.putAll(d.otherActive); otherText.putAll(d.otherText)
+        }
+        draftLoaded = true
+    }
+    PersistDraft(
+        draftKey, AnswerDraft.serializer(), isEmpty = { d -> d.isEmpty },
+        enabled = { draftLoaded && !submitted },
+        value = { AnswerDraft(selected.toMap(), otherActive.toMap(), otherText.toMap()) },
+    )
 
     questions.forEachIndexed { index, q ->
         val qid = q.issueStr("id") ?: return@forEachIndexed
@@ -432,7 +451,9 @@ private fun IssueQuestionsBody(issueId: String, it: Interaction, pending: Boolea
                         "otherText" to other.ifEmpty { null },
                     ).let { o -> if (other.isEmpty()) JsonObject(o.filterKeys { k -> k != "otherText" }) else o }
                 })
-                run { Repo.respond(issueId, it.id, answers) }
+                run {
+                    Repo.respond(issueId, it.id, answers).also { submitted = true; clearDraft(draftKey) }
+                }
             },
         ) { Text(payload.issueStr("submitLabel") ?: payload.issueObj("questionSet").issueStr("submitLabel") ?: stringResource(R.string.interaction_submit_answers)) }
         if (work.working) { Spacer(Modifier.width(10.dp)); CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp) }

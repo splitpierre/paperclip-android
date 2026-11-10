@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -50,6 +52,7 @@ fun IssueRow(issue: Issue, onClick: () -> Unit, modifier: Modifier = Modifier, s
                     Spacer(Modifier.width(6.dp))
                     Pill(stringResource(R.string.component_live), LocalStatusColors.current.blue)
                 }
+                DraftPill(issue.id)
                 if (showProject) {
                     val p = issue.project ?: AppState.project(issue.projectId)?.let { com.bu.paperclip.data.ProjectRef(it.id, it.name, it.color) }
                     if (p != null) {
@@ -136,5 +139,15 @@ fun RunRow(run: HeartbeatRun, onClick: () -> Unit, showAgent: Boolean = true) {
             if (!sub.isNullOrBlank()) Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
             else Text(durationLabel(run.startedAt, run.finishedAt), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+    }
+}
+
+/** A small "Draft" pill when this task has an unsent reply saved on the device. */
+@Composable
+fun DraftPill(issueId: String) {
+    val drafts by com.bu.paperclip.data.Drafts.commentIssueIds.collectAsState()
+    if (issueId in drafts) {
+        Spacer(Modifier.width(6.dp))
+        Pill(stringResource(R.string.task_pill_draft), LocalStatusColors.current.gray)
     }
 }

@@ -477,6 +477,8 @@ FILES = {}
 ATTACHMENTS = {}
 # Paperclip's default PAPERCLIP_ATTACHMENT_MAX_BYTES; --max-attachment-bytes lowers it to try failed uploads.
 MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
+# --fail-text: comments and new tasks containing it are rejected with a 500, to try a failed send.
+FAIL_TEXT = None
 
 
 def attach(n, name, ctype, data, mins_ago, kind="attachments"):
@@ -755,6 +757,9 @@ class Handler(BaseHTTPRequestHandler):
         if m and method == "POST":
             return self.upload(m.group(1))
         body = self.body() if method in ("POST", "PATCH", "PUT") else {}
+        if FAIL_TEXT and method == "POST" and re.fullmatch(r"/api/(issues/[^/]+/comments|companies/[^/]+/issues)", path) \
+                and FAIL_TEXT in str(body.get("body", "")) + str(body.get("title", "")):
+            return self.send_json({"error": "Demo server: rejected because it contains %r (--fail-text)" % FAIL_TEXT}, 500)
         try:
             res = self.api(method, path[4:], q, body)
         except KeyError:
@@ -1143,14 +1148,16 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
-    global MAX_ATTACHMENT_BYTES
+    global MAX_ATTACHMENT_BYTES, FAIL_TEXT
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=3199)
     ap.add_argument("--avatars-from", help="Paperclip base URL to proxy agent avatars from, e.g. https://paperclip.example.com")
     ap.add_argument("--max-attachment-bytes", type=int, default=MAX_ATTACHMENT_BYTES, help="Reject larger uploads with a 422, like Paperclip")
+    ap.add_argument("--fail-text", help="Reject comments and new tasks containing this text with a 500, to try a failed send")
     a = ap.parse_args()
     MAX_ATTACHMENT_BYTES = a.max_attachment_bytes
+    FAIL_TEXT = a.fail_text
     Handler.avatars_from = a.avatars_from
     srv = ThreadingHTTPServer((a.host, a.port), Handler)
     print(f"Demo Paperclip on http://{a.host}:{a.port} ({len(ISSUES)} tasks, {len(AGENTS)} agents)")
