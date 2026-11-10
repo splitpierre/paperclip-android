@@ -312,6 +312,11 @@
     <string name="new_issue_upload_failed">Upload failed</string>
     <string name="new_issue_remove_file">Remove %1$s</string>
     <string name="new_issue_attach_files">Attach files</string>
+    <string name="draft_saved_on_device">Draft, saved on this device</string>
+    <string name="draft_discard">Discard draft</string>
+    <string name="draft_discard_title">Discard this draft?</string>
+    <string name="draft_discard_body">Everything typed here and the files you picked will be cleared. This can\'t be undone.</string>
+    <string name="task_pill_draft">Draft</string>
 
     <!-- File uploads (IssueUploads.kt) -->
     <string name="upload_cant_read">Can\'t read %1$s</string>
@@ -383,6 +388,34 @@
     <string name="issue_tab_activity_runs_empty">No runs yet</string>
     <string name="issue_tab_activity_events">Activity</string>
     <string name="issue_tab_activity_events_empty">No activity</string>
+    <string name="issue_tab_properties">Properties</string>
+    <string name="issue_props_work">Work</string>
+    <string name="issue_props_relationships">Relationships</string>
+    <string name="issue_props_about">About</string>
+    <string name="issue_props_labels">Labels</string>
+    <string name="issue_props_labels_empty">This company has no labels yet</string>
+    <string name="issue_props_filter_labels">Filter labels</string>
+    <string name="issue_props_parent">Parent</string>
+    <string name="issue_props_no_parent">No parent</string>
+    <string name="issue_props_open_parent">Open parent task</string>
+    <string name="issue_props_no_blockers">No blockers</string>
+    <string name="issue_props_blocking">Blocking</string>
+    <plurals name="issue_props_task_count">
+        <item quantity="one">%1$d task</item>
+        <item quantity="other">%1$d tasks</item>
+    </plurals>
+    <string name="issue_props_search_tasks">Search tasks</string>
+    <string name="issue_props_no_matches">No matching tasks</string>
+    <string name="issue_props_identifier">Identifier</string>
+    <string name="issue_props_copy_identifier">Copy identifier</string>
+    <string name="issue_props_created_by">Created by</string>
+    <string name="issue_props_started">Started</string>
+    <string name="issue_props_completed">Completed</string>
+    <string name="issue_props_created">Created</string>
+    <string name="issue_props_updated">Updated</string>
+    <string name="issue_work_mode_auto_hint">The agent does the work</string>
+    <string name="issue_work_mode_plan_hint">The agent writes a plan for you to approve first</string>
+    <string name="issue_work_mode_ask_hint">The agent answers questions without changing anything</string>
 
     <!-- Task thread and composer (IssueThread) -->
     <string name="issue_thread_empty">No comments yet. Say something to the assignee below.</string>
@@ -1023,6 +1056,12 @@
 
     <!-- Projects, goals and routines lists -->
     <string name="projects_title">Projects</string>
+    <string name="projects_new_project">New project</string>
+    <string name="projects_new_title">New project</string>
+    <string name="projects_name_label">Project name</string>
+    <string name="projects_description_label">Description</string>
+    <string name="projects_status_label">Status</string>
+    <string name="projects_create">Create</string>
     <string name="projects_empty">No projects yet.</string>
     <plurals name="projects_tasks">
         <item quantity="one">%1$d task</item>
@@ -1105,4 +1144,10 @@
     <string name="activity_interaction_other">%1$s %3$s on %2$s</string>
     <!-- Unknown activity; %3$s is the raw action name, e.g. "archived". -->
     <string name="activity_other">%1$s %3$s %2$s</string>
+    <string name="work_mode_title">Work mode</string>
+    <string name="work_mode_standard">Auto mode</string>
+    <string name="work_mode_planning">Plan mode</string>
+    <string name="work_mode_ask">Ask mode</string>
+    <string name="code_copy">Copy</string>
+    <string name="code_copied">Copied</string>
 </resources>

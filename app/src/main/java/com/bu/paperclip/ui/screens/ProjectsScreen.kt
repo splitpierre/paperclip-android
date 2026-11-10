@@ -8,6 +8,17 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.runtime.rememberCoroutineScope
+import com.bu.paperclip.data.Repo
+import com.bu.paperclip.ui.components.errorMessage
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -55,7 +66,6 @@ import com.bu.paperclip.data.AppState
 import com.bu.paperclip.data.Goal
 import com.bu.paperclip.data.Issue
 import com.bu.paperclip.data.Project
-import com.bu.paperclip.data.Repo
 import com.bu.paperclip.data.Routine
 import com.bu.paperclip.data.jsonOf
 import com.bu.paperclip.net.Api
@@ -89,16 +99,106 @@ fun ProjectsScreen(nav: Nav) {
     val loader = rememberLoader(cid) { Repo.projects(cid).also { AppState.projects.value = it } }
     LiveRefresh(filter = { it.type == "activity.logged" && it.s("entityType") == "project" }) { loader.refresh() }
 
-    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.projects_title)) }, navigationIcon = { BackIcon { nav.back() } }) }) { pad ->
+    var creating by rememberSaveable { mutableStateOf(false) }
+
+    Scaffold(
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.projects_title)) }, navigationIcon = { BackIcon { nav.back() } }) },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = { creating = true },
+                icon = { Icon(Icons.Default.Add, null) },
+                text = { Text(stringResource(R.string.projects_new_project)) },
+            )
+        },
+    ) { pad ->
         LoadContent(loader, Modifier.padding(pad)) { list ->
             val visible = list.filter { it.archivedAt == null }
                 .sortedWith(compareBy<Project> { adminProjectStatusRank(it.status) }.thenByDescending { it.updatedAt })
             LazyColumn(Modifier.fillMaxSize()) {
                 if (visible.isEmpty()) item { EmptyState(stringResource(R.string.projects_empty), Icons.Outlined.FolderOpen) }
                 items(visible, key = { it.id }) { p -> ProjectRow(p) { nav.project(p.id) } }
+                item { Spacer(Modifier.height(88.dp)) }
             }
         }
     }
+
+    if (creating) {
+        NewProjectDialog(
+            cid = cid,
+            onDismiss = { creating = false },
+            onCreated = { p ->
+                creating = false
+                // Make the project visible to the New task picker right away, then refresh from the server.
+                AppState.projects.value = listOf(p) + AppState.projects.value.filter { it.id != p.id }
+                loader.refresh()
+                nav.project(p.id)
+            },
+        )
+    }
+}
+
+private val newProjectStatuses = listOf("planned", "backlog", "in_progress", "completed", "cancelled")
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun NewProjectDialog(cid: String, onDismiss: () -> Unit, onCreated: (Project) -> Unit) {
+    var name by rememberSaveable { mutableStateOf("") }
+    var description by rememberSaveable { mutableStateOf("") }
+    var status by rememberSaveable { mutableStateOf("planned") }
+    var saving by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
+
+    fun create() {
+        if (name.isBlank() || saving) return
+        saving = true; error = null
+        scope.launch {
+            try {
+                val body = jsonOf(
+                    "name" to name.trim(),
+                    "description" to description.trim().ifEmpty { null },
+                    "status" to status,
+                )
+                onCreated(Repo.createProject(cid, body))
+            } catch (c: CancellationException) {
+                throw c
+            } catch (t: Throwable) {
+                error = errorMessage(t)
+            } finally {
+                saving = false
+            }
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = { if (!saving) onDismiss() },
+        title = { Text(stringResource(R.string.projects_new_title)) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = name, onValueChange = { name = it }, enabled = !saving, singleLine = true,
+                    label = { Text(stringResource(R.string.projects_name_label)) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = description, onValueChange = { description = it }, enabled = !saving, minLines = 3,
+                    label = { Text(stringResource(R.string.projects_description_label)) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Text(stringResource(R.string.projects_status_label), style = MaterialTheme.typography.labelMedium)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    newProjectStatuses.forEach { s ->
+                        FilterChip(selected = status == s, onClick = { status = s }, enabled = !saving, label = { Text(statusLabel(s)) })
+                    }
+                }
+                error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = ::create, enabled = name.isNotBlank() && !saving) { Text(stringResource(R.string.projects_create)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss, enabled = !saving) { Text(stringResource(R.string.common_cancel)) } },
+    )
 }
 
 private fun adminProjectStatusRank(s: String) = when (s) {

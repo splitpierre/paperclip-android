@@ -72,6 +72,12 @@ import com.bu.paperclip.util.L10n
 import com.bu.paperclip.ui.components.PropertyChip
 import com.bu.paperclip.data.AppState
 import com.bu.paperclip.data.Issue
+import com.bu.paperclip.data.IssueDraft
+import com.bu.paperclip.data.DraftFile
+import com.bu.paperclip.data.DraftStore
+import android.content.Context
+import android.content.Intent
+import androidx.compose.material3.AlertDialog
 import com.bu.paperclip.data.Repo
 import com.bu.paperclip.data.jsonOf
 import com.bu.paperclip.ui.Nav
@@ -94,6 +100,7 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
     var description by rememberSaveable { mutableStateOf("") }
     var status by rememberSaveable { mutableStateOf("todo") }
     var priority by rememberSaveable { mutableStateOf("medium") }
+    var workMode by rememberSaveable { mutableStateOf("standard") }
     var agentId by rememberSaveable { mutableStateOf(assigneeAgentId) }
     var userId by rememberSaveable { mutableStateOf<String?>(null) }
     var project by rememberSaveable { mutableStateOf(projectId) }
@@ -105,10 +112,41 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
     val files = rememberSaveable(saver = pickedFilesSaver) { mutableStateListOf() }
     val uploadState = remember { mutableStateMapOf<Uri, NewIssueUpload>() }
     var uploadIndex by remember { mutableStateOf(0) }
+    val draftKey = DraftStore.newIssueKey(parentId)
+    // Set once the saved draft has been applied (or there was none); survives rotation and process death.
+    var draftLoaded by rememberSaveable { mutableStateOf(false) }
+    var submitted by remember { mutableStateOf(false) }
+    var confirmDiscard by remember { mutableStateOf(false) }
+
+    fun currentDraft() = IssueDraft(
+        title = title, description = description, status = status, priority = priority, workMode = workMode,
+        assigneeAgentId = agentId, assigneeUserId = userId, projectId = project, parentId = parentId,
+        files = files.map { DraftFile(it.uri.toString(), it.name, it.size, it.mime) },
+    )
+    LaunchedEffect(draftKey) {
+        if (draftLoaded) return@LaunchedEffect
+        loadDraft(draftKey, IssueDraft.serializer())?.takeIf { !it.isEmpty }?.let { d ->
+            title = d.title; description = d.description; status = d.status; priority = d.priority; workMode = d.workMode
+            agentId = d.assigneeAgentId; userId = d.assigneeUserId; project = d.projectId
+            d.files.forEach { f -> val uri = Uri.parse(f.uri); if (files.none { it.uri == uri }) files.add(PickedFile(uri, f.name, f.size, f.mime)) }
+        }
+        draftLoaded = true
+    }
+    PersistDraft(draftKey, IssueDraft.serializer(), isEmpty = { it.isEmpty }, enabled = { draftLoaded && !submitted }, value = { currentDraft() })
+
+    fun discardDraft() {
+        files.forEach { releaseFileAccess(ctx, it.uri) }
+        files.clear()
+        title = ""; description = ""; status = "todo"; priority = "medium"; workMode = "standard"
+        agentId = assigneeAgentId; userId = null; project = projectId ?: parent?.projectId
+        error = null
+        scope.launch { clearDraft(draftKey) }
+    }
 
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
         scope.launch {
-            val picked = withContext(Dispatchers.IO) { uris.map { pickedFile(ctx, it) } }
+            // Keep read access across restarts so picked files survive in the draft.
+            val picked = withContext(Dispatchers.IO) { uris.map { keepFileAccess(ctx, it); pickedFile(ctx, it) } }
             picked.forEach { f -> if (files.none { it.uri == f.uri }) files.add(f) }
         }
     }
@@ -132,6 +170,7 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
                     "description" to description.trim().ifEmpty { null },
                     "status" to status,
                     "priority" to priority,
+                    "workMode" to workMode,
                     "assigneeAgentId" to agentId,
                     "assigneeUserId" to userId,
                     "projectId" to project,
@@ -153,6 +192,9 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
                         failed += f.name to errorMessage(t)
                     }
                 }
+                submitted = true
+                clearDraft(draftKey)
+                files.forEach { releaseFileAccess(ctx, it.uri) }
                 AppState.toast(uploadFailureMessage(created.identifier ?: L10n.str(R.string.new_issue_task_fallback), failed, files.size), sticky = failed.isNotEmpty())
                 nav.back()
                 nav.issue(created.identifier ?: created.id)
@@ -185,6 +227,17 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
             parent?.let { p ->
                 Text(stringResource(R.string.new_issue_sub_task_of, p.identifier ?: "", p.title), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            if (draftLoaded && !currentDraft().isEmpty) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        stringResource(R.string.draft_saved_on_device),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = { confirmDiscard = true }, enabled = !saving) { Text(stringResource(R.string.draft_discard)) }
+                }
+            }
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it },
@@ -195,6 +248,7 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 PropertyChip(onClick = { sheet = "status" }, label = { Text(taskStatusLabel(status)) }, leadingIcon = { StatusIcon(status, 14.dp) })
                 PropertyChip(onClick = { sheet = "priority" }, label = { Text(taskPriorityLabel(priority)) }, leadingIcon = { PriorityIcon(priority, 16.dp) })
+                PropertyChip(onClick = { sheet = "workMode" }, label = { Text(workModeLabel(workMode)) }, leadingIcon = { Icon(workModeIcon(workMode), null, Modifier.size(18.dp)) })
                 PropertyChip(
                     onClick = { sheet = "assignee" },
                     label = { Text(agentId?.let { AppState.agentName(it) } ?: userId?.let { AppState.userName(it) } ?: stringResource(R.string.common_unassigned)) },
@@ -225,7 +279,7 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
                 state = uploadState,
                 enabled = !saving,
                 onAdd = { picker.launch(arrayOf("*/*")) },
-                onRemove = { f -> files.remove(f) },
+                onRemove = { f -> files.remove(f); releaseFileAccess(ctx, f.uri) },
             )
             if (saving && files.isNotEmpty() && uploadIndex > 0) {
                 Text(
@@ -242,18 +296,39 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
         }
     }
 
+    if (confirmDiscard) {
+        AlertDialog(
+            onDismissRequest = { confirmDiscard = false },
+            title = { Text(stringResource(R.string.draft_discard_title)) },
+            text = { Text(stringResource(R.string.draft_discard_body)) },
+            confirmButton = { TextButton(onClick = { confirmDiscard = false; discardDraft() }) { Text(stringResource(R.string.draft_discard)) } },
+            dismissButton = { TextButton(onClick = { confirmDiscard = false }) { Text(stringResource(R.string.common_cancel)) } },
+        )
+    }
+
     when (sheet) {
         "status" -> IssueStatusSheet(status, onPick = { status = it }, onDismiss = { sheet = null })
         "priority" -> IssuePrioritySheet(priority, onPick = { priority = it }, onDismiss = { sheet = null })
+        "workMode" -> IssueWorkModeSheet(workMode, onPick = { workMode = it }, onDismiss = { sheet = null })
         "assignee" -> IssueAssigneeSheet(agentId, userId, onPick = { a ->
             when (a) {
                 is IssueAssignee.AgentA -> { agentId = a.id; userId = null }
                 IssueAssignee.Me -> { agentId = null; userId = AppState.me.value?.id }
+                is IssueAssignee.UserA -> { agentId = null; userId = a.id }
                 IssueAssignee.Nobody -> { agentId = null; userId = null }
             }
         }, onDismiss = { sheet = null })
         "project" -> IssueProjectSheet(project, onPick = { project = it }, onDismiss = { sheet = null })
     }
+}
+
+/** Asks the document provider to keep read access after restarts; not every provider allows it. */
+private fun keepFileAccess(ctx: Context, uri: Uri) {
+    runCatching { ctx.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+}
+
+private fun releaseFileAccess(ctx: Context, uri: Uri) {
+    runCatching { ctx.contentResolver.releasePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
 }
 
 private enum class NewIssueUpload { Uploading, Done, Failed }

@@ -16,6 +16,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.automirrored.outlined.Assignment
+import androidx.compose.material.icons.outlined.Build
+import androidx.compose.material.icons.outlined.QuestionAnswer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.outlined.FolderOff
 import androidx.compose.material.icons.outlined.PersonOff
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -126,9 +130,47 @@ internal fun IssuePrioritySheet(current: String?, onPick: (String) -> Unit, onDi
     }
 }
 
-/** Assignee choice: agent id, the signed-in user, or nobody. */
+/** Work modes offered when creating a task, in the web UI's order. `skill_test` is a harness mode and never offered. */
+val WORK_MODES = listOf("standard", "planning", "ask")
+
+fun workModeIcon(mode: String): ImageVector = when (mode) {
+    "planning" -> Icons.AutoMirrored.Outlined.Assignment
+    "ask" -> Icons.Outlined.QuestionAnswer
+    else -> Icons.Outlined.Build
+}
+
+@Composable
+fun workModeLabel(mode: String): String = stringResource(
+    when (mode) {
+        "planning" -> R.string.work_mode_planning
+        "ask" -> R.string.work_mode_ask
+        else -> R.string.work_mode_standard
+    },
+)
+
+/** One-line explanation of a work mode, shown under its name in the picker. */
+@Composable
+fun workModeHint(mode: String): String = stringResource(
+    when (mode) {
+        "planning" -> R.string.issue_work_mode_plan_hint
+        "ask" -> R.string.issue_work_mode_ask_hint
+        else -> R.string.issue_work_mode_auto_hint
+    },
+)
+
+@Composable
+internal fun IssueWorkModeSheet(current: String?, onPick: (String) -> Unit, onDismiss: () -> Unit) {
+    IssueSheet(stringResource(R.string.work_mode_title), onDismiss) {
+        WORK_MODES.forEach { m ->
+            IssueSheetRow(m == current, { onPick(m); onDismiss() }, { Icon(workModeIcon(m), null, Modifier.size(20.dp)) }, workModeLabel(m), workModeHint(m))
+        }
+    }
+}
+
+/** Assignee choice: agent id, the signed-in user, another board user, or nobody. */
 sealed class IssueAssignee {
     data class AgentA(val id: String) : IssueAssignee()
+    data class UserA(val id: String) : IssueAssignee()
     data object Me : IssueAssignee()
     data object Nobody : IssueAssignee()
 }
@@ -140,11 +182,14 @@ internal fun IssueAssigneeSheet(
     allowMe: Boolean = true,
     title: String = stringResource(R.string.task_field_assignee),
     unassignedSelected: Boolean = currentAgentId == null && currentUserId == null,
+    /** Also list the company's other board users, as the web panel does. */
+    showUsers: Boolean = false,
     onPick: (IssueAssignee) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val agents by AppState.agents.collectAsState()
     val me by AppState.me.collectAsState()
+    val users by AppState.users.collectAsState()
     var q by remember { mutableStateOf("") }
     IssueSheet(title, onDismiss) {
         if (agents.size > 8) {
@@ -174,6 +219,16 @@ internal fun IssueAssigneeSheet(
                     a.name,
                     listOfNotNull(a.title, statusLabel(a.status).takeIf { a.status != "idle" && a.status != "active" }).joinToString(" · "),
                 )
+            }
+            if (showUsers) {
+                val others = users.entries
+                    .filter { (id, u) -> id != me?.id && (q.isBlank() || (u.name ?: "").contains(q, true) || (u.email ?: "").contains(q, true)) }
+                    .sortedBy { (_, u) -> (u.name ?: u.email ?: "").lowercase() }
+                items(others, key = { "u-" + it.key }) { (id, u) ->
+                    val name = u.name?.takeIf { it.isNotBlank() } ?: u.email ?: stringResource(R.string.common_user)
+                    IssueSheetRow(currentUserId == id, { onPick(IssueAssignee.UserA(id)); onDismiss() },
+                        { Avatar(name, u.image, 28.dp, isAgent = false) }, name, u.email?.takeIf { it != name })
+                }
             }
         }
     }

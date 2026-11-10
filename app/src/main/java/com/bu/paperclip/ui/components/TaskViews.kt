@@ -154,6 +154,7 @@ fun TaskTreeRow(
                 Text(i.ref, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (isNext) { Spacer(Modifier.width(6.dp)); Pill(stringResource(R.string.task_pill_next), colors.green) }
                 if (live) { Spacer(Modifier.width(6.dp)); Pill(stringResource(R.string.task_pill_live), colors.blue) }
+                DraftPill(i.id)
                 if (blocked && i.status != "blocked") {
                     Spacer(Modifier.width(6.dp))
                     Icon(Icons.Default.Block, stringResource(R.string.task_waiting_on_blocker), tint = colors.red, modifier = Modifier.size(13.dp))
@@ -325,6 +326,7 @@ fun BoardCard(issue: Issue, parent: Issue?, rollup: Rollup, live: Boolean, block
                 Spacer(Modifier.width(4.dp))
                 Text(issue.ref, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (live) { Spacer(Modifier.width(6.dp)); Pill(stringResource(R.string.task_pill_live), colors.blue) }
+                DraftPill(issue.id)
                 if (blocked && issue.status != "blocked") { Spacer(Modifier.width(6.dp)); Icon(Icons.Default.Block, stringResource(R.string.task_waiting_on_blocker), tint = colors.red, modifier = Modifier.size(13.dp)) }
                 Spacer(Modifier.weight(1f))
                 when {
