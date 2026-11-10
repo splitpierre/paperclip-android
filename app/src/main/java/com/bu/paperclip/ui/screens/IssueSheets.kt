@@ -16,6 +16,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.outlined.ClipboardList
+import androidx.compose.material.icons.outlined.Hammer
+import androidx.compose.material.icons.outlined.QuestionAnswer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.outlined.FolderOff
 import androidx.compose.material.icons.outlined.PersonOff
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -122,6 +126,33 @@ internal fun IssuePrioritySheet(current: String?, onPick: (String) -> Unit, onDi
     IssueSheet(stringResource(R.string.task_field_priority), onDismiss) {
         PRIORITIES.forEach { p ->
             IssueSheetRow(p == current, { onPick(p); onDismiss() }, { PriorityIcon(p, 20.dp) }, taskPriorityLabel(p))
+        }
+    }
+}
+
+/** Work modes offered when creating a task, in the web UI's order. `skill_test` is a harness mode and never offered. */
+val WORK_MODES = listOf("standard", "planning", "ask")
+
+fun workModeIcon(mode: String): ImageVector = when (mode) {
+    "planning" -> Icons.Outlined.ClipboardList
+    "ask" -> Icons.Outlined.QuestionAnswer
+    else -> Icons.Outlined.Hammer
+}
+
+@Composable
+fun workModeLabel(mode: String): String = stringResource(
+    when (mode) {
+        "planning" -> R.string.work_mode_planning
+        "ask" -> R.string.work_mode_ask
+        else -> R.string.work_mode_standard
+    },
+)
+
+@Composable
+internal fun IssueWorkModeSheet(current: String?, onPick: (String) -> Unit, onDismiss: () -> Unit) {
+    IssueSheet(stringResource(R.string.work_mode_title), onDismiss) {
+        WORK_MODES.forEach { m ->
+            IssueSheetRow(m == current, { onPick(m); onDismiss() }, { Icon(workModeIcon(m), null, Modifier.size(20.dp)) }, workModeLabel(m))
         }
     }
 }
