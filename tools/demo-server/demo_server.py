@@ -921,6 +921,18 @@ class Handler(BaseHTTPRequestHandler):
         if head == "budgets":
             return BUDGETS
         if head == "projects":
+            if m == "POST":
+                name = (b.get("name") or "").strip()
+                if not name:
+                    return {"error": "Validation error: name is required"}, 400
+                if any(p["name"].lower() == name.lower() for p in PROJECTS):
+                    return {"error": f"A project named \"{name}\" already exists"}, 409
+                p = {"id": str(uuid.uuid4()), "name": name, "description": b.get("description"), "status": b.get("status") or "backlog",
+                     "color": "#6366f1", "leadAgentId": b.get("leadAgentId"), "targetDate": b.get("targetDate"),
+                     "companyId": CID, "archivedAt": None, "updatedAt": ago()}
+                PROJECTS.append(p)
+                PROJECT_BY_ID[p["id"]] = p
+                return p
             return [p | {"taskCount": sum(i["projectId"] == p["id"] for i in ISSUES.values())} for p in PROJECTS]
         if head == "goals":
             return GOALS

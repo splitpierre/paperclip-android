@@ -235,7 +235,7 @@ Transcripts support Claude, Codex, ACP and Antigravity agents. Output from other
 ## More
 
 - **Approvals**: pending and past approvals, such as hiring an agent. Approve, reject or ask for a revision, with a note.
-- **Projects**: each project's lead, target date and tasks.
+- **Projects**: each project's lead, target date and tasks. Tap **New project** to create one: give it a name (required), an optional description and a status (it starts as Planned). It opens as soon as it's created, and it's immediately available in the project picker when you create a task. If the server rejects it, for example because the name is already taken, the reason shows in the form.
 - **Inbox**: unread and assigned tasks, plus the attention feed as a list. See [Inbox](#inbox).
 - **Goals**.
 - **Routines**: tap one to edit it. Change the title, instructions (with a preview), default agent, project and priority, and what happens when runs overlap or schedules are missed, then **Save**. Schedules are edited on the spot: every hour, every day, weekdays, weekly, monthly or a custom cron expression, in any time zone, and each can be paused or removed (with **Undo**). The switch at the top pauses or resumes the whole routine, and ▶ runs it now. If someone else saved the routine meanwhile, you choose whether to reload or overwrite. Variables and webhook triggers are still edited on the web.
