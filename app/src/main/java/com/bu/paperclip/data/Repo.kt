@@ -191,6 +191,7 @@ object Repo {
     // Projects, goals, routines, search
     suspend fun projects(cid: String): List<Project> = Api.get("/companies/$cid/projects")
     suspend fun project(id: String): Project = Api.get("/projects/$id")
+    suspend fun createProject(cid: String, body: JsonObject): Project = Api.post("/companies/$cid/projects", body)
     suspend fun goals(cid: String): List<Goal> = Api.get("/companies/$cid/goals")
     suspend fun routines(cid: String): List<Routine> = Api.get("/companies/$cid/routines")
     suspend fun runRoutine(id: String): JsonElement = Api.post("/routines/$id/run", jsonOf("source" to "manual"))
