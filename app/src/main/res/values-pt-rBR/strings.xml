@@ -1050,6 +1050,12 @@
 
     <!-- Listas de projetos, metas e rotinas -->
     <string name="projects_title">Projetos</string>
+    <string name="projects_new_project">Novo projeto</string>
+    <string name="projects_new_title">Novo projeto</string>
+    <string name="projects_name_label">Nome do projeto</string>
+    <string name="projects_description_label">Descrição</string>
+    <string name="projects_status_label">Status</string>
+    <string name="projects_create">Criar</string>
     <string name="projects_empty">Nenhum projeto ainda.</string>
     <plurals name="projects_tasks">
         <item quantity="one">%1$d tarefa</item>

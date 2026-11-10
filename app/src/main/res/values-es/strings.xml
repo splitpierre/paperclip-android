@@ -1050,6 +1050,12 @@
 
     <!-- Projects, goals and routines lists -->
     <string name="projects_title">Proyectos</string>
+    <string name="projects_new_project">Nuevo proyecto</string>
+    <string name="projects_new_title">Nuevo proyecto</string>
+    <string name="projects_name_label">Nombre del proyecto</string>
+    <string name="projects_description_label">Descripción</string>
+    <string name="projects_status_label">Estado</string>
+    <string name="projects_create">Crear</string>
     <string name="projects_empty">Aún no hay proyectos.</string>
     <plurals name="projects_tasks">
         <item quantity="one">%1$d tarea</item>

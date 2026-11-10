@@ -1028,6 +1028,12 @@
 
     <!-- Projects, goals and routines lists -->
     <string name="projects_title">Projects</string>
+    <string name="projects_new_project">New project</string>
+    <string name="projects_new_title">New project</string>
+    <string name="projects_name_label">Project name</string>
+    <string name="projects_description_label">Description</string>
+    <string name="projects_status_label">Status</string>
+    <string name="projects_create">Create</string>
     <string name="projects_empty">No projects yet.</string>
     <plurals name="projects_tasks">
         <item quantity="one">%1$d task</item>
