@@ -174,3 +174,7 @@ See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the architecture, tests, rege
 This is an unofficial client and isn't affiliated with the Paperclip project. Releases are debug-signed builds for sideloading.
 
 The app bundles the [Inter](https://rsms.me/inter/) and [JetBrains Mono](https://www.jetbrains.com/lp/mono/) fonts, both under the SIL Open Font License ([licenses](licenses)).
+
+## License
+
+The app's source code is released under the [MIT License](LICENSE). The bundled fonts keep their own licenses (see above).
