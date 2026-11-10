@@ -94,6 +94,7 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
     var description by rememberSaveable { mutableStateOf("") }
     var status by rememberSaveable { mutableStateOf("todo") }
     var priority by rememberSaveable { mutableStateOf("medium") }
+    var workMode by rememberSaveable { mutableStateOf("standard") }
     var agentId by rememberSaveable { mutableStateOf(assigneeAgentId) }
     var userId by rememberSaveable { mutableStateOf<String?>(null) }
     var project by rememberSaveable { mutableStateOf(projectId) }
@@ -132,6 +133,7 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
                     "description" to description.trim().ifEmpty { null },
                     "status" to status,
                     "priority" to priority,
+                    "workMode" to workMode,
                     "assigneeAgentId" to agentId,
                     "assigneeUserId" to userId,
                     "projectId" to project,
@@ -195,6 +197,7 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 PropertyChip(onClick = { sheet = "status" }, label = { Text(taskStatusLabel(status)) }, leadingIcon = { StatusIcon(status, 14.dp) })
                 PropertyChip(onClick = { sheet = "priority" }, label = { Text(taskPriorityLabel(priority)) }, leadingIcon = { PriorityIcon(priority, 16.dp) })
+                PropertyChip(onClick = { sheet = "workMode" }, label = { Text(workModeLabel(workMode)) }, leadingIcon = { Icon(workModeIcon(workMode), null, Modifier.size(18.dp)) })
                 PropertyChip(
                     onClick = { sheet = "assignee" },
                     label = { Text(agentId?.let { AppState.agentName(it) } ?: userId?.let { AppState.userName(it) } ?: stringResource(R.string.common_unassigned)) },
@@ -245,6 +248,7 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
     when (sheet) {
         "status" -> IssueStatusSheet(status, onPick = { status = it }, onDismiss = { sheet = null })
         "priority" -> IssuePrioritySheet(priority, onPick = { priority = it }, onDismiss = { sheet = null })
+        "workMode" -> IssueWorkModeSheet(workMode, onPick = { workMode = it }, onDismiss = { sheet = null })
         "assignee" -> IssueAssigneeSheet(agentId, userId, onPick = { a ->
             when (a) {
                 is IssueAssignee.AgentA -> { agentId = a.id; userId = null }

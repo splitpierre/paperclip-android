@@ -1128,4 +1128,8 @@
     <string name="activity_interaction_other">%1$s %3$s en %2$s</string>
     <!-- Unknown activity; %3$s is the raw action name, e.g. "archived". -->
     <string name="activity_other">%1$s %3$s %2$s</string>
+    <string name="work_mode_title">Modo de trabajo</string>
+    <string name="work_mode_standard">Modo automático</string>
+    <string name="work_mode_planning">Modo de planificación</string>
+    <string name="work_mode_ask">Modo de pregunta</string>
 </resources>

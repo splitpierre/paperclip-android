@@ -1128,4 +1128,8 @@
     <string name="activity_interaction_other">%1$s %3$s em %2$s</string>
     <!-- Atividade desconhecida; %3$s é o nome bruto da ação, ex.: "archived". -->
     <string name="activity_other">%1$s %3$s %2$s</string>
+    <string name="work_mode_title">Modo de trabalho</string>
+    <string name="work_mode_standard">Modo automático</string>
+    <string name="work_mode_planning">Modo de planejamento</string>
+    <string name="work_mode_ask">Modo de pergunta</string>
 </resources>

@@ -179,7 +179,7 @@ Use the search icon to match task IDs and titles. The **⋮** menu has **Expand 
 
 ### New tasks
 
-Tap **New task** to create one, or **New sub-task** in a task's **⋮** menu. Set its title, status, priority, assignee, project and description. **Attach files** adds any files from your phone; each shows its name and size, and **×** removes it. When you tap **Create**, the task is created first and the files upload one at a time, each one ticked off as it lands. Then the new task opens. If a file doesn't upload, for example because it's over the server's size limit, the task is still created and a message names each file that failed and why. Attach those again from the task's thread.
+Tap **New task** to create one, or **New sub-task** in a task's **⋮** menu. Set its title, status, priority, work mode, assignee, project and description. The work mode chip offers **Auto mode** (the default: the assignee just does the work), **Plan mode** (the assignee proposes a plan first) and **Ask mode** (the assignee answers in the thread without doing any work). A task that isn't in Auto mode shows its mode as a chip at the top of the task. **Attach files** adds any files from your phone; each shows its name and size, and **×** removes it. When you tap **Create**, the task is created first and the files upload one at a time, each one ticked off as it lands. Then the new task opens. If a file doesn't upload, for example because it's over the server's size limit, the task is still created and a message names each file that failed and why. Attach those again from the task's thread.
 
 <p>
   <img src="screenshots/new-task-files.png" alt="A new task with an image and a PDF attached" width="280">
