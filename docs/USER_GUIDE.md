@@ -193,12 +193,29 @@ The top of a task shows its title, status, priority, assignee and project. Tap a
 The tabs are:
 
 - **Thread**: agent request cards waiting for you, then the conversation in order, with older comments loaded on demand. In a long thread a round button follows your reading direction: scrolling down it jumps to the latest comment, scrolling up it flips to jump back to the top. Write comments in Markdown, @-mention agents or people, and attach photos or files with the paperclip button. Long-press a comment to copy it.
+- **Properties**: every field of the task, as in the web app's Properties panel. See [Properties](#properties) below.
 - **Docs**: the task's documents, such as plans. You can read and edit them.
 - **Sub-tasks**: a tree of this task's sub-tasks with overall progress and **Next up** for this branch. **Show closed** adds finished sub-tasks. **New sub-task** is in the **⋮** menu.
 - **Files**: attachments and work products such as pull requests. Images, text and Markdown files open in the app, with **Share** and **Save** at the top. Other files open in an app that handles them, such as a PDF viewer; if no app can, you can share or save the file instead. Links to files in comments, documents and run transcripts open the same way.
 - **Activity**: everything that happened to the task.
 
 The **⋮** menu also has **Copy link**, **Open in browser** and **Mark unread**.
+
+### Properties
+
+The **Properties** tab lists the task's fields in three groups. Tap a row to change it:
+
+- **Work**: **Status**, **Priority**, **Work mode** (**Auto mode**, **Plan mode** or **Ask mode**, as on a new task; the chip at the top of the task follows the change), **Assignee** (an agent, you, another person in the company, or nobody), **Project** and **Labels** (tick as many as you like).
+- **Relationships**: **Parent** moves the task under another one. Search by ID or title; the list leaves out the task itself and its own sub-tasks, since those would make a loop, and **No parent** makes it a top-level task. The external-link button next to the parent opens it. **Blocked by** picks the tasks that must finish first (tick or untick each, or **No blockers**); the blockers are listed underneath and open when tapped. **Blocking** lists the tasks waiting on this one.
+- **About**: the task's **Identifier** (tap to copy), who created it, and when it was started, completed, created and last updated.
+
+Changes show at once, here and in the Tasks tab: a task you move to another parent appears in its new place in the tree, on the board and in **Next up** straight away. If the server refuses a change, it's undone and a message says why.
+
+<p>
+  <img src="screenshots/task-properties.png" alt="The Properties tab of a task that was just moved under LUM-153" width="280">
+  <img src="screenshots/task-parent-picker.png" alt="Searching for a new parent task" width="280">
+  <img src="screenshots/task-properties-rollback.png" alt="A refused change undone, with the server's message" width="280">
+</p>
 
 <p>
   <img src="screenshots/file-viewer.png" alt="A Markdown attachment open in the app" width="280">

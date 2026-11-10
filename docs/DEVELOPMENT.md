@@ -100,6 +100,7 @@ The APK is written to `app/build/outputs/apk/debug/app-debug.apk`. Install it wi
 
 - `TranslationsTest` checks every translation against the default strings (see [TRANSLATING.md](TRANSLATING.md)).
 - `TaskGraphTest` covers filters, trees, rollups and Next up on small hand-made graphs.
+- `IssuePropsTest` covers the Properties tab's pickers (no cycles when re-parenting) and its optimistic edits.
 - `FixtureDecodeTest` and the snapshot cases in `TaskGraphTest` run against captured API responses. Captures contain private data, so they aren't committed. Set `PAPERCLIP_FIXTURES` to a directory of captured JSON to run them; without it, they're skipped.
 
 ## Running against the demo server
