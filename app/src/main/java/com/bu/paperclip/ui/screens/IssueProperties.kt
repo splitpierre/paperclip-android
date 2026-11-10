@@ -22,12 +22,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.AccountTree
 import androidx.compose.material.icons.outlined.Block
-import androidx.compose.material.icons.outlined.Build
-import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.PersonOutline
@@ -47,7 +44,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -61,7 +57,6 @@ import com.bu.paperclip.data.IssueSummaryRef
 import com.bu.paperclip.data.Label
 import com.bu.paperclip.data.ProjectRef
 import com.bu.paperclip.data.Repo
-import com.bu.paperclip.data.WORK_MODES
 import com.bu.paperclip.data.blockerCandidates
 import com.bu.paperclip.data.jsonOf
 import com.bu.paperclip.data.parentCandidates
@@ -111,7 +106,7 @@ internal fun IssuePropertiesTab(issue: Issue, nav: Nav, onPatch: IssuePatch) {
         PropRow(stringResource(R.string.task_field_priority), onClick = { sheet = PropSheet.Priority }) {
             PriorityIcon(issue.priority, 16.dp); Spacer(Modifier.width(8.dp)); PropValue(taskPriorityLabel(issue.priority))
         }
-        PropRow(stringResource(R.string.issue_props_work_mode), onClick = { sheet = PropSheet.WorkMode }) {
+        PropRow(stringResource(R.string.work_mode_title), onClick = { sheet = PropSheet.WorkMode }) {
             Icon(workModeIcon(mode), null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(8.dp)); PropValue(workModeLabel(mode))
         }
@@ -278,40 +273,6 @@ private fun RefRow(r: IssueSummaryRef, onOpen: () -> Unit) {
 private fun OpenButton(onClick: () -> Unit) {
     IconButton(onClick = onClick) {
         Icon(Icons.AutoMirrored.Outlined.OpenInNew, stringResource(R.string.issue_props_open_parent), Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
-// ---------- work mode ----------
-
-private fun workModeIcon(mode: String): ImageVector = when (mode) {
-    "planning" -> Icons.Outlined.Checklist
-    "ask" -> Icons.AutoMirrored.Outlined.HelpOutline
-    else -> Icons.Outlined.Build
-}
-
-@Composable
-internal fun workModeLabel(mode: String): String = when (mode) {
-    "planning" -> stringResource(R.string.issue_work_mode_plan)
-    "ask" -> stringResource(R.string.issue_work_mode_ask)
-    "standard" -> stringResource(R.string.issue_work_mode_auto)
-    else -> mode.replace('_', ' ').replaceFirstChar { it.uppercase() }
-}
-
-@Composable
-private fun workModeHint(mode: String): String = when (mode) {
-    "planning" -> stringResource(R.string.issue_work_mode_plan_hint)
-    "ask" -> stringResource(R.string.issue_work_mode_ask_hint)
-    else -> stringResource(R.string.issue_work_mode_auto_hint)
-}
-
-@Composable
-private fun IssueWorkModeSheet(current: String, onPick: (String) -> Unit, onDismiss: () -> Unit) {
-    IssueSheet(stringResource(R.string.issue_props_work_mode), onDismiss) {
-        WORK_MODES.forEach { m ->
-            IssueSheetRow(m == current, { onPick(m); onDismiss() },
-                { Icon(workModeIcon(m), null, Modifier.size(22.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-                workModeLabel(m), workModeHint(m))
-        }
     }
 }
 

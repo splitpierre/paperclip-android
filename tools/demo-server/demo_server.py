@@ -969,6 +969,8 @@ class Handler(BaseHTTPRequestHandler):
                   project=None, mins_ago=0, desc=b.get("description"))
         i.pop("_blockedByNums", None)
         i["blockedBy"] = []
+        wm = b.get("workMode", "standard")
+        i["workMode"] = wm if wm in WORK_MODES else "standard"
         for k in ("parentId", "projectId", "assigneeAgentId", "assigneeUserId"):
             if k in b:
                 i[k] = b[k]

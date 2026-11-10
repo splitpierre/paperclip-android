@@ -179,7 +179,7 @@ Use the search icon to match task IDs and titles. The **⋮** menu has **Expand 
 
 ### New tasks
 
-Tap **New task** to create one, or **New sub-task** in a task's **⋮** menu. Set its title, status, priority, assignee, project and description. **Attach files** adds any files from your phone; each shows its name and size, and **×** removes it. When you tap **Create**, the task is created first and the files upload one at a time, each one ticked off as it lands. Then the new task opens. If a file doesn't upload, for example because it's over the server's size limit, the task is still created and a message names each file that failed and why. Attach those again from the task's thread.
+Tap **New task** to create one, or **New sub-task** in a task's **⋮** menu. Set its title, status, priority, work mode, assignee, project and description. The work mode chip offers **Auto mode** (the default: the assignee just does the work), **Plan mode** (the assignee proposes a plan first) and **Ask mode** (the assignee answers in the thread without doing any work). A task that isn't in Auto mode shows its mode as a chip at the top of the task. **Attach files** adds any files from your phone; each shows its name and size, and **×** removes it. When you tap **Create**, the task is created first and the files upload one at a time, each one ticked off as it lands. Then the new task opens. If a file doesn't upload, for example because it's over the server's size limit, the task is still created and a message names each file that failed and why. Attach those again from the task's thread.
 
 <p>
   <img src="screenshots/new-task-files.png" alt="A new task with an image and a PDF attached" width="280">
@@ -205,7 +205,7 @@ The **⋮** menu also has **Copy link**, **Open in browser** and **Mark unread**
 
 The **Properties** tab lists the task's fields in three groups. Tap a row to change it:
 
-- **Work**: **Status**, **Priority**, **Work mode** (**Auto**: the agent does the work; **Plan**: it writes a plan for you to approve first; **Ask**: it only answers questions), **Assignee** (an agent, you, another person in the company, or nobody), **Project** and **Labels** (tick as many as you like).
+- **Work**: **Status**, **Priority**, **Work mode** (**Auto mode**, **Plan mode** or **Ask mode**, as on a new task; the chip at the top of the task follows the change), **Assignee** (an agent, you, another person in the company, or nobody), **Project** and **Labels** (tick as many as you like).
 - **Relationships**: **Parent** moves the task under another one. Search by ID or title; the list leaves out the task itself and its own sub-tasks, since those would make a loop, and **No parent** makes it a top-level task. The external-link button next to the parent opens it. **Blocked by** picks the tasks that must finish first (tick or untick each, or **No blockers**); the blockers are listed underneath and open when tapped. **Blocking** lists the tasks waiting on this one.
 - **About**: the task's **Identifier** (tap to copy), who created it, and when it was started, completed, created and last updated.
 

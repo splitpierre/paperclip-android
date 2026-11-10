@@ -5,9 +5,6 @@ package com.bu.paperclip.data
  * optimistic shape of an issue after an edit. Kept free of Android so they are unit-tested directly.
  */
 
-/** Work modes the web composer offers, in its order (Auto, Plan, Ask). `skill_test` is internal. */
-val WORK_MODES = listOf("standard", "planning", "ask")
-
 fun Issue.toRef(): IssueSummaryRef = IssueSummaryRef(id = id, identifier = identifier, title = title, status = status, priority = priority)
 
 /** Every task below [rootId] in [issues] (children, grandchildren…). Cycle-safe. */

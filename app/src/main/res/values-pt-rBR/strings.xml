@@ -391,7 +391,6 @@
     <string name="issue_props_work">Trabalho</string>
     <string name="issue_props_relationships">Relações</string>
     <string name="issue_props_about">Sobre</string>
-    <string name="issue_props_work_mode">Modo de trabalho</string>
     <string name="issue_props_labels">Etiquetas</string>
     <string name="issue_props_labels_empty">Esta empresa ainda não tem etiquetas</string>
     <string name="issue_props_filter_labels">Filtrar etiquetas</string>
@@ -414,9 +413,6 @@
     <string name="issue_props_completed">Concluída</string>
     <string name="issue_props_created">Criada</string>
     <string name="issue_props_updated">Atualizada</string>
-    <string name="issue_work_mode_auto">Auto</string>
-    <string name="issue_work_mode_plan">Plano</string>
-    <string name="issue_work_mode_ask">Pergunta</string>
     <string name="issue_work_mode_auto_hint">O agente faz o trabalho</string>
     <string name="issue_work_mode_plan_hint">O agente escreve um plano para você aprovar antes</string>
     <string name="issue_work_mode_ask_hint">O agente responde perguntas sem alterar nada</string>
@@ -1161,4 +1157,8 @@
     <string name="activity_interaction_other">%1$s %3$s em %2$s</string>
     <!-- Atividade desconhecida; %3$s é o nome bruto da ação, ex.: "archived". -->
     <string name="activity_other">%1$s %3$s %2$s</string>
+    <string name="work_mode_title">Modo de trabalho</string>
+    <string name="work_mode_standard">Modo automático</string>
+    <string name="work_mode_planning">Modo de planejamento</string>
+    <string name="work_mode_ask">Modo de pergunta</string>
 </resources>

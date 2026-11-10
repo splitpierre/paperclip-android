@@ -636,6 +636,10 @@ private fun IssueHeader(
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             PropertyChip(onClick = { onSheet("status") }, label = { Text(statusLabel(issue.status)) }, leadingIcon = { StatusIcon(issue.status, 14.dp) })
             PropertyChip(onClick = { onSheet("priority") }, label = { Text(issue.priority.replaceFirstChar { it.uppercase() }) }, leadingIcon = { PriorityIcon(issue.priority, 16.dp) })
+            // Auto is the default and stays out of the way. Display only; the work mode is edited in the Properties tab.
+            issue.workMode?.takeIf { it in WORK_MODES && it != "standard" }?.let { m ->
+                PropertyChip(onClick = {}, enabled = false, label = { Text(workModeLabel(m)) }, leadingIcon = { Icon(workModeIcon(m), null, Modifier.size(18.dp)) })
+            }
             PropertyChip(
                 onClick = { onSheet("assignee") },
                 label = {

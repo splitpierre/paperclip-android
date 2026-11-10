@@ -387,7 +387,6 @@
     <string name="issue_props_work">Work</string>
     <string name="issue_props_relationships">Relationships</string>
     <string name="issue_props_about">About</string>
-    <string name="issue_props_work_mode">Work mode</string>
     <string name="issue_props_labels">Labels</string>
     <string name="issue_props_labels_empty">This company has no labels yet</string>
     <string name="issue_props_filter_labels">Filter labels</string>
@@ -409,9 +408,6 @@
     <string name="issue_props_completed">Completed</string>
     <string name="issue_props_created">Created</string>
     <string name="issue_props_updated">Updated</string>
-    <string name="issue_work_mode_auto">Auto</string>
-    <string name="issue_work_mode_plan">Plan</string>
-    <string name="issue_work_mode_ask">Ask</string>
     <string name="issue_work_mode_auto_hint">The agent does the work</string>
     <string name="issue_work_mode_plan_hint">The agent writes a plan for you to approve first</string>
     <string name="issue_work_mode_ask_hint">The agent answers questions without changing anything</string>
@@ -1137,4 +1133,8 @@
     <string name="activity_interaction_other">%1$s %3$s on %2$s</string>
     <!-- Unknown activity; %3$s is the raw action name, e.g. "archived". -->
     <string name="activity_other">%1$s %3$s %2$s</string>
+    <string name="work_mode_title">Work mode</string>
+    <string name="work_mode_standard">Auto mode</string>
+    <string name="work_mode_planning">Plan mode</string>
+    <string name="work_mode_ask">Ask mode</string>
 </resources>
