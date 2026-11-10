@@ -28,6 +28,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import com.bu.paperclip.net.Api
 import com.bu.paperclip.net.ServerFiles
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.layout.ContentScale
@@ -53,8 +54,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -74,6 +77,9 @@ import coil.compose.AsyncImage
 import com.bu.paperclip.R
 import com.bu.paperclip.ui.components.AppFilterChip
 import com.bu.paperclip.data.AppState
+import com.bu.paperclip.data.CommentDraft
+import com.bu.paperclip.data.DraftFile
+import com.bu.paperclip.data.DraftStore
 import com.bu.paperclip.data.IssueComment
 import com.bu.paperclip.ui.components.AgentAvatar
 import com.bu.paperclip.ui.components.Avatar
@@ -196,7 +202,14 @@ private fun IssueCommentMenu(open: Boolean, onClose: () -> Unit, ctx: Context, c
     }
 }
 
-private data class IssuePendingUpload(val uri: Uri, val file: PickedFile? = null, val attachmentId: String? = null, val failed: Boolean = false)
+private data class IssuePendingUpload(
+    val uri: Uri,
+    val file: PickedFile? = null,
+    val attachmentId: String? = null,
+    val failed: Boolean = false,
+    /** Server path of the uploaded file; previews a restored draft once the picker's access has expired. */
+    val contentPath: String? = null,
+)
 
 /**
  * Bottom composer: markdown text, @mentions (agent links), image and file attachments and an
@@ -217,6 +230,29 @@ internal fun IssueComposer(
     var interrupt by remember { mutableStateOf(false) }
     var mentionSheet by remember { mutableStateOf(false) }
     val uploads = remember(issueId) { mutableStateListOf<IssuePendingUpload>() }
+    val draftKey = DraftStore.commentKey(issueId)
+    var draftLoaded by remember(issueId) { mutableStateOf(false) }
+    // Sends in flight: the saved draft is left alone until the server has the comment.
+    var sending by remember(issueId) { mutableIntStateOf(0) }
+    LaunchedEffect(issueId) {
+        loadDraft(draftKey, CommentDraft.serializer())?.let { d ->
+            if (text.text.isEmpty()) text = TextFieldValue(d.body, TextRange(d.body.length))
+            d.files.filter { it.attachmentId != null }.forEach { f ->
+                uploads.add(IssuePendingUpload(Uri.parse(f.uri), PickedFile(Uri.parse(f.uri), f.name, f.size, f.mime), f.attachmentId, contentPath = f.contentPath))
+            }
+        }
+        draftLoaded = true
+    }
+    PersistDraft(
+        draftKey, CommentDraft.serializer(), isEmpty = { it.isEmpty },
+        enabled = { draftLoaded && sending == 0 },
+        value = {
+            CommentDraft(text.text, uploads.mapNotNull { u ->
+                val f = u.file ?: return@mapNotNull null
+                u.attachmentId?.let { DraftFile(u.uri.toString(), f.name, f.size, f.mime, it, u.contentPath) }
+            })
+        },
+    )
 
     var attachMenu by remember { mutableStateOf(false) }
     fun upload(uris: List<Uri>) {
@@ -228,7 +264,7 @@ internal fun IssueComposer(
                     uploads.indexOfFirst { it.uri == uri }.takeIf { it >= 0 }?.let { uploads[it] = uploads[it].copy(file = file) }
                     val att = uploadPickedFile(ctx, issueId, file)
                     val i = uploads.indexOfFirst { it.uri == uri }
-                    if (i >= 0) uploads[i] = uploads[i].copy(attachmentId = att.id)
+                    if (i >= 0) uploads[i] = uploads[i].copy(attachmentId = att.id, contentPath = att.contentPath)
                 } catch (c: CancellationException) {
                     throw c
                 } catch (t: Throwable) {
@@ -258,12 +294,17 @@ internal fun IssueComposer(
         text = TextFieldValue("")
         uploads.clear()
         interrupt = false
+        sending++
         scope.launch {
             try {
-                onSent(localId, issueAddComment(issueId, body, doInterrupt, ids))
+                val sent = issueAddComment(issueId, body, doInterrupt, ids)
+                // Sent: the draft now holds only what was typed since (usually nothing).
+                sending--
+                onSent(localId, sent)
             } catch (c: CancellationException) {
                 throw c
             } catch (t: Throwable) {
+                sending--
                 onFailed(localId)
                 text = saved
                 uploads.addAll(savedUploads)
@@ -280,7 +321,8 @@ internal fun IssueComposer(
                     uploads.forEach { u ->
                         Box(Modifier.size(56.dp).clip(RoundedCornerShape(8.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
                             if (u.file == null || ServerFiles.isImage(u.file.mime)) {
-                                AsyncImage(model = u.uri, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(56.dp))
+                                val preview = u.contentPath?.let { ServerFiles.contentUrl(it, Api.baseUrl)?.toString() } ?: u.uri
+                                AsyncImage(model = preview, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(56.dp))
                             } else {
                                 Column(Modifier.size(56.dp).padding(4.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                                     Icon(Icons.AutoMirrored.Outlined.InsertDriveFile, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)

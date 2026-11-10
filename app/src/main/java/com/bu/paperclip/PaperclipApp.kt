@@ -4,6 +4,8 @@ import android.app.Application
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import com.bu.paperclip.data.AppState
+import com.bu.paperclip.data.DraftStore
+import com.bu.paperclip.data.Drafts
 import com.bu.paperclip.data.SettingsStore
 import com.bu.paperclip.net.Api
 import com.bu.paperclip.notify.NotifyWorker
@@ -16,6 +18,7 @@ class PaperclipApp : Application(), ImageLoaderFactory {
         super.onCreate()
         L10n.init(this)
         AppState.settings = SettingsStore(this)
+        Drafts.store = DraftStore(java.io.File(filesDir, "drafts"))
         FileOpener.init(this)
         NotifyWorker.ensureChannel(this)
         AppState.scope.launch {

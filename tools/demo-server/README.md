@@ -27,4 +27,5 @@ Writes are accepted and kept in memory: answering a request, moving a task, edit
 | `--port` | `3199` | Port to listen on. |
 | `--avatars-from` | none | Base URL of a real Paperclip server to proxy agent avatars from. Without it, agents show initials. |
 | `--max-attachment-bytes` | `10485760` | Uploads larger than this are rejected with a 422, as Paperclip does. Lower it to try a failed upload. |
+| `--fail-text` | none | Comments and new tasks whose text contains this are rejected with a 500. Use it to check that a failed send keeps the draft, e.g. `--fail-text '[fail]'`. |
 | `--reject-edits` | off | Answer every task edit with a 409, to see the app roll back an optimistic change (Properties tab, board moves). |

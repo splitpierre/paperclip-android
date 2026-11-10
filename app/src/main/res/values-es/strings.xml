@@ -313,6 +313,11 @@
     <string name="new_issue_upload_failed">Error al subir</string>
     <string name="new_issue_remove_file">Quitar %1$s</string>
     <string name="new_issue_attach_files">Adjuntar archivos</string>
+    <string name="draft_saved_on_device">Borrador guardado en este dispositivo</string>
+    <string name="draft_discard">Descartar borrador</string>
+    <string name="draft_discard_title">¿Descartar este borrador?</string>
+    <string name="draft_discard_body">Todo lo escrito aquí y los archivos elegidos se borrarán. No se puede deshacer.</string>
+    <string name="task_pill_draft">Borrador</string>
 
     <!-- File uploads (IssueUploads.kt) -->
     <string name="upload_cant_read">No se puede leer %1$s</string>

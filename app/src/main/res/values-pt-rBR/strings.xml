@@ -313,6 +313,11 @@
     <string name="new_issue_upload_failed">Falha no envio</string>
     <string name="new_issue_remove_file">Remover %1$s</string>
     <string name="new_issue_attach_files">Anexar arquivos</string>
+    <string name="draft_saved_on_device">Rascunho salvo neste aparelho</string>
+    <string name="draft_discard">Descartar rascunho</string>
+    <string name="draft_discard_title">Descartar este rascunho?</string>
+    <string name="draft_discard_body">Tudo o que foi digitado aqui e os arquivos escolhidos serão apagados. Não dá para desfazer.</string>
+    <string name="task_pill_draft">Rascunho</string>
 
     <!-- Envio de arquivos (IssueUploads.kt) -->
     <string name="upload_cant_read">Não é possível ler %1$s</string>

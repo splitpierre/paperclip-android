@@ -312,6 +312,11 @@
     <string name="new_issue_upload_failed">Upload failed</string>
     <string name="new_issue_remove_file">Remove %1$s</string>
     <string name="new_issue_attach_files">Attach files</string>
+    <string name="draft_saved_on_device">Draft, saved on this device</string>
+    <string name="draft_discard">Discard draft</string>
+    <string name="draft_discard_title">Discard this draft?</string>
+    <string name="draft_discard_body">Everything typed here and the files you picked will be cleared. This can\'t be undone.</string>
+    <string name="task_pill_draft">Draft</string>
 
     <!-- File uploads (IssueUploads.kt) -->
     <string name="upload_cant_read">Can\'t read %1$s</string>
