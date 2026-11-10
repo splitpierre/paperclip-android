@@ -140,4 +140,28 @@ object IssueStore {
     }
 
     fun get(id: String?): Issue? = id?.let { _issues.value[it] }
+
+    /**
+     * `PATCH /issues/{id}` with an optimistic local edit: [change] is applied to the mirrored copy at once,
+     * so tree, board and Next up re-render before the server answers. On failure the copy is restored and
+     * the error rethrown for the caller to show. On success the server's copy replaces it and a delta sync
+     * picks up anything the change touched elsewhere (the old and new parent's roll-ups, for instance).
+     */
+    suspend fun patch(id: String, body: kotlinx.serialization.json.JsonObject, change: (Issue) -> Issue): Issue {
+        val before = _issues.value[id]
+        if (before != null) upsert(change(before))
+        val updated = try {
+            Repo.updateIssue(id, body)
+        } catch (t: Throwable) {
+            if (before != null && _issues.value.containsKey(id)) upsert(before)
+            throw t
+        }
+        if (before != null && updated.companyId.let { it.isEmpty() || it == companyId }) {
+            // The PATCH response may omit the list-only fields the mirror was loaded with.
+            val optimistic = change(before)
+            upsert(updated.copy(blockedBy = updated.blockedBy ?: optimistic.blockedBy, labels = updated.labels ?: optimistic.labels))
+        }
+        scope.launch { refresh(full = false) }
+        return updated
+    }
 }

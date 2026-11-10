@@ -132,7 +132,7 @@ def issue(n, title, status, priority, assignee=None, parent=None, project="web",
         "completedAt": upd if status == "done" else None,
         "createdAt": created, "updatedAt": upd, "lastActivityAt": upd,
         "labelIds": [L[x] for x in labels], "labels": [lb for lb in LABELS if lb["id"] in [L[x] for x in labels]],
-        "blockedBy": [], "originKind": origin, "isUnreadForMe": False,
+        "blockedBy": [], "originKind": origin, "isUnreadForMe": False, "workMode": "standard",
     }
     if project:
         p = PROJECT_BY_ID[P[project]]
@@ -479,6 +479,8 @@ ATTACHMENTS = {}
 MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024
 # --fail-text: comments and new tasks containing it are rejected with a 500, to try a failed send.
 FAIL_TEXT = None
+REJECT_EDITS = False
+WORK_MODES = ("standard", "ask", "planning", "skill_test")
 
 
 def attach(n, name, ctype, data, mins_ago, kind="attachments"):
@@ -985,11 +987,53 @@ class Handler(BaseHTTPRequestHandler):
         i.pop("_blockedByNums", None)
         i["blockedBy"] = []
         wm = b.get("workMode", "standard")
-        i["workMode"] = wm if wm in ("standard", "planning", "ask") else "standard"
+        i["workMode"] = wm if wm in WORK_MODES else "standard"
         for k in ("parentId", "projectId", "assigneeAgentId", "assigneeUserId"):
             if k in b:
                 i[k] = b[k]
         return i
+
+    def patch_issue(self, i, b):
+        """PATCH /api/issues/:id, with the validation the Properties tab relies on. Returns an error tuple or None."""
+        if REJECT_EDITS:
+            return {"error": "Demo server is rejecting edits (--reject-edits)"}, 409
+        if "workMode" in b and b["workMode"] not in WORK_MODES:
+            return {"error": "Invalid workMode"}, 400
+        if b.get("parentId") is not None:
+            pid = b["parentId"]
+            if pid not in ISSUES:
+                return {"error": "Parent issue not found"}, 404
+            p = pid
+            while p:  # The new parent may not be the task itself or one of its descendants.
+                if p == i["id"]:
+                    return {"error": "Parent cannot be the issue itself or one of its descendants"}, 422
+                p = ISSUES[p].get("parentId")
+        if "blockedByIssueIds" in b:
+            ids = b["blockedByIssueIds"] or []
+            if i["id"] in ids:
+                return {"error": "An issue cannot block itself"}, 422
+            if any(x not in ISSUES for x in ids):
+                return {"error": "Blocking issue not found"}, 404
+        if "labelIds" in b and any(x not in {lb["id"] for lb in LABELS} for x in b["labelIds"] or []):
+            return {"error": "Label not found"}, 404
+        for k, v in b.items():
+            if k == "blockedByIssueIds":
+                i["blockedBy"] = [ref(ISSUES[x]) for x in v or []]
+            elif k == "labelIds":
+                i["labelIds"] = list(v or [])
+                i["labels"] = [lb for lb in LABELS if lb["id"] in i["labelIds"]]
+            elif k == "projectId":
+                i["projectId"] = v
+                pr = PROJECT_BY_ID.get(v)
+                i["project"] = {"id": pr["id"], "name": pr["name"], "color": pr["color"]} if pr else None
+            elif k in i or k in ("assigneeAgentId", "assigneeUserId", "parentId", "workMode"):
+                i[k] = v
+        if "status" in b:
+            if b["status"] == "in_progress" and not i.get("startedAt"):
+                i["startedAt"] = ago()
+            i["completedAt"] = (i.get("completedAt") or ago()) if b["status"] == "done" else None
+        i["updatedAt"] = i["lastActivityAt"] = ago()
+        return None
 
     def issue_api(self, m, key, rest, q, b):
         i = ISSUES.get(key) or next((x for x in ISSUES.values() if x["identifier"] == key), None)
@@ -998,10 +1042,9 @@ class Handler(BaseHTTPRequestHandler):
         iid = i["id"]
         if not rest:
             if m == "PATCH":
-                for k, v in b.items():
-                    if k in i or k in ("assigneeAgentId", "assigneeUserId", "projectId", "parentId"):
-                        i[k] = v
-                i["updatedAt"] = i["lastActivityAt"] = ago()
+                err = self.patch_issue(i, b)
+                if err:
+                    return err
                 if "comment" in b and b["comment"]:
                     COMMENTS.setdefault(iid, []).append({"id": str(uuid.uuid4()), "issueId": iid, "authorType": "user", "authorUserId": ME, "body": b["comment"], "createdAt": ago()})
             return full_issue(i)
@@ -1160,16 +1203,18 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
-    global MAX_ATTACHMENT_BYTES, FAIL_TEXT
+    global MAX_ATTACHMENT_BYTES, FAIL_TEXT, REJECT_EDITS
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=3199)
     ap.add_argument("--avatars-from", help="Paperclip base URL to proxy agent avatars from, e.g. https://paperclip.example.com")
     ap.add_argument("--max-attachment-bytes", type=int, default=MAX_ATTACHMENT_BYTES, help="Reject larger uploads with a 422, like Paperclip")
     ap.add_argument("--fail-text", help="Reject comments and new tasks containing this text with a 500, to try a failed send")
+    ap.add_argument("--reject-edits", action="store_true", help="Answer every task edit (PATCH /api/issues/:id) with a 409, to try the app's rollback")
     a = ap.parse_args()
     MAX_ATTACHMENT_BYTES = a.max_attachment_bytes
     FAIL_TEXT = a.fail_text
+    REJECT_EDITS = a.reject_edits
     Handler.avatars_from = a.avatars_from
     srv = ThreadingHTTPServer((a.host, a.port), Handler)
     print(f"Demo Paperclip on http://{a.host}:{a.port} ({len(ISSUES)} tasks, {len(AGENTS)} agents)")
