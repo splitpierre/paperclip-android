@@ -16,8 +16,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.outlined.ClipboardList
-import androidx.compose.material.icons.outlined.Hammer
+import androidx.compose.material.icons.automirrored.outlined.Assignment
+import androidx.compose.material.icons.outlined.Build
 import androidx.compose.material.icons.outlined.QuestionAnswer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material.icons.outlined.FolderOff
@@ -134,9 +134,9 @@ internal fun IssuePrioritySheet(current: String?, onPick: (String) -> Unit, onDi
 val WORK_MODES = listOf("standard", "planning", "ask")
 
 fun workModeIcon(mode: String): ImageVector = when (mode) {
-    "planning" -> Icons.Outlined.ClipboardList
+    "planning" -> Icons.AutoMirrored.Outlined.Assignment
     "ask" -> Icons.Outlined.QuestionAnswer
-    else -> Icons.Outlined.Hammer
+    else -> Icons.Outlined.Build
 }
 
 @Composable
