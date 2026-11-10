@@ -102,11 +102,12 @@ fun prepareMarkdown(text: String): String = mentionRe.replace(text) { m ->
 
 /**
  * Renders GitHub-flavoured markdown with selectable text, images and in-app links. Tables are drawn
- * natively (see [MarkdownTable]) so they keep readable columns and scroll sideways on a phone.
+ * natively (see [MarkdownTable]) so they keep readable columns and scroll sideways on a phone, and code
+ * blocks get a Copy button (see [MarkdownCodeBlock]).
  */
 @Composable
 fun Markdown(text: String, modifier: Modifier = Modifier, fontSizeSp: Float = 15f, selectable: Boolean = true) {
-    val blocks = remember(text) { splitMarkdownTables(prepareMarkdown(text)) }
+    val blocks = remember(text) { splitMarkdownBlocks(prepareMarkdown(text)) }
     val single = blocks.singleOrNull() as? MdBlock.Prose
     if (single != null) {
         MarkdownText(single.text, modifier, fontSizeSp, selectable)
@@ -117,6 +118,7 @@ fun Markdown(text: String, modifier: Modifier = Modifier, fontSizeSp: Float = 15
             when (b) {
                 is MdBlock.Prose -> MarkdownText(b.text, Modifier.fillMaxWidth(), fontSizeSp, selectable)
                 is MdBlock.Table -> MarkdownTable(b, fontSizeSp, selectable, Modifier.fillMaxWidth().padding(vertical = 2.dp))
+                is MdBlock.Code -> MarkdownCodeBlock(b, fontSizeSp, selectable, Modifier.fillMaxWidth())
             }
         }
     }

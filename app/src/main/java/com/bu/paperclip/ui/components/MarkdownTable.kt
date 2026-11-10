@@ -48,10 +48,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bu.paperclip.net.Api
 
-/** A Markdown document split into prose (rendered by Markwon) and GFM tables (rendered natively). */
+/** A Markdown document split into prose (rendered by Markwon) GFM tables and code blocks (rendered natively). */
 sealed class MdBlock {
     data class Prose(val text: String) : MdBlock()
     data class Table(val header: List<String>, val align: List<TextAlign>, val rows: List<List<String>>) : MdBlock()
+    data class Code(val text: String, val lang: String) : MdBlock()
 }
 
 private val delimiterCell = Regex("""^\s*:?-{1,}:?\s*$""")

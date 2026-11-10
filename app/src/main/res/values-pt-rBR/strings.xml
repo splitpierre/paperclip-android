@@ -1167,4 +1167,6 @@
     <string name="work_mode_standard">Modo automático</string>
     <string name="work_mode_planning">Modo de planejamento</string>
     <string name="work_mode_ask">Modo de pergunta</string>
+    <string name="code_copy">Copiar</string>
+    <string name="code_copied">Copiado</string>
 </resources>
