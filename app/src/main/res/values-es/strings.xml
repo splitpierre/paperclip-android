@@ -387,6 +387,39 @@
     <string name="issue_tab_activity_runs_empty">Aún no hay ejecuciones</string>
     <string name="issue_tab_activity_events">Actividad</string>
     <string name="issue_tab_activity_events_empty">Sin actividad</string>
+    <string name="issue_tab_properties">Propiedades</string>
+    <string name="issue_props_work">Trabajo</string>
+    <string name="issue_props_relationships">Relaciones</string>
+    <string name="issue_props_about">Acerca de</string>
+    <string name="issue_props_work_mode">Modo de trabajo</string>
+    <string name="issue_props_labels">Etiquetas</string>
+    <string name="issue_props_labels_empty">Esta empresa aún no tiene etiquetas</string>
+    <string name="issue_props_filter_labels">Filtrar etiquetas</string>
+    <string name="issue_props_parent">Tarea principal</string>
+    <string name="issue_props_no_parent">Sin tarea principal</string>
+    <string name="issue_props_open_parent">Abrir tarea principal</string>
+    <string name="issue_props_no_blockers">Sin bloqueos</string>
+    <string name="issue_props_blocking">Bloqueando</string>
+    <plurals name="issue_props_task_count">
+        <item quantity="one">%1$d tarea</item>
+        <item quantity="many">%1$d tareas</item>
+        <item quantity="other">%1$d tareas</item>
+    </plurals>
+    <string name="issue_props_search_tasks">Buscar tareas</string>
+    <string name="issue_props_no_matches">No hay tareas que coincidan</string>
+    <string name="issue_props_identifier">Identificador</string>
+    <string name="issue_props_copy_identifier">Copiar identificador</string>
+    <string name="issue_props_created_by">Creada por</string>
+    <string name="issue_props_started">Iniciada</string>
+    <string name="issue_props_completed">Completada</string>
+    <string name="issue_props_created">Creada</string>
+    <string name="issue_props_updated">Actualizada</string>
+    <string name="issue_work_mode_auto">Auto</string>
+    <string name="issue_work_mode_plan">Plan</string>
+    <string name="issue_work_mode_ask">Pregunta</string>
+    <string name="issue_work_mode_auto_hint">El agente hace el trabajo</string>
+    <string name="issue_work_mode_plan_hint">El agente escribe un plan para que lo apruebes primero</string>
+    <string name="issue_work_mode_ask_hint">El agente responde preguntas sin cambiar nada</string>
 
     <!-- Task thread and composer (IssueThread) -->
     <string name="issue_thread_empty">Aún no hay comentarios. Escríbele algo al responsable abajo.</string>

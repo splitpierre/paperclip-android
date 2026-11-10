@@ -126,9 +126,10 @@ internal fun IssuePrioritySheet(current: String?, onPick: (String) -> Unit, onDi
     }
 }
 
-/** Assignee choice: agent id, the signed-in user, or nobody. */
+/** Assignee choice: agent id, the signed-in user, another board user, or nobody. */
 sealed class IssueAssignee {
     data class AgentA(val id: String) : IssueAssignee()
+    data class UserA(val id: String) : IssueAssignee()
     data object Me : IssueAssignee()
     data object Nobody : IssueAssignee()
 }
@@ -140,11 +141,14 @@ internal fun IssueAssigneeSheet(
     allowMe: Boolean = true,
     title: String = stringResource(R.string.task_field_assignee),
     unassignedSelected: Boolean = currentAgentId == null && currentUserId == null,
+    /** Also list the company's other board users, as the web panel does. */
+    showUsers: Boolean = false,
     onPick: (IssueAssignee) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val agents by AppState.agents.collectAsState()
     val me by AppState.me.collectAsState()
+    val users by AppState.users.collectAsState()
     var q by remember { mutableStateOf("") }
     IssueSheet(title, onDismiss) {
         if (agents.size > 8) {
@@ -174,6 +178,16 @@ internal fun IssueAssigneeSheet(
                     a.name,
                     listOfNotNull(a.title, statusLabel(a.status).takeIf { a.status != "idle" && a.status != "active" }).joinToString(" · "),
                 )
+            }
+            if (showUsers) {
+                val others = users.entries
+                    .filter { (id, u) -> id != me?.id && (q.isBlank() || (u.name ?: "").contains(q, true) || (u.email ?: "").contains(q, true)) }
+                    .sortedBy { (_, u) -> (u.name ?: u.email ?: "").lowercase() }
+                items(others, key = { "u-" + it.key }) { (id, u) ->
+                    val name = u.name?.takeIf { it.isNotBlank() } ?: u.email ?: stringResource(R.string.common_user)
+                    IssueSheetRow(currentUserId == id, { onPick(IssueAssignee.UserA(id)); onDismiss() },
+                        { Avatar(name, u.image, 28.dp, isAgent = false) }, name, u.email?.takeIf { it != name })
+                }
             }
         }
     }

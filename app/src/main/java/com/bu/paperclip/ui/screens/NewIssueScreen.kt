@@ -249,6 +249,7 @@ fun NewIssueScreen(nav: Nav, parentId: String?, projectId: String?, assigneeAgen
             when (a) {
                 is IssueAssignee.AgentA -> { agentId = a.id; userId = null }
                 IssueAssignee.Me -> { agentId = null; userId = AppState.me.value?.id }
+                is IssueAssignee.UserA -> { agentId = null; userId = a.id }
                 IssueAssignee.Nobody -> { agentId = null; userId = null }
             }
         }, onDismiss = { sheet = null })

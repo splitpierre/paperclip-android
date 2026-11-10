@@ -85,6 +85,7 @@ import com.bu.paperclip.data.Issue
 import com.bu.paperclip.data.IssueComment
 import com.bu.paperclip.data.IssueCostSummary
 import com.bu.paperclip.data.IssueDocument
+import com.bu.paperclip.data.IssueStore
 import com.bu.paperclip.data.LiveRun
 import com.bu.paperclip.data.ProjectRef
 import com.bu.paperclip.data.Repo
@@ -118,13 +119,23 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import java.time.Instant
 
 private const val ISSUE_COMMENT_PAGE = 50
-private val ISSUE_TABS = listOf(R.string.issue_tab_thread, R.string.issue_tab_docs, R.string.issue_tab_subtasks, R.string.issue_tab_files, R.string.issue_tab_activity)
+private const val TAB_THREAD = 0
+private const val TAB_PROPERTIES = 1
+private const val TAB_DOCS = 2
+private const val TAB_SUBTASKS = 3
+private const val TAB_FILES = 4
+private const val TAB_ACTIVITY = 5
+private val ISSUE_TABS = listOf(
+    R.string.issue_tab_thread, R.string.issue_tab_properties, R.string.issue_tab_docs,
+    R.string.issue_tab_subtasks, R.string.issue_tab_files, R.string.issue_tab_activity,
+)
 
 private sealed class IssueThreadEntry(val at: Instant, val key: String) {
     class C(val c: IssueComment, at: Instant) : IssueThreadEntry(at, "c-" + c.id)
@@ -204,14 +215,14 @@ fun IssueDetailScreen(nav: Nav, id: String) {
     suspend fun loadTab(t: Int) {
         val i = issue ?: return
         when (t) {
-            1 -> docs = Repo.documents(i.id)
-            2 -> children = Repo.issues(AppState.cid, parentId = i.id, limit = 200)
-            3 -> coroutineScope {
+            TAB_DOCS -> docs = Repo.documents(i.id)
+            TAB_SUBTASKS -> children = Repo.issues(AppState.cid, parentId = i.id, limit = 200)
+            TAB_FILES -> coroutineScope {
                 val a = async { Repo.attachments(i.id) }
                 val w = async { Repo.workProducts(i.id) }
                 attachments = a.await(); workProducts = w.await()
             }
-            4 -> coroutineScope {
+            TAB_ACTIVITY -> coroutineScope {
                 val e = async { Repo.issueActivity(i.id) }
                 val r = async { Repo.issueRuns(i.id) }
                 events = e.await(); runs = r.await()
@@ -235,7 +246,7 @@ fun IssueDetailScreen(nav: Nav, id: String) {
                 launch { runCatching { cost = Repo.issueCost(issue!!.id) } }
             }
             loadError = null
-            if (tab != 0) runCatching { loadTab(tab) }
+            if (tab != TAB_THREAD) runCatching { loadTab(tab) }
         } catch (c: CancellationException) {
             throw c
         } catch (t: Throwable) {
@@ -254,7 +265,7 @@ fun IssueDetailScreen(nav: Nav, id: String) {
     }
 
     LaunchedEffect(tab, issue?.id, tabTick) {
-        if (issue != null && tab != 0) runCatching { loadTab(tab) }.onFailure { AppState.toast(errorMessage(it)) }
+        if (issue != null && tab != TAB_THREAD) runCatching { loadTab(tab) }.onFailure { AppState.toast(errorMessage(it)) }
     }
 
     // ---- live updates: targeted refetches, coalesced ----
@@ -324,18 +335,24 @@ fun IssueDetailScreen(nav: Nav, id: String) {
     }
 
     // ---- mutations ----
-    fun patch(optimistic: Issue, body: JsonObject) {
-        val before = issue
-        issue = optimistic
-        scope.launch {
+    /**
+     * Optimistic edit through [IssueStore]: this screen and every task view (tree, board, Next up) show
+     * [change] at once; both roll back with an error message if the server refuses it. Runs outside the
+     * screen's scope so leaving the page doesn't cancel a save half-way.
+     */
+    fun patch(body: JsonObject, change: (Issue) -> Issue) {
+        val before = issue ?: return
+        issue = change(before)
+        AppState.scope.launch {
             try {
-                Repo.updateIssue(optimistic.id, body)
+                IssueStore.patch(before.id, body, change)
                 runCatching { loadIssue() }
             } catch (c: CancellationException) {
                 throw c
             } catch (t: Throwable) {
                 issue = before
                 AppState.toast(errorMessage(t))
+                runCatching { loadIssue() }
             }
         }
     }
@@ -386,7 +403,7 @@ fun IssueDetailScreen(nav: Nav, id: String) {
             )
         },
         bottomBar = {
-            if (i != null && tab == 0) {
+            if (i != null && tab == TAB_THREAD) {
                 IssueComposer(
                     issueId = i.id,
                     runLive = runLive,
@@ -405,7 +422,7 @@ fun IssueDetailScreen(nav: Nav, id: String) {
             }
         },
         floatingActionButton = {
-            ScrollJumpButton(listState, enabled = tab == 0 && commentsLoaded && comments.size > 3)
+            ScrollJumpButton(listState, enabled = tab == TAB_THREAD && commentsLoaded && comments.size > 3)
         },
     ) { pad ->
         when {
@@ -440,12 +457,12 @@ fun IssueDetailScreen(nav: Nav, id: String) {
                     stickyHeader(key = "tabs") {
                         Surface(color = MaterialTheme.colorScheme.background) {
                             Column {
-                                ScrollableTabRow(selectedTabIndex = tab, edgePadding = 8.dp, containerColor = MaterialTheme.colorScheme.background) {
+                                ScrollableTabRow(selectedTabIndex = tab.coerceIn(0, ISSUE_TABS.lastIndex), edgePadding = 8.dp, containerColor = MaterialTheme.colorScheme.background) {
                                     ISSUE_TABS.forEachIndexed { idx, labelRes ->
                                         val label = stringResource(labelRes)
                                         val tabText = when (idx) {
-                                            0 -> interactions.count { it.status == "pending" }.takeIf { it > 0 }?.let { stringResource(R.string.issue_tab_with_pending, label, it) }
-                                            1 -> (docs?.size ?: i.documentSummaries?.size)?.takeIf { it > 0 }?.let { stringResource(R.string.issue_tab_with_count, label, it) }
+                                            TAB_THREAD -> interactions.count { it.status == "pending" }.takeIf { it > 0 }?.let { stringResource(R.string.issue_tab_with_pending, label, it) }
+                                            TAB_DOCS -> (docs?.size ?: i.documentSummaries?.size)?.takeIf { it > 0 }?.let { stringResource(R.string.issue_tab_with_count, label, it) }
                                             else -> null
                                         } ?: label
                                         Tab(selected = tab == idx, onClick = { tab = idx }, text = { Text(tabText) })
@@ -456,7 +473,7 @@ fun IssueDetailScreen(nav: Nav, id: String) {
                         }
                     }
                     when (tab) {
-                        0 -> {
+                        TAB_THREAD -> {
                             val pending = interactions.filter { it.status == "pending" }.sortedBy { it.createdAt ?: "" }
                             items(pending, key = { "p-" + it.id }) { inter ->
                                 IssueInteractionCard(
@@ -514,10 +531,11 @@ fun IssueDetailScreen(nav: Nav, id: String) {
                             }
                             item { Spacer(Modifier.height(16.dp)) }
                         }
-                        1 -> item { IssueDocsTab(i, docs, nav) }
-                        2 -> item { IssueSubtasksTab(i, children, nav) }
-                        3 -> item { IssueFilesTab(attachments, workProducts) }
-                        4 -> item { IssueActivityTab(events, runs, nav) }
+                        TAB_PROPERTIES -> item(key = "properties") { IssuePropertiesTab(i, nav, ::patch) }
+                        TAB_DOCS -> item { IssueDocsTab(i, docs, nav) }
+                        TAB_SUBTASKS -> item { IssueSubtasksTab(i, children, nav) }
+                        TAB_FILES -> item { IssueFilesTab(attachments, workProducts) }
+                        TAB_ACTIVITY -> item { IssueActivityTab(events, runs, nav) }
                     }
                 }
             }
@@ -534,7 +552,7 @@ fun IssueDetailScreen(nav: Nav, id: String) {
             confirmButton = {
                 TextButton(enabled = v.isNotBlank(), onClick = {
                     editTitle = false
-                    patch(i.copy(title = v.trim()), jsonOf("title" to v.trim()))
+                    patch(jsonOf("title" to v.trim())) { it.copy(title = v.trim()) }
                 }) { Text(stringResource(R.string.common_save)) }
             },
             dismissButton = { TextButton(onClick = { editTitle = false }) { Text(stringResource(R.string.common_cancel)) } },
@@ -555,25 +573,29 @@ fun IssueDetailScreen(nav: Nav, id: String) {
             confirmButton = {
                 TextButton(onClick = {
                     editDescription = false
-                    patch(i.copy(description = v), jsonOf("description" to v))
+                    patch(jsonOf("description" to v)) { it.copy(description = v) }
                 }) { Text(stringResource(R.string.common_save)) }
             },
             dismissButton = { TextButton(onClick = { editDescription = false }) { Text(stringResource(R.string.common_cancel)) } },
         )
     }
     if (i != null) when (sheet) {
-        "status" -> IssueStatusSheet(i.status, onPick = { s -> if (s != i.status) patch(i.copy(status = s), jsonOf("status" to s)) }, onDismiss = { sheet = null })
-        "priority" -> IssuePrioritySheet(i.priority, onPick = { p -> if (p != i.priority) patch(i.copy(priority = p), jsonOf("priority" to p)) }, onDismiss = { sheet = null })
-        "assignee" -> IssueAssigneeSheet(i.assigneeAgentId, i.assigneeUserId, onPick = { a ->
-            when (a) {
-                is IssueAssignee.AgentA -> patch(i.copy(assigneeAgentId = a.id, assigneeUserId = null), jsonOf("assigneeAgentId" to a.id, "assigneeUserId" to kotlinx.serialization.json.JsonNull))
-                IssueAssignee.Me -> me?.id?.let { mid -> patch(i.copy(assigneeAgentId = null, assigneeUserId = mid), jsonOf("assigneeAgentId" to kotlinx.serialization.json.JsonNull, "assigneeUserId" to mid)) }
-                IssueAssignee.Nobody -> patch(i.copy(assigneeAgentId = null, assigneeUserId = null), jsonOf("assigneeAgentId" to kotlinx.serialization.json.JsonNull, "assigneeUserId" to kotlinx.serialization.json.JsonNull))
+        "status" -> IssueStatusSheet(i.status, onPick = { s -> if (s != i.status) patch(jsonOf("status" to s)) { it.copy(status = s) } }, onDismiss = { sheet = null })
+        "priority" -> IssuePrioritySheet(i.priority, onPick = { p -> if (p != i.priority) patch(jsonOf("priority" to p)) { it.copy(priority = p) } }, onDismiss = { sheet = null })
+        "assignee" -> IssueAssigneeSheet(i.assigneeAgentId, i.assigneeUserId, showUsers = true, onPick = { a ->
+            val (agentId, userId) = when (a) {
+                is IssueAssignee.AgentA -> a.id to null
+                is IssueAssignee.UserA -> null to a.id
+                IssueAssignee.Me -> null to (me?.id ?: return@IssueAssigneeSheet)
+                IssueAssignee.Nobody -> null to null
+            }
+            patch(jsonOf("assigneeAgentId" to (agentId ?: JsonNull), "assigneeUserId" to (userId ?: JsonNull))) {
+                it.copy(assigneeAgentId = agentId, assigneeUserId = userId)
             }
         }, onDismiss = { sheet = null })
         "project" -> IssueProjectSheet(i.projectId, onPick = { p ->
-            val pr = AppState.project(p)
-            patch(i.copy(projectId = p, project = pr?.let { ProjectRef(it.id, it.name, it.color) }), jsonOf("projectId" to (p ?: kotlinx.serialization.json.JsonNull)))
+            val pr = AppState.project(p)?.let { ProjectRef(it.id, it.name, it.color) }
+            patch(jsonOf("projectId" to (p ?: JsonNull))) { it.copy(projectId = p, project = pr) }
         }, onDismiss = { sheet = null })
     }
 }

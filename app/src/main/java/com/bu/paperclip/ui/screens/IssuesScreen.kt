@@ -296,6 +296,7 @@ fun IssuesScreen(nav: Nav) {
                 when (a) {
                     is IssueAssignee.AgentA -> patch(current, current.copy(assigneeAgentId = a.id, assigneeUserId = null), jsonOf("assigneeAgentId" to a.id, "assigneeUserId" to JsonNull))
                     IssueAssignee.Me -> me?.id?.let { mid -> patch(current, current.copy(assigneeAgentId = null, assigneeUserId = mid), jsonOf("assigneeAgentId" to JsonNull, "assigneeUserId" to mid)) }
+                    is IssueAssignee.UserA -> patch(current, current.copy(assigneeAgentId = null, assigneeUserId = a.id), jsonOf("assigneeAgentId" to JsonNull, "assigneeUserId" to a.id))
                     IssueAssignee.Nobody -> patch(current, current.copy(assigneeAgentId = null, assigneeUserId = null), jsonOf("assigneeAgentId" to JsonNull, "assigneeUserId" to JsonNull))
                 }
             },

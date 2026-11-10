@@ -387,6 +387,39 @@
     <string name="issue_tab_activity_runs_empty">Nenhuma execução ainda</string>
     <string name="issue_tab_activity_events">Atividade</string>
     <string name="issue_tab_activity_events_empty">Nenhuma atividade</string>
+    <string name="issue_tab_properties">Propriedades</string>
+    <string name="issue_props_work">Trabalho</string>
+    <string name="issue_props_relationships">Relações</string>
+    <string name="issue_props_about">Sobre</string>
+    <string name="issue_props_work_mode">Modo de trabalho</string>
+    <string name="issue_props_labels">Etiquetas</string>
+    <string name="issue_props_labels_empty">Esta empresa ainda não tem etiquetas</string>
+    <string name="issue_props_filter_labels">Filtrar etiquetas</string>
+    <string name="issue_props_parent">Tarefa pai</string>
+    <string name="issue_props_no_parent">Sem tarefa pai</string>
+    <string name="issue_props_open_parent">Abrir tarefa pai</string>
+    <string name="issue_props_no_blockers">Sem bloqueios</string>
+    <string name="issue_props_blocking">Bloqueando</string>
+    <plurals name="issue_props_task_count">
+        <item quantity="one">%1$d tarefa</item>
+        <item quantity="many">%1$d tarefas</item>
+        <item quantity="other">%1$d tarefas</item>
+    </plurals>
+    <string name="issue_props_search_tasks">Buscar tarefas</string>
+    <string name="issue_props_no_matches">Nenhuma tarefa encontrada</string>
+    <string name="issue_props_identifier">Identificador</string>
+    <string name="issue_props_copy_identifier">Copiar identificador</string>
+    <string name="issue_props_created_by">Criada por</string>
+    <string name="issue_props_started">Iniciada</string>
+    <string name="issue_props_completed">Concluída</string>
+    <string name="issue_props_created">Criada</string>
+    <string name="issue_props_updated">Atualizada</string>
+    <string name="issue_work_mode_auto">Auto</string>
+    <string name="issue_work_mode_plan">Plano</string>
+    <string name="issue_work_mode_ask">Pergunta</string>
+    <string name="issue_work_mode_auto_hint">O agente faz o trabalho</string>
+    <string name="issue_work_mode_plan_hint">O agente escreve um plano para você aprovar antes</string>
+    <string name="issue_work_mode_ask_hint">O agente responde perguntas sem alterar nada</string>
 
     <!-- Conversa da tarefa e editor (IssueThread) -->
     <string name="issue_thread_empty">Nenhum comentário ainda. Escreva algo para o responsável abaixo.</string>
